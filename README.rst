@@ -6,6 +6,10 @@ The PDAL Python extension allows you to process data with PDAL into `Numpy`_
 arrays. Additionally, you can use it to fetch `schema`_ and `metadata`_ from
 PDAL operations.
 
+The repository for PDAL's Python extension is available at https://github.com/PDAL/python
+
+It is released independently from PDAL itself as of PDAL 1.7.
+
 Usage
 --------------------------------------------------------------------------------
 
