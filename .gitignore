@@ -2,3 +2,5 @@ pdal/libpdalpython.cpp
 *.pyc
 __pycache__
 build/*
+PDAL.egg-info/*
+dist/*
