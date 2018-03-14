@@ -1,3 +1,4 @@
 pdal/libpdalpython.cpp
 *.pyc
 __pycache__
+build/*
