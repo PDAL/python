@@ -106,6 +106,12 @@ include_dirs = []
 library_dirs = []
 libraries = []
 extra_link_args = []
+extra_compile_args = []
+
+if os.name in ['nt']:
+    library_dirs = ['c:/OSGeo4W64/lib']
+    libraries = ['pdalcpp','pdal_util','ws2_32']
+    extra_compile_args = ['/DNOMINMAX',]
 
 from setuptools.extension import Extension as DistutilsExtension
 
@@ -144,11 +150,14 @@ if pdal_config and "clean" not in sys.argv:
             libraries.append(item[2:])
 
 include_dirs.append(numpy.get_include())
-extra_compile_args = ['-std=c++11','-Wno-unknown-pragmas']
+
+if os.name != 'nt':
+    extra_compile_args = ['-std=c++11','-Wno-unknown-pragmas']
 
 DEBUG=False
 if DEBUG:
-    extra_compile_args += ['-g','-O0']
+    if os.name != 'nt':
+        extra_compile_args += ['-g','-O0']
 
 sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp"  ]
 extensions = [DistutilsExtension("*",
