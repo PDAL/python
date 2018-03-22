@@ -64,7 +64,8 @@ Pipeline::Pipeline(std::string const& json)
 #ifndef _WIN32
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
-
+#undef NUMPY_IMPORT_ARRAY_RETVAL
+#define NUMPY_IMPORT_ARRAY_RETVAL
     import_array();
 }
 
