@@ -1,0 +1,10 @@
+{
+  "pipeline":[
+    "test/data/autzen-utm.las",
+    {
+      "type":"filters.chipper",
+      "capacity":25
+    },
+    "auzen-utm-chipped-25.las"
+  ]
+}
