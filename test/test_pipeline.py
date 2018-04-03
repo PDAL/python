@@ -2,9 +2,7 @@ import unittest
 import pdal
 import os
 
-DATADIRECTORY = os.environ.get('PDAL_TEST_DIR')
-if not DATADIRECTORY:
-    DATADIRECTORY = "../test"
+DATADIRECTORY = "./test/data"
 
 bad_json = u"""
 {
@@ -18,11 +16,10 @@ bad_json = u"""
 }
 """
 
+print (os.path.abspath(os.path.join(DATADIRECTORY, 'sort.json')))
+
 class TestPipeline(unittest.TestCase):
 
-    DATADIRECTORY = os.environ.get('PDAL_TEST_DIR')
-    if not DATADIRECTORY:
-        DATADIRECTORY = "../test"
     def fetch_json(self, filename):
         import os
         fn = DATADIRECTORY + os.path.sep +  filename
@@ -31,18 +28,18 @@ class TestPipeline(unittest.TestCase):
             output = f.read().decode('UTF-8')
         return output
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_construction(self):
         """Can we construct a PDAL pipeline"""
-        json = self.fetch_json('/data/pipeline/sort.json')
+        json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_execution(self):
         """Can we execute a PDAL pipeline"""
-        x = self.fetch_json('/data/pipeline/sort.json')
+        x = self.fetch_json('sort.json')
         r = pdal.Pipeline(x)
         r.execute()
         self.assertGreater(len(r.pipeline), 200)
@@ -53,11 +50,11 @@ class TestPipeline(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             r.validate()
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_array(self):
         """Can we fetch PDAL data as a numpy array"""
-        json = self.fetch_json('/data/pipeline/sort.json')
+        json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
         r.execute()
         arrays = r.arrays
@@ -67,11 +64,11 @@ class TestPipeline(unittest.TestCase):
         self.assertAlmostEqual(a[0][0], 635619.85, 7)
         self.assertAlmostEqual(a[1064][2], 456.92, 7)
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_metadata(self):
         """Can we fetch PDAL metadata"""
-        json = self.fetch_json('/data/pipeline/sort.json')
+        json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
         r.execute()
         metadata = r.metadata
@@ -80,40 +77,40 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(j["metadata"]["readers.las"]["count"], 1065)
 
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_no_execute(self):
         """Does fetching arrays without executing throw an exception"""
-        json = self.fetch_json('/data/pipeline/sort.json')
+        json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
         with self.assertRaises(RuntimeError):
             r.arrays
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/reproject.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
                          "missing test data")
     def test_logging(self):
         """Can we fetch log output"""
-        json = self.fetch_json('/data/pipeline/reproject.json')
+        json = self.fetch_json('reproject.json')
         r = pdal.Pipeline(json)
         r.loglevel = 8
         count = r.execute()
         self.assertEqual(count, 789)
         self.assertEqual(r.log.split()[0], '(pypipeline')
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/pipeline/sort.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_schema(self):
         """Fetching a schema works"""
-        json = self.fetch_json('/data/pipeline/sort.json')
+        json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
         r.execute()
         self.assertEqual(r.schema['schema']['dimensions'][0]['name'], 'X')
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'data/filters/chip.json')),
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'chip.json')),
                          "missing test data")
     def test_merged_arrays(self):
         """Can we fetch multiple point views from merged PDAL data """
-        json = self.fetch_json('/data/filters/chip.json')
+        json = self.fetch_json('chip.json')
         r = pdal.Pipeline(json)
         r.execute()
         arrays = r.arrays
