@@ -49,6 +49,6 @@ sorts it by the ``X`` dimension:
 Requirements
 ================================================================================
 
-* PDAL 1.4+
+* PDAL 1.7+
 * Python >=2.7 (including Python 3.x)
 
