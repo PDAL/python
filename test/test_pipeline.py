@@ -118,7 +118,7 @@ class TestPipeline(unittest.TestCase):
 
 def test_suite():
     return unittest.TestSuite(
-        [TestXML])
+        [TestPipeline])
 
 if __name__ == '__main__':
     unittest.main()
