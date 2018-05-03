@@ -51,4 +51,6 @@ Requirements
 
 * PDAL 1.7+
 * Python >=2.7 (including Python 3.x)
+* Cython (eg :code:`pip install cython`)
+* Packaging (eg :code:`pip install packaging`) 
 
