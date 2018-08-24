@@ -14,11 +14,13 @@ from cython.operator cimport dereference as deref, preincrement as inc
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
+        Array(object) except +
         void* getPythonArray() except+
 
 cdef extern from "PyPipeline.hpp" namespace "libpdalpython":
     cdef cppclass Pipeline:
         Pipeline(const char* ) except +
+        Pipeline(const char*, vector[Array*]& ) except +
         int64_t execute() except +
         bool validate() except +
         string getPipeline() except +
@@ -29,16 +31,45 @@ cdef extern from "PyPipeline.hpp" namespace "libpdalpython":
         int getLogLevel()
         void setLogLevel(int)
 
+cdef class PyArray:
+    cdef Array *thisptr
+    def __cinit__(self, object array):
+        self.thisptr = new Array(array)
+    def __dealloc__(self):
+        del self.thisptr
+
+
 cdef class PyPipeline:
     cdef Pipeline *thisptr      # hold a c++ instance which we're wrapping
-    def __cinit__(self, unicode json):
-        cdef char* x
+
+
+    def __cinit__(self, unicode json, list arrays=None):
+        cdef char* x = NULL
+        cdef int n_arrays;
+        if arrays:
+            n_arrays = len(arrays)
+
+        cdef vector[Array*] c_arrays;
+        cdef np.ndarray np_array;
+        cdef Array* a
+
+        if arrays is not None:
+            for array in arrays:
+                a = new Array(array)
+                c_arrays.push_back(a)
+
         if PY_MAJOR_VERSION >= 3:
             py_byte_string = json.encode('UTF-8')
-            x= py_byte_string
-            self.thisptr = new Pipeline(x)
+            x = py_byte_string
+            if arrays:
+                self.thisptr = new Pipeline(x, c_arrays)
+            else:
+                self.thisptr = new Pipeline(x)
         else:
-            self.thisptr = new Pipeline(json)
+            if arrays:
+                self.thisptr = new Pipeline(x, c_arrays)
+            else:
+                self.thisptr = new Pipeline(json)
     def __dealloc__(self):
         del self.thisptr
 

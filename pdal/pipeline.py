@@ -1,16 +1,21 @@
 
 from pdal import libpdalpython
+import numpy as np
 
 class Pipeline(object):
     """A PDAL pipeline object, defined by JSON. See http://www.pdal.io/pipeline.html for more
     information on how to define one"""
 
-    def __init__(self, json):
+    def __init__(self, json, arrays=None):
         if isinstance(json, str):
             data = json
         else:
             data = json.decode('UTF-8')
-        self.p = libpdalpython.PyPipeline(data)
+
+        if arrays:
+            self.p = libpdalpython.PyPipeline(data, arrays)
+        else:
+            self.p = libpdalpython.PyPipeline(data)
 
     def get_metadata(self):
         return self.p.metadata

@@ -46,14 +46,67 @@
 #include <numpy/arrayobject.h>
 
 #include "PyArray.hpp"
+#include <pdal/Stage.hpp>
+#include <pdal/PipelineWriter.hpp>
+#include <pdal/io/NumpyReader.hpp>
 
 namespace libpdalpython
 {
 
 using namespace pdal::python;
 
+Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays)
+{
+
+#ifndef _WIN32
+    ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
+    ::dlopen("libpdal_plugin_reader_numpy.so", RTLD_NOLOAD | RTLD_GLOBAL);
+#endif
+
+#undef NUMPY_IMPORT_ARRAY_RETVAL
+#define NUMPY_IMPORT_ARRAY_RETVAL
+    import_array();
+
+    m_executor = std::shared_ptr<pdal::PipelineExecutor>(new pdal::PipelineExecutor(json));
+
+    pdal::PipelineManager& manager = m_executor->getManager();
+
+    std::stringstream strm(json);
+    manager.readPipeline(strm);
+
+    pdal::Stage *r = manager.getStage();
+    if (!r)
+        throw pdal::pdal_error("pipeline had no stages!");
+
+    int counter = 1;
+    for (auto array: arrays)
+    {
+        // Create numpy reader for each array
+        pdal::Options options;
+        std::stringstream tag;
+        tag << "readers_numpy" << counter;
+        pdal::StageCreationOptions opts { "", "readers.numpy", nullptr, options, tag.str()};
+        pdal::Stage& reader = manager.makeReader(opts);
+
+        pdal::NumpyReader* np_reader = dynamic_cast<pdal::NumpyReader*>(&reader);
+        if (!np_reader)
+            throw pdal::pdal_error("couldn't cast reader!");
+
+        PyObject* parray = (PyObject*)array->getPythonArray();
+        if (!parray)
+            throw pdal::pdal_error("array was none!");
+
+        np_reader->setArray(parray);
+
+        r->setInput(reader);
+        counter++;
+
+    }
+
+    manager.validateStageOptions();
+}
+
 Pipeline::Pipeline(std::string const& json)
-    : m_executor(json)
 {
     // Make the symbols in pdal_base global so that they're accessible
     // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
@@ -67,6 +120,8 @@ Pipeline::Pipeline(std::string const& json)
 #undef NUMPY_IMPORT_ARRAY_RETVAL
 #define NUMPY_IMPORT_ARRAY_RETVAL
     import_array();
+
+    m_executor = std::shared_ptr<pdal::PipelineExecutor>(new pdal::PipelineExecutor(json));
 }
 
 Pipeline::~Pipeline()
@@ -75,34 +130,34 @@ Pipeline::~Pipeline()
 
 void Pipeline::setLogLevel(int level)
 {
-    m_executor.setLogLevel(level);
+    m_executor->setLogLevel(level);
 }
 
 int Pipeline::getLogLevel() const
 {
-    return static_cast<int>(m_executor.getLogLevel());
+    return static_cast<int>(m_executor->getLogLevel());
 }
 
 int64_t Pipeline::execute()
 {
 
-    int64_t count = m_executor.execute();
+    int64_t count = m_executor->execute();
     return count;
 }
 
 bool Pipeline::validate()
 {
-    return m_executor.validate();
+    return m_executor->validate();
 }
 
 std::vector<Array *> Pipeline::getArrays() const
 {
     std::vector<Array *> output;
 
-    if (!m_executor.executed())
+    if (!m_executor->executed())
         throw python_error("call execute() before fetching arrays");
 
-    const pdal::PointViewSet& pvset = m_executor.getManagerConst().views();
+    const pdal::PointViewSet& pvset = m_executor->getManagerConst().views();
 
     for (auto i: pvset)
     {

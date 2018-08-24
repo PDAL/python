@@ -41,6 +41,8 @@
 
 #include <string>
 #include <sstream>
+#include <memory>
+
 #undef toupper
 #undef tolower
 #undef isspace
@@ -65,26 +67,27 @@ public:
 
 class Pipeline {
 public:
-    Pipeline(std::string const& xml);
+    Pipeline(std::string const& json);
+    Pipeline(std::string const& json, std::vector<pdal::python::Array*> arrays);
     ~Pipeline();
 
     int64_t execute();
     bool validate();
     inline std::string getPipeline() const
     {
-        return m_executor.getPipeline();
+        return m_executor->getPipeline();
     }
     inline std::string getMetadata() const
     {
-        return m_executor.getMetadata();
+        return m_executor->getMetadata();
     }
     inline std::string getSchema() const
     {
-        return m_executor.getSchema();
+        return m_executor->getSchema();
     }
     inline std::string getLog() const
     {
-        return m_executor.getLog();
+        return m_executor->getLog();
     }
     std::vector<pdal::python::Array *> getArrays() const;
 
@@ -92,7 +95,7 @@ public:
     int getLogLevel() const;
 
 private:
-    pdal::PipelineExecutor m_executor;
+    std::shared_ptr<pdal::PipelineExecutor> m_executor;
 };
 
 }

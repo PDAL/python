@@ -110,7 +110,7 @@ extra_compile_args = []
 
 if os.name in ['nt']:
     library_dirs = ['c:/OSGeo4W64/lib']
-    libraries = ['pdalcpp','pdal_util','ws2_32']
+    libraries = ['pdalcpp','pdal_plugin_reader_numpy','pdal_util','ws2_32']
     extra_compile_args = ['/DNOMINMAX',]
 
 from setuptools.extension import Extension as DistutilsExtension
@@ -154,11 +154,15 @@ include_dirs.append(numpy.get_include())
 if os.name != 'nt':
     extra_compile_args = ['-std=c++11','-Wno-unknown-pragmas']
 
+if platform.system() == 'Darwin':
+    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
+
 DEBUG=False
 if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']
 
+libraries.append('pdal_plugin_reader_numpy')
 sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp"  ]
 extensions = [DistutilsExtension("*",
                                    sources,

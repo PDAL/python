@@ -66,8 +66,23 @@ class PDAL_DLL Array
 {
 public:
 
-    Array() : m_py_array(0)
-    {}
+    Array() : m_py_array(0), m_own_array(true)
+    {
+#undef NUMPY_IMPORT_ARRAY_RETVAL
+#define NUMPY_IMPORT_ARRAY_RETVAL
+        import_array();
+    }
+
+    Array(PyObject* array) : m_py_array(array), m_own_array(false)
+    {
+#undef NUMPY_IMPORT_ARRAY_RETVAL
+#define NUMPY_IMPORT_ARRAY_RETVAL
+        import_array();
+        if (!PyArray_Check(array))
+            throw pdal::pdal_error("pdal::python::Array constructor object is not a numpy array");
+        Py_XINCREF(array);
+
+    }
 
     ~Array()
     {
@@ -85,13 +100,13 @@ public:
         npy_intp* ndims = &mydims;
         std::vector<npy_intp> strides(dims.size());
 
-
         DataPtr pdata( new std::vector<uint8_t>(view->pointSize()* view->size(), 0));
 
-        PyArray_Descr *dtype(0);
+        PyArray_Descr *dtype = nullptr;
         PyObject * dtype_dict = (PyObject*)buildNumpyDescription(view);
         if (!dtype_dict)
             throw pdal_error("Unable to build numpy dtype description dictionary");
+
         int did_convert = PyArray_DescrConverter(dtype_dict, &dtype);
         if (did_convert == NPY_FAIL)
             throw pdal_error("Unable to build numpy dtype");
@@ -126,16 +141,22 @@ public:
     }
 
 
-    inline PyObject* getPythonArray() const { return m_py_array; }
-
+    inline PyObject* getPythonArray() const
+    {
+        return m_py_array;
+    }
 
 private:
 
     inline void cleanup()
     {
         PyObject* p = (PyObject*)(m_py_array);
+        if (m_own_array)
+        {
+            m_data_array.reset();
+        }
+
         Py_XDECREF(p);
-        m_data_array.reset();
     }
 
     inline PyObject* buildNumpyDescription(PointViewPtr view) const
@@ -170,6 +191,8 @@ private:
             Dimension::BaseType b = Dimension::base(t);
             if (b == Dimension::BaseType::Unsigned)
                 kind = "u";
+            else if (b == Dimension::BaseType::Signed)
+                kind = "i";
             else if (b == Dimension::BaseType::Floating)
                 kind = "f";
             else
@@ -201,8 +224,12 @@ private:
         return dict;
     }
 
+
+
+
     PyObject* m_py_array;
     std::unique_ptr<std::vector<uint8_t> > m_data_array;
+    bool m_own_array;
 
     Array& operator=(Array const& rhs);
 };
