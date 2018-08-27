@@ -7,15 +7,11 @@ class Pipeline(object):
     information on how to define one"""
 
     def __init__(self, json, arrays=None):
-        if isinstance(json, str):
-            data = json
-        else:
-            data = json.decode('UTF-8')
 
         if arrays:
-            self.p = libpdalpython.PyPipeline(data, arrays)
+            self.p = libpdalpython.PyPipeline(json, arrays)
         else:
-            self.p = libpdalpython.PyPipeline(data)
+            self.p = libpdalpython.PyPipeline(json)
 
     def get_metadata(self):
         return self.p.metadata
