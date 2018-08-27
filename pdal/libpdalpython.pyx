@@ -86,10 +86,21 @@ cdef class PyPipeline:
             for array in arrays:
                 a = new Array(array)
                 c_arrays.push_back(a)
-        if arrays:
-            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
+
+        if PY_MAJOR_VERSION >= 3:
+            if arrays:
+                self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
+            else:
+                self.thisptr = new Pipeline(json.encode('UTF-8'))
         else:
-            self.thisptr = new Pipeline(json.encode('UTF-8'))
+            if arrays:
+                self.thisptr = new Pipeline(json, c_arrays)
+            else:
+                self.thisptr = new Pipeline(json)
+#        if arrays:
+#            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
+#        else:
+#            self.thisptr = new Pipeline(json.encode('UTF-8'))
 
     def __dealloc__(self):
         del self.thisptr
