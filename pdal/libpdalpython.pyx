@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: c_string_type=unicode, c_string_encoding=utf8
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -38,6 +39,34 @@ cdef class PyArray:
     def __dealloc__(self):
         del self.thisptr
 
+cdef extern from "PyDimension.hpp":
+    ctypedef struct Dimension:
+        string name;
+        string description;
+        int size;
+        string type;
+##         string units; // Not defined by PDAL yet
+
+    cdef vector[Dimension] getValidDimensions() except +
+
+
+def getDimensions():
+        cdef vector[Dimension] c_dims;
+        c_dims = getValidDimensions()
+        output = []
+        cdef vector[Dimension].iterator it = c_dims.begin()
+        while it != c_dims.end():
+            ptr = deref(it)
+            d = {}
+            d['name'] = ptr.name
+            d['description'] = ptr.description
+            kind = ptr.type + str(ptr.size)
+            d['dtype'] = np.dtype(kind)
+            ptr = deref(it)
+            output.append(d)
+            inc(it)
+        return output
+
 
 cdef class PyPipeline:
     cdef Pipeline *thisptr      # hold a c++ instance which we're wrapping
@@ -57,29 +86,21 @@ cdef class PyPipeline:
             for array in arrays:
                 a = new Array(array)
                 c_arrays.push_back(a)
-
-        if PY_MAJOR_VERSION >= 3:
-            py_byte_string = json.encode('UTF-8')
-            x = py_byte_string
-            if arrays:
-                self.thisptr = new Pipeline(x, c_arrays)
-            else:
-                self.thisptr = new Pipeline(x)
+        if arrays:
+            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
         else:
-            if arrays:
-                self.thisptr = new Pipeline(x, c_arrays)
-            else:
-                self.thisptr = new Pipeline(json)
+            self.thisptr = new Pipeline(json.encode('UTF-8'))
+
     def __dealloc__(self):
         del self.thisptr
 
     property pipeline:
         def __get__(self):
-            return self.thisptr.getPipeline().decode('UTF-8')
+            return self.thisptr.getPipeline()
 
     property metadata:
         def __get__(self):
-            return self.thisptr.getMetadata().decode('UTF-8')
+            return self.thisptr.getMetadata()
 
     property loglevel:
         def __get__(self):
@@ -90,13 +111,13 @@ cdef class PyPipeline:
     property log:
         def __get__(self):
 
-            return self.thisptr.getLog().decode('UTF-8')
+            return self.thisptr.getLog()
 
     property schema:
         def __get__(self):
             import json
 
-            j = self.thisptr.getSchema().decode('UTF-8')
+            j = self.thisptr.getSchema()
             return json.loads(j)
 
     property arrays:

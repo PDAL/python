@@ -157,7 +157,7 @@ if os.name != 'nt':
 if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
-DEBUG=False
+DEBUG=True
 if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']

@@ -153,6 +153,12 @@ class TestArrayLoad(PDALTest):
         data = arrays[0]
         self.assertEqual(len(data), 1836)
 
+class TestDimensions(PDALTest):
+    def test_fetch_dimensions(self):
+        """Ask PDAL for its valid dimensions list"""
+        dims = pdal.dimensions
+        self.assertEqual(len(dims), 72)
+
 def test_suite():
     return unittest.TestSuite(
         [TestPipeline])
