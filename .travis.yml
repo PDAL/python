@@ -1,0 +1,13 @@
+# .travis.yml
+# Configure Travis CI service for http://github.com/PDAL/python
+
+sudo: required
+
+services: docker
+
+before_install:
+  - docker pull pdal/ubuntu:master
+
+script:
+  - docker run -v $TRAVIS_BUILD_DIR:/pdal -t pdal/ubuntu:master /bin/sh -c "/pdal/scripts/ci/script.sh"
+
