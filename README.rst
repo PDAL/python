@@ -46,11 +46,15 @@ sorts it by the ``X`` dimension:
 .. _`schema`: http://www.pdal.io/dimensions.html
 .. _`metadata`: http://www.pdal.io/development/metadata.html
 
+
+.. image:: https://travis-ci.org/PDAL/python.svg?branch=master
+    :target: https://travis-ci.org/PDAL/python
+
 Requirements
 ================================================================================
 
 * PDAL 1.7+
 * Python >=2.7 (including Python 3.x)
 * Cython (eg :code:`pip install cython`)
-* Packaging (eg :code:`pip install packaging`) 
+* Packaging (eg :code:`pip install packaging`)
 
