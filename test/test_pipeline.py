@@ -135,7 +135,7 @@ class TestArrayLoad(PDALTest):
         arrays = [data]
 
         json = self.fetch_json('chip.json')
-        chip ="""{
+        chip =u"""{
   "pipeline":[
     {
       "type":"filters.range",
