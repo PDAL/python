@@ -132,7 +132,6 @@ class TestArrayLoad(PDALTest):
         data = np.load(os.path.join(DATADIRECTORY, 'perlin.npy'))
 
         arrays = [data, data, data]
-        arrays = [data]
 
         json = self.fetch_json('chip.json')
         chip =u"""{
@@ -148,10 +147,11 @@ class TestArrayLoad(PDALTest):
         p.loglevel = 8
         count = p.execute()
         arrays = p.arrays
-        self.assertEqual(len(arrays), 1)
+        self.assertEqual(len(arrays), 3)
 
         data = arrays[0]
         self.assertEqual(len(data), 1836)
+        self.assertEqual(sum([len(i) for i in arrays]), 3*1836)
 
 class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
