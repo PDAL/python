@@ -108,13 +108,9 @@ libraries = []
 extra_link_args = []
 extra_compile_args = []
 
-if os.name in ['nt']:
-    library_dirs = ['c:/OSGeo4W64/lib']
-    libraries = ['pdalcpp','pdal_plugin_reader_numpy','pdal_util','ws2_32']
-    extra_compile_args = ['/DNOMINMAX',]
-
 from setuptools.extension import Extension as DistutilsExtension
 
+PDALVERSION = None
 if pdal_config and "clean" not in sys.argv:
     # Collect other options from PDAL
     try:
@@ -134,6 +130,7 @@ if pdal_config and "clean" not in sys.argv:
     # older versions of pdal-config do not include --python-version switch
     except ValueError:
         pass
+    PDALVERSION = Version(get_pdal_config('--version'))
 
     separator = ':'
     if os.name in ['nt']:
@@ -162,7 +159,19 @@ if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']
 
-libraries.append('pdal_plugin_reader_numpy')
+if os.name in ['nt']:
+    if os.environ['OSGEO4W_ROOT']:
+        library_dirs = ['c:/OSGeo4W64/lib']
+    libraries = ['pdalcpp','pdal_util','ws2_32']
+    if PDALVERSION >= Version('1.8'):
+        libraries.append('pdal_plugin_reader_numpy')
+    extra_compile_args = ['/DNOMINMAX',]
+
+
+# readers.numpy doesn't exist until PDAL 1.8
+if PDALVERSION >= Version('1.8'):
+    libraries.append('pdal_plugin_reader_numpy')
+
 sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp"  ]
 extensions = [DistutilsExtension("*",
                                    sources,

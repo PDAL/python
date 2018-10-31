@@ -2,6 +2,7 @@ import unittest
 import pdal
 import os
 import numpy as np
+from packaging.version import Version
 
 DATADIRECTORY = "./test/data"
 
@@ -129,6 +130,8 @@ class TestArrayLoad(PDALTest):
 
     def test_merged_arrays(self):
         """Can we load data from a a list of arrays to PDAL"""
+        if Version(pdal.info.version) < Version('1.8'):
+            return True
         data = np.load(os.path.join(DATADIRECTORY, 'perlin.npy'))
 
         arrays = [data, data, data]
@@ -157,7 +160,10 @@ class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
         """Ask PDAL for its valid dimensions list"""
         dims = pdal.dimensions
-        self.assertEqual(len(dims), 72)
+        if Version(pdal.info.version) < Version('1.8'):
+            self.assertEqual(len(dims), 71)
+        else:
+            self.assertEqual(len(dims), 72)
 
 def test_suite():
     return unittest.TestSuite(

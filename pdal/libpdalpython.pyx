@@ -12,6 +12,30 @@ np.import_array()
 from cpython cimport PyObject, Py_INCREF
 from cython.operator cimport dereference as deref, preincrement as inc
 
+cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
+    cdef int versionMajor() except +
+    cdef int versionMinor() except +
+    cdef int versionPatch() except +
+    cdef string sha1() except+
+    cdef string debugInformation() except+
+    cdef string pluginInstallPath() except+
+    cdef string versionString() except+
+
+def getVersionString():
+    return versionString()
+
+def getVersionMajor():
+    return versionMajor()
+def getVersionMinor():
+    return versionMinor()
+def getVersionPatch():
+    return versionPatch()
+def getSha1():
+    return sha1()
+def getDebugInformation():
+    return debugInformation()
+def getPluginInstallPath():
+    return pluginInstallPath()
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
@@ -31,6 +55,8 @@ cdef extern from "PyPipeline.hpp" namespace "libpdalpython":
         vector[Array*] getArrays() except +
         int getLogLevel()
         void setLogLevel(int)
+
+
 
 cdef class PyArray:
     cdef Array *thisptr

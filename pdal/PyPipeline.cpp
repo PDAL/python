@@ -47,6 +47,7 @@
 
 #include "PyArray.hpp"
 #include <pdal/Stage.hpp>
+#include <pdal/pdal_features.hpp>
 #include <pdal/PipelineWriter.hpp>
 #include <pdal/io/NumpyReader.hpp>
 
@@ -78,6 +79,7 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays)
     if (!r)
         throw pdal::pdal_error("pipeline had no stages!");
 
+#if PDAL_VERSION_MAJOR > 1 || PDAL_VERSION_MINOR >=8
     int counter = 1;
     for (auto array: arrays)
     {
@@ -102,6 +104,7 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays)
         counter++;
 
     }
+#endif
 
     manager.validateStageOptions();
 }
