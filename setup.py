@@ -178,7 +178,7 @@ if USE_CYTHON and "clean" not in sys.argv:
 setup_args = dict(
     name                = 'PDAL',
     version             = str(module_version),
-    requires            = ['Python (>=2.7)', ],
+    requires            = ['Python (>=2.7)', 'Numpy'],
     description         = 'Point cloud data processing',
     license             = 'BSD',
     keywords            = 'point cloud spatial',
@@ -203,7 +203,7 @@ setup_args = dict(
         'Topic :: Scientific/Engineering :: GIS',
     ],
     cmdclass           = {},
-    install_requires   = ['numpy', 'packaging'],
+    install_requires   = ['numpy', 'packaging', 'cython'],
 )
 setup(ext_modules=extensions, **setup_args)
 
