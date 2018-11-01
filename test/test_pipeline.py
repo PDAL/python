@@ -128,6 +128,8 @@ class TestPipeline(PDALTest):
 #
 class TestArrayLoad(PDALTest):
 
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'perlin.npy')),
+            "missing test data")
     def test_merged_arrays(self):
         """Can we load data from a a list of arrays to PDAL"""
         if Version(pdal.info.version) < Version('1.8'):
