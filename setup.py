@@ -149,7 +149,7 @@ if pdal_config and "clean" not in sys.argv:
 include_dirs.append(numpy.get_include())
 
 if os.name != 'nt':
-    extra_compile_args = ['-std=c++11','-Wno-unknown-pragmas']
+    extra_compile_args = ['-D_GLIBCXX_USE_CXX11_ABI=0', '-std=c++11','-Wno-unknown-pragmas']
 
 if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
