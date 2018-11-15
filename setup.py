@@ -165,9 +165,10 @@ if os.name in ['nt']:
     extra_compile_args = ['/DNOMINMAX',]
 
 if 'linux' in sys.platform or 'linux2' in sys.platform:
-    # try to ensure the ABI
     if 'GCC' in sys.version:
-        extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
+        # try to ensure the ABI for Conda GCC 4.8
+        if '4.8' in sys.version:
+            extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
 
 # readers.numpy doesn't exist until PDAL 1.8
 if PDALVERSION >= Version('1.8'):
