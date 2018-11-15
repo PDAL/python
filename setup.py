@@ -148,9 +148,6 @@ if pdal_config and "clean" not in sys.argv:
 
 include_dirs.append(numpy.get_include())
 
-if os.name != 'nt':
-    extra_compile_args = ['-std=c++11','-Wno-unknown-pragmas']
-
 if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
@@ -167,6 +164,10 @@ if os.name in ['nt']:
         libraries.append('pdal_plugin_reader_numpy')
     extra_compile_args = ['/DNOMINMAX',]
 
+if 'linux' in sys.platform or 'linux2' in sys.platform:
+    # try to ensure the ABI
+    if 'GCC' in sys.version:
+        extra_compile_args += '-D_GLIBCXX_USE_CXX11_ABI=0'
 
 # readers.numpy doesn't exist until PDAL 1.8
 if PDALVERSION >= Version('1.8'):
