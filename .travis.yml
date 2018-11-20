@@ -6,8 +6,8 @@ sudo: required
 services: docker
 
 before_install:
-  - docker pull pdal/pdal:master
+  - docker pull pdal/pdal:latest
 
 script:
-  - docker run -v $TRAVIS_BUILD_DIR:/pdal -t pdal/pdal:master /bin/sh -c "/pdal/scripts/travis/script.sh"
+  - docker run -v $TRAVIS_BUILD_DIR:/pdal -t pdal/pdal:latest /bin/sh -c "/pdal/scripts/travis/script.sh"
 
