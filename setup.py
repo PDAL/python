@@ -169,6 +169,9 @@ if 'linux' in sys.platform or 'linux2' in sys.platform:
         # try to ensure the ABI for Conda GCC 4.8
         if '4.8' in sys.version:
             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
+elif 'darwin' in sys.platform:
+    if 'Clang' in sys.version:
+        extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
 
 # readers.numpy doesn't exist until PDAL 1.8
 if PDALVERSION >= Version('1.8'):
