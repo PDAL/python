@@ -156,12 +156,21 @@ if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']
 
+# readers.numpy doesn't exist until PDAL 1.8
+if PDALVERSION >= Version('1.8'):
+    libraries.append('pdal_plugin_reader_numpy')
+
 if os.name in ['nt']:
-    if os.environ['OSGEO4W_ROOT']:
-        library_dirs = ['c:/OSGeo4W64/lib']
+    if os.environ.get('OSGEO4W_ROOT'):
+        library_dirs = ['c:/%s/lib' % os.environ.get('OSGEO4W_ROOT')]
+    if os.environ.get('CONDA_PREFIX'):
+        prefix=os.path.expandvars('%CONDA_PREFIX%')
+        library_dirs = ['%s\Library\lib' % prefix]
+        
     libraries = ['pdalcpp','pdal_util','ws2_32']
     if PDALVERSION >= Version('1.8'):
-        libraries.append('pdal_plugin_reader_numpy')
+        libraries.append('libpdal_plugin_reader_numpy')
+
     extra_compile_args = ['/DNOMINMAX',]
 
 if 'linux' in sys.platform or 'linux2' in sys.platform:
@@ -172,9 +181,7 @@ if 'linux' in sys.platform or 'linux2' in sys.platform:
 elif 'darwin' in sys.platform:
     extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
 
-# readers.numpy doesn't exist until PDAL 1.8
-if PDALVERSION >= Version('1.8'):
-    libraries.append('pdal_plugin_reader_numpy')
+
 
 sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp"  ]
 extensions = [DistutilsExtension("*",
