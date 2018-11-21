@@ -173,13 +173,12 @@ if os.name in ['nt']:
 
     extra_compile_args = ['/DNOMINMAX',]
 
-if 'linux' in sys.platform or 'linux2' in sys.platform:
+if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
+    extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
     if 'GCC' in sys.version:
         # try to ensure the ABI for Conda GCC 4.8
         if '4.8' in sys.version:
             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
-else:
-    extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
 
 
 
