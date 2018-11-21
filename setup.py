@@ -166,7 +166,7 @@ if os.name in ['nt']:
     if os.environ.get('CONDA_PREFIX'):
         prefix=os.path.expandvars('%CONDA_PREFIX%')
         library_dirs = ['%s\Library\lib' % prefix]
-        
+
     libraries = ['pdalcpp','pdal_util','ws2_32']
     if PDALVERSION >= Version('1.8'):
         libraries.append('libpdal_plugin_reader_numpy')
@@ -178,7 +178,7 @@ if 'linux' in sys.platform or 'linux2' in sys.platform:
         # try to ensure the ABI for Conda GCC 4.8
         if '4.8' in sys.version:
             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
-elif 'darwin' in sys.platform:
+else:
     extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
 
 
