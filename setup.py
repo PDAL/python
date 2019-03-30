@@ -157,7 +157,7 @@ if DEBUG:
         extra_compile_args += ['-g','-O0']
 
 # readers.numpy doesn't exist until PDAL 1.8
-if PDALVERSION >= Version('1.8'):
+if PDALVERSION is not None and PDALVERSION >= Version('1.8'):
     libraries.append('pdal_plugin_reader_numpy')
 
 if os.name in ['nt']:
