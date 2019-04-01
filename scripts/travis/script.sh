@@ -1,5 +1,5 @@
-apt-get update -y; apt-get install python-pip -y
-pip install numpy packaging cython
+apt-get update -y; apt-get install python3-pip -y
+pip3 install numpy packaging cython
 cd /pdal/
-python setup.py build
-python setup.py test
+python3 setup.py build
+python3 setup.py test
