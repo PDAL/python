@@ -50,6 +50,9 @@ sorts it by the ``X`` dimension:
 .. image:: https://travis-ci.org/PDAL/python.svg?branch=master
     :target: https://travis-ci.org/PDAL/python
 
+.. image:: https://ci.appveyor.com/api/projects/status/of4kecyahpo8892d
+   :target: https://ci.appveyor.com/project/hobu/python/
+
 Requirements
 ================================================================================
 
