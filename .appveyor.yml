@@ -26,8 +26,8 @@ install:
  - call scripts\\appveyor\\config.cmd
 
 build_script:
- - call scripts\\appveyor\\test\\build.cmd
+ - call scripts\\appveyor\\build.cmd
 
 test_script:
- - call scripts\\appveyor\\test\\test.cmd
+ - call scripts\\appveyor\\test.cmd
  -
