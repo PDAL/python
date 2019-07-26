@@ -43,20 +43,12 @@
 #include <sstream>
 #include <memory>
 
-#undef toupper
-#undef tolower
-#undef isspace
-
 namespace pdal
 {
 namespace python
 {
-    class Array;
-}
-}
 
-namespace libpdalpython
-{
+class Array;
 
 class python_error : public std::runtime_error
 {
@@ -65,10 +57,12 @@ public:
         {}
 };
 
-class Pipeline {
+class Pipeline
+{
 public:
     Pipeline(std::string const& json);
-    Pipeline(std::string const& json, std::vector<pdal::python::Array*> arrays);
+    Pipeline(std::string const& json,
+        std::vector<pdal::python::Array*> arrays);
     ~Pipeline();
 
     int64_t execute();
@@ -98,4 +92,5 @@ private:
     std::shared_ptr<pdal::PipelineExecutor> m_executor;
 };
 
-}
+} // namespace python
+} // namespace pdal

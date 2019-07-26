@@ -182,7 +182,7 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
 
 
 
-sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp"  ]
+sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
 extensions = [DistutilsExtension("*",
                                    sources,
                                    include_dirs=include_dirs,
@@ -192,12 +192,12 @@ extensions = [DistutilsExtension("*",
                                    extra_link_args=extra_link_args,)]
 if USE_CYTHON and "clean" not in sys.argv:
     from Cython.Build import cythonize
-    extensions= cythonize(extensions, language="c++")
+    extensions= cythonize(extensions, compiler_directives={'language_level':3})
 
 setup_args = dict(
     name                = 'PDAL',
     version             = str(module_version),
-    requires            = ['Python (>=2.7)', 'Numpy'],
+    requires            = ['Python (>=3.0)', 'Numpy'],
     description         = 'Point cloud data processing',
     license             = 'BSD',
     keywords            = 'point cloud spatial',
