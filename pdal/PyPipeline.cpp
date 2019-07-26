@@ -55,7 +55,6 @@ namespace python
 Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
     m_executor(new PipelineExecutor(json))
 {
-    std::cerr << "Made pipeline #1!\n";
 #ifndef _WIN32
     // See comment in alternate constructor below. 
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
@@ -122,7 +121,6 @@ Pipeline::Pipeline(std::string const& json) :
     // on Alpine and other Linux variants that don't use UNIQUE symbols
     // for C++ template statics only.  Without this, you end up with multiple
     // copies of template statics.
-    std::cerr << "Made pipeline #2!\n";
 #ifndef _WIN32
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
@@ -153,9 +151,7 @@ int64_t Pipeline::execute()
 
 bool Pipeline::validate()
 {
-    std::cerr << "Before validate!\n";
     auto res =  m_executor->validate();
-    std::cerr << "After validate!\n";
     return res;
 }
 
@@ -163,10 +159,8 @@ std::vector<Array *> Pipeline::getArrays() const
 {
     std::vector<Array *> output;
 
-std::cerr << "BEfore executor check!\n";
     if (!m_executor->executed())
         throw python_error("call execute() before fetching arrays");
-std::cerr << "After executor check!\n";
 
     const PointViewSet& pvset = m_executor->getManagerConst().views();
 

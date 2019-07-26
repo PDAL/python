@@ -1,4 +1,4 @@
-import unittest
+i/mport unittest
 import pdal
 import os
 import numpy as np
@@ -60,20 +60,15 @@ class TestPipeline(PDALTest):
     def test_array(self):
         """Can we fetch PDAL data as a numpy array"""
         json = self.fetch_json('sort.json')
-        print("*** TEST 1\n")
         r = pdal.Pipeline(json)
-        print("*** TEST 2\n")
         r.validate()
-        print("*** TEST 3\n")
         r.execute()
-        print("*** About to assign arrays\n")
-#        arrays = r.arrays
-#        print("*** Assigned arrays\n")
-#        self.assertEqual(len(arrays), 1)
-#
-#        a = arrays[0]
-#        self.assertAlmostEqual(a[0][0], 635619.85, 7)
-#        self.assertAlmostEqual(a[1064][2], 456.92, 7)
+        arrays = r.arrays
+        self.assertEqual(len(arrays), 1)
+
+        a = arrays[0]
+        self.assertAlmostEqual(a[0][0], 635619.85, 7)
+        self.assertAlmostEqual(a[1064][2], 456.92, 7)
 #
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
@@ -160,13 +155,9 @@ class TestArrayLoad(PDALTest):
         arrays = p.arrays
         self.assertEqual(len(arrays), 3)
 
-#        for data in arrays:
-#            print ("Size = ", len(data))
-#            print(data.dtype)
-#            print(data)
-#            print ("Sum = ", data.sum(axis="Intensity"))
-#        self.assertEqual(len(data), 1836)
-#        self.assertEqual(sum([len(i) for i in arrays]), 3*1836)
+        for data in arrays:
+            self.assertEqual(len(data), 12)
+            self.assertEqual(data['Intensity'].sum(), 1926)
 
 class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
