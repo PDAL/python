@@ -71,7 +71,6 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
     if (roots.size() != 1)
         throw pdal_error("Filter pipeline must contain a single root stage.");
 
-//#if PDAL_VERSION_MAJOR >= 2
     for (auto array : arrays)
     {
         // Create numpy reader for each array
@@ -79,11 +78,12 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
 
         Options options;
         options.add("order", array->rowMajor() ?
-            MemoryReader::Order::RowMajor : MemoryReader::Order::ColumnMajor);
+            MemoryViewReader::Order::RowMajor :
+            MemoryViewReader::Order::ColumnMajor);
         options.add("shape", MemoryReader::Shape(array->shape()));
 
-        Stage& s = manager.makeReader("", "readers.memory", options);
-        MemoryReader& r = dynamic_cast<MemoryReader &>(s);
+        Stage& s = manager.makeReader("", "readers.memoryview", options);
+        MemoryViewReader& r = dynamic_cast<MemoryReader &>(s);
         for (auto f : array->fields())
             r.pushField(f);
 
@@ -105,7 +105,6 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
 
         roots[0]->setInput(r);
     }
-//#endif
 
     manager.validateStageOptions();
 }
