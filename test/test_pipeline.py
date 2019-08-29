@@ -93,17 +93,17 @@ class TestPipeline(PDALTest):
         with self.assertRaises(RuntimeError):
             r.arrays
 #
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
-                         "missing test data")
-    def test_logging(self):
-       """Can we fetch log output"""
-       json = self.fetch_json('reproject.json')
-       r = pdal.Pipeline(json)
-       r.loglevel = 8
-       r.validate()
-       count = r.execute()
-       self.assertEqual(count, 789)
-       self.assertEqual(r.log.split()[0], '(pypipeline')
+#    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
+#                         "missing test data")
+#    def test_logging(self):
+#        """Can we fetch log output"""
+#        json = self.fetch_json('reproject.json')
+#        r = pdal.Pipeline(json)
+#        r.loglevel = 8
+#        r.validate()
+#        count = r.execute()
+#        self.assertEqual(count, 789)
+#        self.assertEqual(r.log.split()[0], '(pypipeline')
 #
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
