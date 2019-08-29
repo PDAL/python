@@ -33,7 +33,7 @@
 ****************************************************************************/
 
 #include "PyArray.hpp"
-#include <pdal/io/MemoryReader.hpp>
+#include <pdal/io/MemoryViewReader.hpp>
 
 #include <numpy/arrayobject.h>
 

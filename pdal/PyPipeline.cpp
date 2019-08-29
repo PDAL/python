@@ -56,7 +56,7 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
     m_executor(new PipelineExecutor(json))
 {
 #ifndef _WIN32
-    // See comment in alternate constructor below. 
+    // See comment in alternate constructor below.
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
 
@@ -80,10 +80,10 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
         options.add("order", array->rowMajor() ?
             MemoryViewReader::Order::RowMajor :
             MemoryViewReader::Order::ColumnMajor);
-        options.add("shape", MemoryReader::Shape(array->shape()));
+        options.add("shape", MemoryViewReader::Shape(array->shape()));
 
         Stage& s = manager.makeReader("", "readers.memoryview", options);
-        MemoryViewReader& r = dynamic_cast<MemoryReader &>(s);
+        MemoryViewReader& r = dynamic_cast<MemoryViewReader &>(s);
         for (auto f : array->fields())
             r.pushField(f);
 

@@ -37,7 +37,7 @@
 #include <numpy/ndarraytypes.h>
 
 #include <pdal/PointView.hpp>
-#include <pdal/io/MemoryReader.hpp>
+#include <pdal/io/MemoryViewReader.hpp>
 
 namespace pdal
 {
@@ -50,7 +50,7 @@ class PDAL_DLL Array
 {
 public:
     using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryReader::Field>;
+    using Fields = std::vector<MemoryViewReader::Field>;
 
     // Create an array for reading data from PDAL.
     Array();
