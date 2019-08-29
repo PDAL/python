@@ -23,7 +23,6 @@ cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
 
 def getVersionString():
     return versionString()
-
 def getVersionMajor():
     return versionMajor()
 def getVersionMinor():
@@ -39,10 +38,10 @@ def getPluginInstallPath():
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
-        Array(object) except +
-        void* getPythonArray() except+
+        Array(np.ndarray) except +
+        void *getPythonArray() except+
 
-cdef extern from "PyPipeline.hpp" namespace "libpdalpython":
+cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass Pipeline:
         Pipeline(const char* ) except +
         Pipeline(const char*, vector[Array*]& ) except +
@@ -56,11 +55,9 @@ cdef extern from "PyPipeline.hpp" namespace "libpdalpython":
         int getLogLevel()
         void setLogLevel(int)
 
-
-
 cdef class PyArray:
     cdef Array *thisptr
-    def __cinit__(self, object array):
+    def __cinit__(self, np.ndarray array):
         self.thisptr = new Array(array)
     def __dealloc__(self):
         del self.thisptr
@@ -109,24 +106,14 @@ cdef class PyPipeline:
         cdef Array* a
 
         if arrays is not None:
+            print("Looping arrays\n")
             for array in arrays:
                 a = new Array(array)
                 c_arrays.push_back(a)
 
-        if PY_MAJOR_VERSION >= 3:
-            if arrays:
-                self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
-            else:
-                self.thisptr = new Pipeline(json.encode('UTF-8'))
+            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
         else:
-            if arrays:
-                self.thisptr = new Pipeline(json, c_arrays)
-            else:
-                self.thisptr = new Pipeline(json)
-#        if arrays:
-#            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
-#        else:
-#            self.thisptr = new Pipeline(json.encode('UTF-8'))
+            self.thisptr = new Pipeline(json.encode('UTF-8'))
 
     def __dealloc__(self):
         del self.thisptr
@@ -158,6 +145,7 @@ cdef class PyPipeline:
             return json.loads(j)
 
     property arrays:
+
         def __get__(self):
             v = self.thisptr.getArrays()
             output = []
@@ -170,6 +158,7 @@ cdef class PyPipeline:
                 output.append(<object>o)
                 inc(it)
             return output
+
 
     def execute(self):
         if not self.thisptr:

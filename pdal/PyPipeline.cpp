@@ -33,124 +33,125 @@
 ****************************************************************************/
 
 #include "PyPipeline.hpp"
-#ifdef PDAL_HAVE_LIBXML2
-#include <pdal/XMLSchema.hpp>
-#endif
 
 #ifndef _WIN32
 #include <dlfcn.h>
 #endif
 
 #include <Python.h>
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
 
-#include "PyArray.hpp"
 #include <pdal/Stage.hpp>
 #include <pdal/pdal_features.hpp>
-#include <pdal/PipelineWriter.hpp>
-#include <pdal/io/NumpyReader.hpp>
 
-namespace libpdalpython
+#include "PyArray.hpp"
+
+namespace pdal
+{
+namespace python
 {
 
-using namespace pdal::python;
-
-Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays)
+// Create a pipeline for writing data to PDAL
+Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
+    m_executor(new PipelineExecutor(json))
 {
-
 #ifndef _WIN32
+    // See comment in alternate constructor below.
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
-    ::dlopen("libpdal_plugin_reader_numpy.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
 
-#undef NUMPY_IMPORT_ARRAY_RETVAL
-#define NUMPY_IMPORT_ARRAY_RETVAL
-    import_array();
+    if (_import_array() < 0)
+        throw pdal_error("Could not impory numpy.core.multiarray.");
 
-    m_executor = std::shared_ptr<pdal::PipelineExecutor>(new pdal::PipelineExecutor(json));
-
-    pdal::PipelineManager& manager = m_executor->getManager();
+    PipelineManager& manager = m_executor->getManager();
 
     std::stringstream strm(json);
     manager.readPipeline(strm);
+    std::vector<Stage *> roots = manager.roots();
+    if (roots.size() != 1)
+        throw pdal_error("Filter pipeline must contain a single root stage.");
 
-    pdal::Stage *r = manager.getStage();
-    if (!r)
-        throw pdal::pdal_error("pipeline had no stages!");
-
-#if PDAL_VERSION_MAJOR > 1 || PDAL_VERSION_MINOR >=8
-    int counter = 1;
-    for (auto array: arrays)
+    for (auto array : arrays)
     {
         // Create numpy reader for each array
-        pdal::Options options;
-        std::stringstream tag;
-        tag << "readers_numpy" << counter;
-        pdal::StageCreationOptions opts { "", "readers.numpy", nullptr, options, tag.str()};
-        pdal::Stage& reader = manager.makeReader(opts);
+        // Options
 
-        pdal::NumpyReader* np_reader = dynamic_cast<pdal::NumpyReader*>(&reader);
-        if (!np_reader)
-            throw pdal::pdal_error("couldn't cast reader!");
+        Options options;
+        options.add("order", array->rowMajor() ?
+            MemoryViewReader::Order::RowMajor :
+            MemoryViewReader::Order::ColumnMajor);
+        options.add("shape", MemoryViewReader::Shape(array->shape()));
 
+        Stage& s = manager.makeReader("", "readers.memoryview", options);
+        MemoryViewReader& r = dynamic_cast<MemoryViewReader &>(s);
+        for (auto f : array->fields())
+            r.pushField(f);
+
+        ArrayIter& iter = array->iterator();
+        auto incrementer = [&iter](PointId id) -> char *
+        {
+            if (! iter)
+                return nullptr;
+
+            char *c = *iter;
+            ++iter;
+            return c;
+        };
+
+        r.setIncrementer(incrementer);
         PyObject* parray = (PyObject*)array->getPythonArray();
         if (!parray)
-            throw pdal::pdal_error("array was none!");
+            throw pdal_error("array was none!");
 
-        np_reader->setArray(parray);
-
-        r->setInput(reader);
-        counter++;
-
+        roots[0]->setInput(r);
     }
-#endif
 
     manager.validateStageOptions();
 }
 
-Pipeline::Pipeline(std::string const& json)
+// Create a pipeline for reading data from PDAL
+Pipeline::Pipeline(std::string const& json) :
+    m_executor(new PipelineExecutor(json))
 {
     // Make the symbols in pdal_base global so that they're accessible
     // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
     // which means that without this, symbols in libpdal_base aren't available
     // for resolution of symbols on future runtime linking.  This is an issue
-    // on Apline and other Linux variants that doesn't use UNIQUE symbols
-    // for C++ template statics. only
+    // on Alpine and other Linux variants that don't use UNIQUE symbols
+    // for C++ template statics only.  Without this, you end up with multiple
+    // copies of template statics.
 #ifndef _WIN32
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
-#undef NUMPY_IMPORT_ARRAY_RETVAL
-#define NUMPY_IMPORT_ARRAY_RETVAL
-    import_array();
-
-    m_executor = std::shared_ptr<pdal::PipelineExecutor>(new pdal::PipelineExecutor(json));
+    if (_import_array() < 0)
+        throw pdal_error("Could not impory numpy.core.multiarray.");
 }
 
 Pipeline::~Pipeline()
-{
-}
+{}
+
 
 void Pipeline::setLogLevel(int level)
 {
     m_executor->setLogLevel(level);
 }
 
+
 int Pipeline::getLogLevel() const
 {
     return static_cast<int>(m_executor->getLogLevel());
 }
 
+
 int64_t Pipeline::execute()
 {
-
-    int64_t count = m_executor->execute();
-    return count;
+    return m_executor->execute();
 }
 
 bool Pipeline::validate()
 {
-    return m_executor->validate();
+    auto res =  m_executor->validate();
+    return res;
 }
 
 std::vector<Array *> Pipeline::getArrays() const
@@ -160,16 +161,18 @@ std::vector<Array *> Pipeline::getArrays() const
     if (!m_executor->executed())
         throw python_error("call execute() before fetching arrays");
 
-    const pdal::PointViewSet& pvset = m_executor->getManagerConst().views();
+    const PointViewSet& pvset = m_executor->getManagerConst().views();
 
     for (auto i: pvset)
     {
         //ABELL - Leak?
-        Array *array = new pdal::python::Array;
+        Array *array = new python::Array;
         array->update(i);
         output.push_back(array);
     }
     return output;
 }
-} //namespace libpdalpython
+
+} // namespace python
+} // namespace pdal
 

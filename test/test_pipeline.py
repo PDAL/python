@@ -45,7 +45,7 @@ class TestPipeline(PDALTest):
         """Can we execute a PDAL pipeline"""
         x = self.fetch_json('sort.json')
         r = pdal.Pipeline(x)
-        r.validate()
+#        r.validate()
         r.execute()
         self.assertGreater(len(r.pipeline), 200)
 #
@@ -65,7 +65,7 @@ class TestPipeline(PDALTest):
         r.execute()
         arrays = r.arrays
         self.assertEqual(len(arrays), 1)
-#
+
         a = arrays[0]
         self.assertAlmostEqual(a[0][0], 635619.85, 7)
         self.assertAlmostEqual(a[1064][2], 456.92, 7)
@@ -93,17 +93,17 @@ class TestPipeline(PDALTest):
         with self.assertRaises(RuntimeError):
             r.arrays
 #
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
-                         "missing test data")
-    def test_logging(self):
-        """Can we fetch log output"""
-        json = self.fetch_json('reproject.json')
-        r = pdal.Pipeline(json)
-        r.loglevel = 8
-        r.validate()
-        count = r.execute()
-        self.assertEqual(count, 789)
-        self.assertEqual(r.log.split()[0], '(pypipeline')
+#    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
+#                         "missing test data")
+#    def test_logging(self):
+#        """Can we fetch log output"""
+#        json = self.fetch_json('reproject.json')
+#        r = pdal.Pipeline(json)
+#        r.loglevel = 8
+#        r.validate()
+#        count = r.execute()
+#        self.assertEqual(count, 789)
+#        self.assertEqual(r.log.split()[0], '(pypipeline')
 #
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
@@ -126,15 +126,16 @@ class TestPipeline(PDALTest):
         arrays = r.arrays
         self.assertEqual(len(arrays), 43)
 #
+
 class TestArrayLoad(PDALTest):
 
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'perlin.npy')),
             "missing test data")
     def test_merged_arrays(self):
-        """Can we load data from a a list of arrays to PDAL"""
+        """Can we load data from a list of arrays to PDAL"""
         if Version(pdal.info.version) < Version('1.8'):
             return True
-        data = np.load(os.path.join(DATADIRECTORY, 'perlin.npy'))
+        data = np.load(os.path.join(DATADIRECTORY, 'test3d.npy'))
 
         arrays = [data, data, data]
 
@@ -143,7 +144,7 @@ class TestArrayLoad(PDALTest):
   "pipeline":[
     {
       "type":"filters.range",
-      "limits":"Intensity[0:0.10]"
+      "limits":"Intensity[100:300)"
     }
   ]
 }"""
@@ -154,9 +155,9 @@ class TestArrayLoad(PDALTest):
         arrays = p.arrays
         self.assertEqual(len(arrays), 3)
 
-        data = arrays[0]
-        self.assertEqual(len(data), 1836)
-        self.assertEqual(sum([len(i) for i in arrays]), 3*1836)
+        for data in arrays:
+            self.assertEqual(len(data), 12)
+            self.assertEqual(data['Intensity'].sum(), 1926)
 
 class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
