@@ -1,4 +1,4 @@
-__version__='2.1.8'
+__version__='2.2.0'
 
 from .pipeline import Pipeline
 from .array import Array
