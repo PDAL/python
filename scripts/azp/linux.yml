@@ -1,0 +1,21 @@
+# -*- mode: yaml -*-
+
+jobs:
+- job: linux
+  pool:
+    vmImage: ubuntu-16.04
+  container:
+      image: pdal/pdal:latest
+      options: --privileged
+  timeoutInMinutes: 60
+  steps:
+  - script: |
+    displayName: 'Dependencies'
+        apt-get update -y; apt-get install python3-pip -y
+        pip3 install numpy packaging cython
+  - script: |
+        python3 setup.py build
+    displayName: 'Build'
+  - script: |
+      python3 setup.py test
+    displayName: 'Test'
