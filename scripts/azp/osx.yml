@@ -34,9 +34,9 @@ jobs:
       source activate pdal
       export CI=azure
       source run_conda_forge_build_setup
-      env: {
-        OSX_FORCE_SDK_DOWNLOAD: "1"
-      }
+    env: {
+      OSX_FORCE_SDK_DOWNLOAD: "1"
+    }
     displayName: Configure OSX SDK
   - script: |
       source activate pdal
