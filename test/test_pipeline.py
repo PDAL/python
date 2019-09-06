@@ -31,30 +31,30 @@ class PDALTest(unittest.TestCase):
         return output
 
 class TestPipeline(PDALTest):
-#
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_construction(self):
         """Can we construct a PDAL pipeline"""
         json = self.fetch_json('sort.json')
         r = pdal.Pipeline(json)
-#
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_execution(self):
         """Can we execute a PDAL pipeline"""
         x = self.fetch_json('sort.json')
         r = pdal.Pipeline(x)
-#        r.validate()
+        r.validate()
         r.execute()
         self.assertGreater(len(r.pipeline), 200)
-#
+
     def test_validate(self):
         """Do we complain with bad pipelines"""
         r = pdal.Pipeline(bad_json)
         with self.assertRaises(RuntimeError):
             r.validate()
-#
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_array(self):
@@ -69,7 +69,7 @@ class TestPipeline(PDALTest):
         a = arrays[0]
         self.assertAlmostEqual(a[0][0], 635619.85, 7)
         self.assertAlmostEqual(a[1064][2], 456.92, 7)
-#
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_metadata(self):
@@ -82,8 +82,8 @@ class TestPipeline(PDALTest):
         import json
         j = json.loads(metadata)
         self.assertEqual(j["metadata"]["readers.las"][0]["count"], 1065)
-#
-#
+
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
                          "missing test data")
     def test_no_execute(self):
@@ -114,7 +114,7 @@ class TestPipeline(PDALTest):
         r.validate()
         r.execute()
         self.assertEqual(r.schema['schema']['dimensions'][0]['name'], 'X')
-#
+
     @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'chip.json')),
                          "missing test data")
     def test_merged_arrays(self):
@@ -125,7 +125,7 @@ class TestPipeline(PDALTest):
         r.execute()
         arrays = r.arrays
         self.assertEqual(len(arrays), 43)
-#
+
 
 class TestArrayLoad(PDALTest):
 

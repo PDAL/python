@@ -156,9 +156,9 @@ if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']
 
-# readers.numpy doesn't exist until PDAL 1.8
-if PDALVERSION is not None and PDALVERSION >= Version('1.8'):
-    libraries.append('pdal_plugin_reader_numpy')
+if PDALVERSION < Version('2.0.0'):
+    raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDALVERSION, module_version))
+
 
 if os.name in ['nt']:
     if os.environ.get('OSGEO4W_ROOT'):
@@ -168,8 +168,6 @@ if os.name in ['nt']:
         library_dirs = ['%s\Library\lib' % prefix]
 
     libraries = ['pdalcpp','pdal_util','ws2_32']
-    if PDALVERSION >= Version('1.8'):
-        libraries.append('libpdal_plugin_reader_numpy')
 
     extra_compile_args = ['/DNOMINMAX',]
 
