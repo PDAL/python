@@ -43,9 +43,11 @@ jobs:
       pip install numpy packaging cython
     displayName: 'Dependencies'
   - script: |
+      source activate pdal
       python setup.py build
     displayName: 'Build'
   - script: |
+      source activate pdal
       python setup.py test
     displayName: 'Test'
 
