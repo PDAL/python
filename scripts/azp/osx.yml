@@ -28,7 +28,7 @@ jobs:
       ECHO ON
       source activate pdal
       conda config --set always_yes True --set show_channel_urls True
-      conda install --yes --quiet --name pdal -c conda-forge  cython packaging pdal conda-forge-ci-setup=2 -y
+      conda install --yes --quiet --name pdal -c conda-forge  cython packaging pdal numpy conda-forge-ci-setup=2 -y
     displayName: Install PDAL
   - script: |
       source activate pdal
