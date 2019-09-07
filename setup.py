@@ -156,7 +156,7 @@ if DEBUG:
     if os.name != 'nt':
         extra_compile_args += ['-g','-O0']
 
-if PDALVERSION < Version('2.0.0'):
+if PDALVERSION is not None and PDALVERSION < Version('2.0.0'):
     raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDALVERSION, module_version))
 
 
