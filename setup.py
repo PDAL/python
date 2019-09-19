@@ -91,9 +91,6 @@ open_kwds = {}
 if sys.version_info >= (3,):
     open_kwds['encoding'] = 'utf-8'
 
-with open('VERSION.txt', 'w', **open_kwds) as fp:
-    fp.write(str(module_version))
-
 with open('README.rst', 'r', **open_kwds) as fp:
     readme = fp.read()
 
