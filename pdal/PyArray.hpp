@@ -74,7 +74,7 @@ private:
     Array& operator=(Array const& rhs);
     Fields m_fields;
     bool m_rowMajor;
-    Shape m_shape;
+    Shape m_shape {};
     std::vector<std::unique_ptr<ArrayIter>> m_iterators;
 };
 

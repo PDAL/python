@@ -106,7 +106,6 @@ cdef class PyPipeline:
         cdef Array* a
 
         if arrays is not None:
-            print("Looping arrays\n")
             for array in arrays:
                 a = new Array(array)
                 c_arrays.push_back(a)
