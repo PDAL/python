@@ -9,8 +9,13 @@ import warnings
 
 import pdal
 
-PDAL_DRIVERS_JSON = subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
-PDAL_DRIVERS = json.loads(PDAL_DRIVERS_JSON)
+try:
+    PDAL_DRIVERS_JSON = subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
+    PDAL_DRIVERS = json.loads(PDAL_DRIVERS_JSON)
+    _PDAL_VALIDATE = True
+except:
+    PDAL_DRIVERS = []
+    _PDAL_VALIDATE = False
 
 DEFAULT_STAGE_PARAMS = defaultdict(dict)
 DEFAULT_STAGE_PARAMS.update({
@@ -36,7 +41,7 @@ class StageSpec(object):
         return output
 
     def __getattr__(self, name):
-        if name not in dir(self):
+        if _PDAL_VALIDATE and (name not in dir(self)):
             raise AttributeError(f"'{self.prefix}.{name}' is an invalid or unsupported PDAL stage")
         return partial(self.__class__, self.prefix, type=name)
 
