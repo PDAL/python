@@ -1,4 +1,6 @@
+import types
 import json
+import subprocess
 from functools import partial
 from collections import defaultdict
 from itertools import chain
@@ -7,18 +9,24 @@ import warnings
 
 import pdal
 
+PDAL_DRIVERS_JSON = subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
+PDAL_DRIVERS = json.loads(PDAL_DRIVERS_JSON)
+modules = set([e["name"].split(".")[0] for e in PDAL_DRIVERS])
+
+
 DEFAULT_STAGE_PARAMS = defaultdict(dict)
 DEFAULT_STAGE_PARAMS.update({
 # TODO: add stage specific default configurations
 })
 
+
 class StageSpec(object):
     def __init__(self, prefix, **kwargs):
         self.prefix = prefix
-        key = ".".join([self.prefix, kwargs.get("type", "")])
-        self.spec = DEFAULT_STAGE_PARAMS[key].copy()
+        self.key = ".".join([self.prefix, kwargs.get("type", "")])
+        self.spec = DEFAULT_STAGE_PARAMS[self.key].copy()
         self.spec.update(kwargs)
-        self.spec["type"] = key
+        self.spec["type"] = self.key
         # NOTE: special case to support reading files without passing an explicit reader
         if (self.prefix == "readers") and kwargs.get("type") == "auto":
             del self.spec["type"]
@@ -30,6 +38,7 @@ class StageSpec(object):
         return output
 
     def __getattr__(self, name):
+        assert name in dir(self), "Invalid or unsupported stage"
         return partial(self.__class__, self.prefix, type=name)
 
     def __str__(self):
@@ -37,6 +46,10 @@ class StageSpec(object):
 
     def __add__(self, other):
         return self.pipeline + other
+
+    def __dir__(self):
+        extra_keys = [e["name"][len(self.key):] for e in PDAL_DRIVERS if e["name"].startswith(self.key)]
+        return super().__dir__() + [e for e in extra_keys if len(e) > 0]
 
     def execute(self):
         return self.pipeline.execute()
