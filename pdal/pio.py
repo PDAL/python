@@ -11,8 +11,6 @@ import pdal
 
 PDAL_DRIVERS_JSON = subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
 PDAL_DRIVERS = json.loads(PDAL_DRIVERS_JSON)
-modules = set([e["name"].split(".")[0] for e in PDAL_DRIVERS])
-
 
 DEFAULT_STAGE_PARAMS = defaultdict(dict)
 DEFAULT_STAGE_PARAMS.update({
