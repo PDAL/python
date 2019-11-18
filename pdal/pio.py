@@ -38,7 +38,8 @@ class StageSpec(object):
         return output
 
     def __getattr__(self, name):
-        assert name in dir(self), "Invalid or unsupported stage"
+        if name not in dir(self):
+            raise AttributeError(f"'{self.prefix}.{name}' is an invalid or unsupported PDAL stage")
         return partial(self.__class__, self.prefix, type=name)
 
     def __str__(self):
