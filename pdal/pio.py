@@ -56,7 +56,7 @@ class PipelineSpec(object):
         if other is not None:
             self.readers = copy.copy(other.readers)
             self.filters = copy.copy(other.filters)
-            self.writer = copy.copy(other.writer)
+            self.writer = other.writer
 
     @property
     def spec(self):
