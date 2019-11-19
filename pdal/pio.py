@@ -52,7 +52,7 @@ class StageSpec(object):
         return self.pipeline + other
 
     def __dir__(self):
-        extra_keys = [e["name"][len(self.key):] for e in PDAL_DRIVERS if e["name"].startswith(self.key)]
+        extra_keys = [e["name"][len(self.key):] for e in PDAL_DRIVERS if e["name"].startswith(self.key)] + ["auto"]
         return super().__dir__() + [e for e in extra_keys if len(e) > 0]
 
     def execute(self):
