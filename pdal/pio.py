@@ -65,15 +65,11 @@ writers = StageSpec("writers")
 
 
 class PipelineSpec(object):
-    readers = []
-    filters = []
-    writer = None
+    stages = []
 
     def __init__(self, other=None):
         if other is not None:
-            self.readers = copy.copy(other.readers)
-            self.filters = copy.copy(other.filters)
-            self.writer = other.writer
+            self.stages = copy.copy(other.stages)
 
     @property
     def spec(self):
@@ -81,26 +77,10 @@ class PipelineSpec(object):
             "pipeline": [stage.spec for stage in self.stages]
         }
 
-    @property
-    def stages(self):
-        if self.writer is not None:
-            return chain(self.readers, self.filters, [self.writer])
-        else:
-            return chain(self.readers, self.filters)
-
     def add_stage(self, stage):
         assert isinstance(stage, StageSpec), "Expected StageSpec"
-        if stage.prefix == "writers":
-            if self.writer is not None:
-                warnings.warn("Currently assigned output stage will be replaced.")
-            self.writer = stage
-        elif stage.prefix == "readers":
-            self.readers.append(stage)
-        elif stage.prefix == "filters":
-            self.filters.append(stage)
-        else:
-            warnings.warn("Unknown stage type.  Skipping.")
 
+        self.stages.append(stage)
         return self
 
     def __str__(self):
