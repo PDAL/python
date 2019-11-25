@@ -45,12 +45,3 @@ class TestPIOBasics(unittest.TestCase):
         self.assertIsInstance(pipeline, pio.PipelineSpec)
         self.assertEqual(len(list(pipeline.stages)), 5)
         self.assertEqual(json.dumps(pipeline.spec, indent=2), dummy_pipeline)
-
-        pipeline = pipeline + pio.readers.auto(filename="anotherdummmyfile.laz")
-
-        self.assertEqual(len(pipeline.readers), 2) # we can have multiple readers
-
-        null_writer = pio.writers.null()
-        self.assertIsNot(pipeline.writer, null_writer)
-        pipeline = pipeline + null_writer
-        self.assertIs(pipeline.writer, null_writer)
