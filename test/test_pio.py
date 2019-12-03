@@ -45,3 +45,13 @@ class TestPIOBasics(unittest.TestCase):
         self.assertIsInstance(pipeline, pio.PipelineSpec)
         self.assertEqual(len(list(pipeline.stages)), 5)
         self.assertEqual(json.dumps(pipeline.spec, indent=2), dummy_pipeline)
+
+        auto_reader = pio.readers.auto(filename="dummyinput.las")
+        auto_writer = pio.writers.auto(filename="dummyoutput.las")
+
+        self.assertIn("filename", auto_reader.spec)
+        self.assertNotIn("type", auto_reader.spec)
+        self.assertIn("filename", auto_reader.spec)
+        self.assertNotIn("type", auto_writer.spec)
+        self.assertEqual(auto_reader.prefix, "readers")
+        self.assertEqual(auto_writer.prefix, "writers")
