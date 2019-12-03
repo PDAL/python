@@ -31,7 +31,7 @@ class StageSpec(object):
         self.spec.update(kwargs)
         self.spec["type"] = self.key
         # NOTE: special case to support reading files without passing an explicit reader
-        if (self.prefix == "readers") and kwargs.get("type") == "auto":
+        if (self.prefix in ["readers", "writers"]) and kwargs.get("type") == "auto":
             del self.spec["type"]
 
     @property
