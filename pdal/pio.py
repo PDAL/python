@@ -1,3 +1,27 @@
+"""
+This module provides a python-syntax interface for constructing and executing pdal-python json
+pipelines.  The API is not explicitly defined but stage names are validated against the pdal executable's drivers when possible.
+
+To construct pipeline stages, access the driver name from this module.  This will create
+a callable function where driver parameters can be specified as keyword arguments.  For example:
+
+>>> from pdal import pio
+>>> las_reader = pio.readers.las(filename="test.las")
+
+To construct a pipeline, sum stages together.
+
+>>> pipeline = pio.readers.las(filename="test.las") + pio.writers.ply(filename="test.ply")
+
+To execute a pipeline and return results, call `execute`.
+
+>>> arr = pipeline.execute() # returns a numpy structured array
+
+To access the pipelines as a dict (which may be dumped to json), call `spec`.
+
+>>> json.dumps(pipeline.spec)
+
+"""
+
 import types
 import json
 import subprocess
@@ -36,6 +60,10 @@ class StageSpec(object):
 
     @property
     def pipeline(self):
+        """
+        Promote this stage to  a `pdal.pio.PipelineSpec` with one `pdal.pio.StageSpec`
+        and return it.
+        """
         output = PipelineSpec()
         output.add_stage(self)
         return output
@@ -73,11 +101,17 @@ class PipelineSpec(object):
 
     @property
     def spec(self):
+        """
+        Return a `dict` containing the pdal pipeline suitable for dumping to json
+        """
         return {
             "pipeline": [stage.spec for stage in self.stages]
         }
 
     def add_stage(self, stage):
+        """
+        Add a StageSpec to the end of this pipeline, and return the updated result.
+        """
         assert isinstance(stage, StageSpec), "Expected StageSpec"
 
         self.stages.append(stage)
@@ -98,6 +132,9 @@ class PipelineSpec(object):
         return output
 
     def execute(self):
+        """
+        Shortcut to execute and return the results of the pipeline.
+        """
         # TODO: do some validation before calling execute
 
         # TODO: some exception/error handling around pdal
