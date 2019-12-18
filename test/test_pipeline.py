@@ -196,10 +196,8 @@ class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
         """Ask PDAL for its valid dimensions list"""
         dims = pdal.dimensions
-        if Version(pdal.info.version) < Version('1.8'):
-            self.assertEqual(len(dims), 71)
-        else:
-            self.assertEqual(len(dims), 72)
+        self.assertLess(len(dims), 100)
+        self.assertGreater(len(dims), 71)
 
 def test_suite():
     return unittest.TestSuite(
