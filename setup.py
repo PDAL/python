@@ -16,7 +16,16 @@ import os
 import platform
 import sys
 import numpy
-from Cython.Build import cythonize
+import glob
+import sysconfig
+from distutils.core import setup, Extension
+from packaging.version import Version
+
+from distutils.ccompiler import new_compiler
+import distutils.unixccompiler
+from distutils.sysconfig import get_python_inc
+from distutils.command import build_ext
+from distutils.util import get_platform
 
 USE_CYTHON = True
 try:
@@ -25,10 +34,6 @@ except ImportError:
     USE_CYTHON = False
 
 ext = '.pyx' if USE_CYTHON else '.cpp'
-
-from setuptools import setup
-from packaging.version import Version
-
 
 logging.basicConfig()
 log = logging.getLogger(__file__)
@@ -105,41 +110,29 @@ libraries = []
 extra_link_args = []
 extra_compile_args = []
 
-from setuptools.extension import Extension as DistutilsExtension
+base = 'build'
+plat_specifier = ".%s-%d.%d" % (get_platform(), *sys.version_info[:2])
 
-PDALVERSION = None
+lib_output_dir = os.path.join(base, 'lib' + plat_specifier)
+temp_output_dir = os.path.join(base, 'temp' + plat_specifier)
+
+
+output_dir = lib_output_dir
+
+
+
+PDAL_PLUGIN_DIR = None
 if pdal_config and "clean" not in sys.argv:
-    # Collect other options from PDAL
-    try:
 
-        # Running against different major versions is going to fail.
-        # Minor versions might too, depending on numpy.
-        for item in get_pdal_config('--python-version').split():
-            if item:
-                # 2.7.4 or 3.5.2
-                built_version = item.split('.')
-                built_major = int(built_version[0])
-                running_major = int(sys.version_info[0])
-                if built_major != running_major:
-                    message = "Version mismatch. PDAL Python support was compiled against version %d.x but setup is running version is %d.x. "
-                    raise Exception(message % (built_major, running_major))
-
-    # older versions of pdal-config do not include --python-version switch
-    except ValueError:
-        pass
-    PDALVERSION = Version(get_pdal_config('--version'))
-
-    separator = ':'
-    if os.name in ['nt']:
-        separator = ';'
-
+    PDAL_PLUGIN_DIR = get_pdal_config('--plugin-dir')
+    PDAL_VERSION = Version(get_pdal_config('--version'))
     for item in get_pdal_config('--includes').split():
         if item.startswith("-I"):
-            include_dirs.extend(item[2:].split(separator))
+            include_dirs.extend(item[2:].split(os.pathsep))
 
     for item in get_pdal_config('--libs').split():
         if item.startswith("-L"):
-            library_dirs.extend(item[2:].split(separator))
+            library_dirs.extend(item[2:].split(os.pathsep))
         elif item.startswith("-l"):
             libraries.append(item[2:])
 
@@ -148,18 +141,12 @@ include_dirs.append(numpy.get_include())
 if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
-DEBUG=True
-if DEBUG:
-    if os.name != 'nt':
-        extra_compile_args += ['-g','-O0']
-
-if PDALVERSION is not None and PDALVERSION < Version('2.0.0'):
-    raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDALVERSION, module_version))
+if  PDAL_VERSION is not None \
+    and PDAL_VERSION < Version('2.1.0'):
+    raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDAL_VERSION, module_version))
 
 
 if os.name in ['nt']:
-    if os.environ.get('OSGEO4W_ROOT'):
-        library_dirs = ['c:/%s/lib' % os.environ.get('OSGEO4W_ROOT')]
     if os.environ.get('CONDA_PREFIX'):
         prefix=os.path.expandvars('%CONDA_PREFIX%')
         library_dirs = ['%s\Library\lib' % prefix]
@@ -176,18 +163,79 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
 
 
+# This junk is here because the PDAL embedded environment needs the
+# Python library at compile time so it knows what to open. If the
+# Python environment was statically built (like Conda/OSX), we need to
+# do -undefined dynamic_lookup which the Python LDSHARED variable
+# gives us.
+PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
+                              sysconfig.get_config_var('LDLIBRARY'))
+SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
 
-sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
-extensions = [DistutilsExtension("*",
-                                   sources,
-                                   include_dirs=include_dirs,
-                                   library_dirs=library_dirs,
-                                   extra_compile_args=extra_compile_args,
-                                   libraries=libraries,
-                                   extra_link_args=extra_link_args,)]
+# If we were build shared, just point to that. Otherwise,
+# point to the LDSHARED stuff and let dynamic_lookup find
+# it for us
+if not SHARED:
+    ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
+    ldshared = ldshared.replace('-bundle','')
+    PYTHON_LIBRARY = ''
+    ldshared = [i for i in ldshared.split(' ') if i != '']
+    extra_link_args += ldshared
+
+macros = [('PDAL_PYTHON_LIBRARY','"%s"' % PYTHON_LIBRARY)]
+
+c = new_compiler()
+
+for d in include_dirs:
+    c.add_include_dir(d)
+c.add_include_dir(get_python_inc())
+for l in library_dirs:
+    c.add_library_dir(l)
+for l in libraries:
+    c.add_library(l)
+
+# maybe need distutils.sysconfig.get_python_lib()
+
+c.define_macro('PDAL_PYTHON_LIBRARY="%s"' % PYTHON_LIBRARY)
+
+plang = c.compile(glob.glob('./pdal/plang/*.cpp'),
+                  extra_preargs = extra_compile_args)
+
+filter_objs = c.compile(glob.glob('./pdal/filters/*.cpp') ,
+                        output_dir = temp_output_dir,
+                        extra_preargs = extra_compile_args)
+
+reader_objs = c.compile(glob.glob('./pdal/io/*.cpp') ,
+                        output_dir = temp_output_dir,
+                        extra_preargs = extra_compile_args)
+
+filter_lib = c.link('shared_library', filter_objs + plang,
+                     output_filename = 'pdal_plugin_filter_python' + c.dylib_lib_extension,
+                     output_dir = lib_output_dir,
+                     library_dirs = library_dirs,
+                     extra_preargs = extra_link_args,
+                     libraries = libraries)
+
+reader_lib = c.link('shared_library', reader_objs + plang,
+                     output_filename = 'pdal_plugin_reader_numpy' + c.dylib_lib_extension,
+                     output_dir = lib_output_dir,
+                     library_dirs = library_dirs,
+                     extra_preargs = extra_link_args,
+                     libraries = libraries)
+
+extensions = []
+extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
+extension = Extension("*",
+                       extension_sources,
+                       include_dirs = include_dirs,
+                       library_dirs = library_dirs,
+                       extra_compile_args = extra_compile_args,
+                       libraries = libraries,
+                       extra_link_args = extra_link_args,)
+
 if USE_CYTHON and "clean" not in sys.argv:
     from Cython.Build import cythonize
-    extensions= cythonize(extensions, compiler_directives={'language_level':3})
+    extensions = cythonize([extension], compiler_directives={'language_level':3})
 
 setup_args = dict(
     name                = 'PDAL',
@@ -200,7 +248,7 @@ setup_args = dict(
     author_email        = 'howard@hobu.co',
     maintainer          = 'Howard Butler',
     maintainer_email    = 'howard@hobu.co',
-    url                 = 'http://pdal.io',
+    url                 = 'https://pdal.io',
     long_description    = long_description,
     test_suite          = 'test',
     packages            = [
@@ -219,5 +267,5 @@ setup_args = dict(
     cmdclass           = {},
     install_requires   = ['numpy', 'packaging', 'cython'],
 )
-setup(ext_modules=extensions, **setup_args)
+output = setup(ext_modules=extensions, **setup_args)
 
