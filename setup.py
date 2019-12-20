@@ -26,6 +26,15 @@ import distutils.unixccompiler
 from distutils.sysconfig import get_python_inc
 from distutils.command import build_ext
 from distutils.util import get_platform
+from distutils.command.install_data import install_data
+
+
+
+class PDALInstallData(install_data):
+    def run(self):
+        install_data.run(self)
+        import pdb;pdb.set_trace()
+
 
 USE_CYTHON = True
 try:
@@ -117,10 +126,6 @@ lib_output_dir = os.path.join(base, 'lib' + plat_specifier)
 temp_output_dir = os.path.join(base, 'temp' + plat_specifier)
 
 
-output_dir = lib_output_dir
-
-
-
 PDAL_PLUGIN_DIR = None
 if pdal_config and "clean" not in sys.argv:
 
@@ -163,38 +168,38 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
 
 
-# This junk is here because the PDAL embedded environment needs the
-# Python library at compile time so it knows what to open. If the
-# Python environment was statically built (like Conda/OSX), we need to
-# do -undefined dynamic_lookup which the Python LDSHARED variable
-# gives us.
+# # This junk is here because the PDAL embedded environment needs the
+# # Python library at compile time so it knows what to open. If the
+# # Python environment was statically built (like Conda/OSX), we need to
+# # do -undefined dynamic_lookup which the Python LDSHARED variable
+# # gives us.
 PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
                               sysconfig.get_config_var('LDLIBRARY'))
-SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
-
-# If we were build shared, just point to that. Otherwise,
-# point to the LDSHARED stuff and let dynamic_lookup find
-# it for us
-if not SHARED:
-    ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
-    ldshared = ldshared.replace('-bundle','')
-    PYTHON_LIBRARY = ''
-    ldshared = [i for i in ldshared.split(' ') if i != '']
-    extra_link_args += ldshared
-
-macros = [('PDAL_PYTHON_LIBRARY','"%s"' % PYTHON_LIBRARY)]
+# SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
+#
+# # If we were build shared, just point to that. Otherwise,
+# # point to the LDSHARED stuff and let dynamic_lookup find
+# # it for us
+# if not SHARED:
+#     ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
+#     ldshared = ldshared.replace('-bundle','')
+#     ldshared = [i for i in ldshared.split(' ') if i != '']
 
 c = new_compiler()
 
 for d in include_dirs:
     c.add_include_dir(d)
 c.add_include_dir(get_python_inc())
-for l in library_dirs:
-    c.add_library_dir(l)
-for l in libraries:
-    c.add_library(l)
 
-# maybe need distutils.sysconfig.get_python_lib()
+c.add_library_dir(library_dirs[0])
+c.add_library('pdalcpp')
+c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
+PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
+c.add_library(PYLIB)
+c.add_library('c++')
+
+READER_FILENAME = c.dylib_lib_format % ('pdal_plugin_reader_numpy', c.dylib_lib_extension)
+FILTER_FILENAME = c.dylib_lib_format % ('pdal_plugin_filter_python', c.dylib_lib_extension)
 
 c.define_macro('PDAL_PYTHON_LIBRARY="%s"' % PYTHON_LIBRARY)
 
@@ -210,18 +215,26 @@ reader_objs = c.compile(glob.glob('./pdal/io/*.cpp') ,
                         extra_preargs = extra_compile_args)
 
 filter_lib = c.link('shared_library', filter_objs + plang,
-                     output_filename = 'pdal_plugin_filter_python' + c.dylib_lib_extension,
+                     output_filename = FILTER_FILENAME,
                      output_dir = lib_output_dir,
-                     library_dirs = library_dirs,
-                     extra_preargs = extra_link_args,
-                     libraries = libraries)
+                     extra_preargs = extra_link_args)
 
 reader_lib = c.link('shared_library', reader_objs + plang,
-                     output_filename = 'pdal_plugin_reader_numpy' + c.dylib_lib_extension,
+                     output_filename = READER_FILENAME,
                      output_dir = lib_output_dir,
-                     library_dirs = library_dirs,
-                     extra_preargs = extra_link_args,
-                     libraries = libraries)
+                     extra_preargs = extra_link_args)
+
+if platform.system() == 'Darwin':
+    import delocate
+
+    def relocate(LIBRARY_NAME, library_output_dir):
+        names = delocate.tools.get_install_names(os.path.join(library_output_dir, LIBRARY_NAME))
+        inst_id = delocate.tools.get_install_id(os.path.join(library_output_dir, LIBRARY_NAME))
+        set_id = delocate.tools.set_install_id(os.path.join(library_output_dir, LIBRARY_NAME), os.path.join('@rpath', LIBRARY_NAME))
+
+    relocate(READER_FILENAME, lib_output_dir)
+    relocate(FILTER_FILENAME, lib_output_dir)
+    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 extensions = []
 extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
@@ -260,12 +273,17 @@ setup_args = dict(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering :: GIS',
     ],
-    cmdclass           = {},
-    install_requires   = ['numpy', 'packaging', 'cython'],
+    cmdclass           = {'install_data': PDALInstallData},
+    install_requires   = [
+        'numpy',
+        'packaging',
+        'delocate ; platform_system=="Darwin"',
+        'cython'],
 )
 output = setup(ext_modules=extensions, **setup_args)
 
