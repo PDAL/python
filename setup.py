@@ -18,7 +18,8 @@ import sys
 import numpy
 import glob
 import sysconfig
-from distutils.core import setup, Extension
+from setuptools import setup
+from distutils.core import  Extension
 from packaging.version import Version
 
 from distutils.ccompiler import new_compiler
@@ -32,8 +33,8 @@ from distutils.command.install_data import install_data
 
 class PDALInstallData(install_data):
     def run(self):
-        install_data.run(self)
         import pdb;pdb.set_trace()
+        install_data.run(self)
 
 
 USE_CYTHON = True
@@ -98,7 +99,7 @@ with open('pdal/__init__.py', 'r') as fp:
             break
 
 if not module_version:
-    raise ValueError("Could not determine PDAL's version")
+    raise ValueError("Could not determine Python package version")
 
 # Handle UTF-8 encoding of certain text files.
 open_kwds = {}
@@ -141,6 +142,12 @@ if pdal_config and "clean" not in sys.argv:
         elif item.startswith("-l"):
             libraries.append(item[2:])
 
+if not PDAL_PLUGIN_DIR:
+    try:
+        PDAL_PLUGIN_DIR = os.environ['PDAL_PLUGIN_DIR']
+    except KeyError:
+        pass
+
 include_dirs.append(numpy.get_include())
 
 if platform.system() == 'Darwin':
@@ -162,10 +169,10 @@ if os.name in ['nt']:
 
 if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
     extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
-    if 'GCC' in sys.version:
-        # try to ensure the ABI for Conda GCC 4.8
-        if '4.8' in sys.version:
-            extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
+#     if 'GCC' in sys.version:
+#         # try to ensure the ABI for Conda GCC 4.8
+#         if '4.8' in sys.version:
+#             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
 
 
 # # This junk is here because the PDAL embedded environment needs the
@@ -250,6 +257,12 @@ if USE_CYTHON and "clean" not in sys.argv:
     from Cython.Build import cythonize
     extensions = cythonize([extension], compiler_directives={'language_level':3})
 
+DATA_FILES = None
+if PDAL_PLUGIN_DIR:
+    libs = [os.path.join(lib_output_dir,READER_FILENAME),
+            os.path.join(lib_output_dir,FILTER_FILENAME)]
+    DATA_FILES          = [(PDAL_PLUGIN_DIR, libs)]
+
 setup_args = dict(
     name                = 'PDAL',
     version             = str(module_version),
@@ -267,6 +280,7 @@ setup_args = dict(
     packages            = [
         'pdal',
     ],
+    data_files=DATA_FILES,
     classifiers         = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
