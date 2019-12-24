@@ -165,7 +165,7 @@ if os.name in ['nt']:
 
     libraries = ['pdalcpp','pdal_util','ws2_32']
 
-    extra_compile_args = ['/DNOMINMAX',]
+    extra_compile_args = ['/DNOMINMAX','-D_CRT_SECURE_NO_WARNINGS=1']
 
 if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
     extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
@@ -180,8 +180,11 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
 # # Python environment was statically built (like Conda/OSX), we need to
 # # do -undefined dynamic_lookup which the Python LDSHARED variable
 # # gives us.
-PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
-                              sysconfig.get_config_var('LDLIBRARY'))
+
+PYTHON_LIBRARY = None
+if not os.name in ['nt']:
+    PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
+                                  sysconfig.get_config_var('LDLIBRARY'))
 # SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
 #
 # # If we were build shared, just point to that. Otherwise,
@@ -200,13 +203,41 @@ c.add_include_dir(get_python_inc())
 
 c.add_library_dir(library_dirs[0])
 c.add_library('pdalcpp')
-c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
-PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
-c.add_library(PYLIB)
-c.add_library('c++')
 
-READER_FILENAME = c.dylib_lib_format % ('pdal_plugin_reader_numpy', c.dylib_lib_extension)
-FILTER_FILENAME = c.dylib_lib_format % ('pdal_plugin_filter_python', c.dylib_lib_extension)
+
+extension = None
+format = None
+library_type = 'shared_library'
+try:
+    extension = c.dylib_lib_extension
+except AttributeError:
+    extension = c.shared_lib_extension
+try:
+
+    format = c.dylib_lib_format
+except AttributeError:
+    format = c.shared_lib_format
+if not os.name in ['nt']:
+    c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
+    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(extension,'').replace('lib','')
+    c.add_library(PYLIB)
+    c.add_library('c++')
+
+
+else:
+    library_type = 'shared_object'
+    for l in library_dirs:
+        c.add_library_dir(l)
+    c.add_library_dir(os.path.join(sysconfig.get_config_var('base'),'libs'))
+    extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
+    c.add_library('pdal_util')
+    c.add_library('ws2_32')
+    c.add_library('pdalcpp')
+
+
+
+READER_FILENAME = format % ('pdal_plugin_reader_numpy', extension)
+FILTER_FILENAME = format % ('pdal_plugin_filter_python', extension)
 
 c.define_macro('PDAL_PYTHON_LIBRARY="%s"' % PYTHON_LIBRARY)
 
@@ -221,12 +252,14 @@ reader_objs = c.compile(glob.glob('./pdal/io/*.cpp') ,
                         output_dir = temp_output_dir,
                         extra_preargs = extra_compile_args)
 
-filter_lib = c.link('shared_library', filter_objs + plang,
+import pdb;pdb.set_trace()
+
+filter_lib = c.link(library_type, filter_objs + plang,
                      output_filename = FILTER_FILENAME,
                      output_dir = lib_output_dir,
                      extra_preargs = extra_link_args)
 
-reader_lib = c.link('shared_library', reader_objs + plang,
+reader_lib = c.link(library_type, reader_objs + plang,
                      output_filename = READER_FILENAME,
                      output_dir = lib_output_dir,
                      extra_preargs = extra_link_args)
@@ -241,7 +274,7 @@ if platform.system() == 'Darwin':
 
     relocate(READER_FILENAME, lib_output_dir)
     relocate(FILTER_FILENAME, lib_output_dir)
-    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
+#    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 extensions = []
 extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
