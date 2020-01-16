@@ -33,7 +33,6 @@ from distutils.command.install_data import install_data
 
 class PDALInstallData(install_data):
     def run(self):
-        import pdb;pdb.set_trace()
         install_data.run(self)
 
 
@@ -182,15 +181,15 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
 # # gives us.
 PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
                               sysconfig.get_config_var('LDLIBRARY'))
-# SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
+SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
 #
 # # If we were build shared, just point to that. Otherwise,
 # # point to the LDSHARED stuff and let dynamic_lookup find
 # # it for us
-# if not SHARED:
-#     ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
-#     ldshared = ldshared.replace('-bundle','')
-#     ldshared = [i for i in ldshared.split(' ') if i != '']
+if not SHARED:
+    ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
+    ldshared = ldshared.replace('-bundle','')
+    ldshared = [i for i in ldshared.split(' ') if i != '']
 
 c = new_compiler()
 
@@ -201,7 +200,7 @@ c.add_include_dir(get_python_inc())
 c.add_library_dir(library_dirs[0])
 c.add_library('pdalcpp')
 c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
-PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
+PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','').replace('.a','')
 c.add_library(PYLIB)
 c.add_library('c++')
 
