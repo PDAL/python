@@ -1,3 +1,4 @@
+import sys
 import unittest
 import pdal
 import os
@@ -190,6 +191,37 @@ class TestArrayLoad(PDALTest):
         arrays = p.arrays
         self.assertEqual(count, 2)
         self.assertEqual(len(arrays), 1)
+
+    def test_reference_counting(self):
+        """Can we read and filter data from a list of arrays to PDAL"""
+        if Version(pdal.info.version) < Version("1.8"):
+            return True
+
+        # just some dummy data
+        x_vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        y_vals = [6.0, 7.0, 8.0, 9.0, 10.0]
+        z_vals = [1.5, 3.5, 5.5, 7.5, 9.5]
+        test_data = np.array(
+            [(x, y, z) for x, y, z in zip(x_vals, y_vals, z_vals)],
+            dtype=[("X", np.float), ("Y", np.float), ("Z", np.float)],
+        )
+
+        pipeline = """
+        {
+            "pipeline": [
+                {
+                    "type":"filters.range",
+                    "limits":"X[2.5:4.5]"
+                }
+            ]
+        }
+        """
+
+        p = pdal.Pipeline(pipeline, arrays=[test_data])
+        p.loglevel = 8
+        count = p.execute()
+        self.assertEqual(count, 2)
+        self.assertEqual(1, sys.getrefcount(p.arrays[0]), "Reference count should only be 1 in this case")
 
 
 class TestDimensions(PDALTest):

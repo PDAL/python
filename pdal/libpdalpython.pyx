@@ -155,7 +155,6 @@ cdef class PyPipeline:
                 a = ptr#.get()
                 o = a.getPythonArray()
                 output.append(<object>o)
-                del ptr
                 inc(it)
             return output
 
