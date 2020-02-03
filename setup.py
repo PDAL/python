@@ -153,7 +153,7 @@ if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 if  PDAL_VERSION is not None \
-    and PDAL_VERSION < Version('2.1.0'):
+    and PDAL_VERSION < Version('2.0.0'):
     raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDAL_VERSION, module_version))
 
 
