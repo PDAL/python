@@ -29,8 +29,6 @@ from distutils.command import build_ext
 from distutils.util import get_platform
 from distutils.command.install_data import install_data
 
-
-
 class PDALInstallData(install_data):
     def run(self):
         install_data.run(self)
@@ -135,6 +133,7 @@ else:
     if os.environ.get('CONDA_PREFIX'):
         prefix=os.path.expandvars('%CONDA_PREFIX%')
         library_dirs = ['%s\Library\lib' % prefix]
+        include_dirs = ['%s\Library\include' % prefix]
 
     libraries = ['pdalcpp','pdal_util','ws2_32']
     include_dirs.append(numpy.get_include())
@@ -211,11 +210,10 @@ if not SHARED:
 
 for d in include_dirs:
     c.add_include_dir(d)
-
-assert(len(libraries) == len(library_dirs))
-for i in range(len(library_dirs)):
-    c.add_library_dir(library_dirs[i])
-    c.add_library(libraries[i])
+for d in library_dirs:
+    c.add_library_dir(d)
+for d in libraries:
+    c.add_library(d)
 
 if not WINDOWS:
     c.add_library('c++')
