@@ -203,11 +203,13 @@ c.add_include_dir(get_python_inc())
 c.add_library_dir(library_dirs[0])
 c.add_library('pdalcpp')
 c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
-PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','').replace('.a','')
-c.add_library(PYLIB)
+
 
 if not os.name in ['nt']:
     c.add_library('c++')
+    c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
+    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','').replace('.a','')
+    c.add_library(PYLIB)
 
 
 extension = None
