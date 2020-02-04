@@ -44,6 +44,8 @@ except ImportError:
 
 ext = '.pyx' if USE_CYTHON else '.cpp'
 
+PYVERS = sysconfig.get_config_var('py_version_nodot')
+
 logging.basicConfig()
 log = logging.getLogger(__file__)
 
@@ -183,13 +185,12 @@ PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
 if os.name in ['nt']:
     pdal_config += '.bat'
     PYTHON_LIB_DIR = os.path.join(sysconfig.get_config_var("prefix"), "libs")
-    PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python38.lib")
+    PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python%s.lib" % PYVERS)
 else:
-
     PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
                                 sysconfig.get_config_var('LDLIBRARY'))
 SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
-#
+
 # # If we were build shared, just point to that. Otherwise,
 # # point to the LDSHARED stuff and let dynamic_lookup find
 # # it for us
@@ -210,7 +211,6 @@ c.add_library('pdalcpp')
 
 c.add_library_dir(PYTHON_LIB_DIR)
 if os.name in ['nt']:
-    PYVERS = sysconfig.get_config_var('py_version_nodot')
     c.add_library("python%s" % PYVERS)
 else:
     PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
