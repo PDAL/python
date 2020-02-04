@@ -97,7 +97,7 @@ cdef class PyPipeline:
 
     def __cinit__(self, unicode json, list arrays=None):
         cdef char* x = NULL
-        cdef int n_arrays;
+        cdef Py_ssize_t n_arrays;
         if arrays:
             n_arrays = len(arrays)
 

@@ -164,7 +164,7 @@ if os.name in ['nt']:
 
     libraries = ['pdalcpp','pdal_util','ws2_32']
 
-    extra_compile_args = ['/DNOMINMAX','-D_CRT_SECURE_NO_WARNINGS=1']
+    extra_compile_args = ['/DNOMINMAX','-D_CRT_SECURE_NO_WARNINGS=1', '/wd4250','/wd4800']
 
 if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
     extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']

@@ -281,7 +281,7 @@ const Array::Fields& Array::fields() const
 ArrayIter& Array::iterator()
 {
     ArrayIter *it = new ArrayIter(*this);
-    m_iterators.push_back(std::unique_ptr<ArrayIter>(it));
+    m_iterators.push_back(std::shared_ptr<ArrayIter>(it));
     return *it;
 }
 

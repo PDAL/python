@@ -75,13 +75,14 @@ private:
     Fields m_fields;
     bool m_rowMajor;
     Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
+    std::vector<std::shared_ptr<ArrayIter>> m_iterators;
 };
 
 class ArrayIter
 {
 public:
     ArrayIter(const ArrayIter&) = delete;
+    ArrayIter() = delete;
 
     ArrayIter(Array& array);
     ~ArrayIter();
