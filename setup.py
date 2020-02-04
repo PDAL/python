@@ -260,9 +260,6 @@ reader_objs = c.compile(glob.glob('./pdal/io/*.cpp') ,
                         output_dir = temp_output_dir,
                         extra_preargs = extra_compile_args)
 
-import pdb;pdb.set_trace()
-
-filter_lib = c.link(library_type, filter_objs + plang,
                      output_filename = FILTER_FILENAME,
                      output_dir = lib_output_dir,
                      extra_preargs = extra_link_args)
