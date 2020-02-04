@@ -233,7 +233,7 @@ class TestDimensions(PDALTest):
 
 def test_suite():
     return unittest.TestSuite(
-        [TestPipeline])
+        [TestPipeline()])
 
 if __name__ == '__main__':
     unittest.main()

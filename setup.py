@@ -340,7 +340,12 @@ setup_args = dict(
     install_requires   = [
         'numpy',
         'packaging',
-        'delocate ; platform_system=="Darwin"',
+        'delocate ; platform_system=="darwin"',
+        'cython'],
+    setup_requires   = [
+        'numpy',
+        'packaging',
+        'delocate ; platform_system=="darwin"',
         'cython'],
 )
 output = setup(ext_modules=extensions, **setup_args)
