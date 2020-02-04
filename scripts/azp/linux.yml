@@ -11,11 +11,11 @@ jobs:
   steps:
   - script: |
       sudo apt-get update -y; sudo apt-get install python3-pip -y
-      pip3 install numpy packaging cython
+      pip3 install numpy packaging cython pytest
     displayName: 'Dependencies'
   - script: |
       python3 setup.py build
     displayName: 'Build'
   - script: |
-      python3 setup.py test
+      py.test
     displayName: 'Test'
