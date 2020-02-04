@@ -179,10 +179,15 @@ if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platfo
 # # Python environment was statically built (like Conda/OSX), we need to
 # # do -undefined dynamic_lookup which the Python LDSHARED variable
 # # gives us.
-PYTHON_LIBRARY = None
-if not os.name in ['nt']:
+PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
+if os.name in ['nt']:
+    pdal_config += '.bat'
+    PYTHON_LIB_DIR = os.path.join(sysconfig.get_config_var("prefix"), "libs")
+    PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python38.lib")
+else:
+
     PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
-                                  sysconfig.get_config_var('LDLIBRARY'))
+                                sysconfig.get_config_var('LDLIBRARY'))
 SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
 #
 # # If we were build shared, just point to that. Otherwise,
@@ -202,13 +207,13 @@ c.add_include_dir(get_python_inc())
 
 c.add_library_dir(library_dirs[0])
 c.add_library('pdalcpp')
-c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
 
-
-if not os.name in ['nt']:
-    c.add_library('c++')
-    c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
-    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','').replace('.a','')
+c.add_library_dir(PYTHON_LIB_DIR)
+if os.name in ['nt']:
+    PYVERS = sysconfig.get_config_var('py_version_nodot')
+    c.add_library("python%s" % PYVERS)
+else:
+    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
     c.add_library(PYLIB)
 
 
