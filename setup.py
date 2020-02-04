@@ -113,6 +113,7 @@ temp_output_dir = os.path.join(base, 'temp' + plat_specifier)
 
 
 PDAL_PLUGIN_DIR = None
+PDAL_VERSION = None
 if not WINDOWS:
     PDAL_PLUGIN_DIR = get_pdal_config('--plugin-dir')
     PDAL_VERSION = Version(get_pdal_config('--version'))
@@ -138,7 +139,7 @@ else:
     libraries = ['pdalcpp','pdal_util','ws2_32']
     include_dirs.append(numpy.get_include())
     extra_compile_args = ['/DNOMINMAX',
-                          '-D_CRT_SECURE_NO_WARNINGS=1', 
+                          '-D_CRT_SECURE_NO_WARNINGS=1',
                           '/wd4250',
                           '/wd4800']
 
