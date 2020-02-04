@@ -45,24 +45,9 @@ except ImportError:
 ext = '.pyx' if USE_CYTHON else '.cpp'
 
 PYVERS = sysconfig.get_config_var('py_version_nodot')
-
-logging.basicConfig()
-log = logging.getLogger(__file__)
-
-# python -W all setup.py ...
-if 'all' in sys.warnoptions:
-    log.level = logging.DEBUG
-
-
-# Second try: use PDAL_CONFIG environment variable
-if 'PDAL_CONFIG' in os.environ:
-    pdal_config = os.environ['PDAL_CONFIG']
-    log.debug('pdal_config: %s', pdal_config)
-else:
-    pdal_config = 'pdal-config'
-    # in case of windows...
-    if os.name in ['nt']:
-        pdal_config += '.bat'
+WINDOWS = False
+if os.name in ['nt']:
+    WINDOWS = True
 
 
 def get_pdal_config(option):
@@ -71,7 +56,7 @@ def get_pdal_config(option):
     This code was adapted from Shapely's geos-config stuff
     '''
     import subprocess
-    pdal_config = globals().get('pdal_config')
+    pdal_config = os.environ.get('PDAL_CONFIG','pdal-config')
     if not pdal_config or not isinstance(pdal_config, str):
         raise OSError('Path to pdal-config is not set')
     try:
@@ -88,7 +73,6 @@ def get_pdal_config(option):
         result = stdout.decode('ascii').strip()
     else:
         result = stdout.strip()
-    log.debug('%s %s: %r', pdal_config, option, result)
     return result
 
 # Get the version from the pdal module
@@ -129,19 +113,34 @@ temp_output_dir = os.path.join(base, 'temp' + plat_specifier)
 
 
 PDAL_PLUGIN_DIR = None
-if pdal_config and "clean" not in sys.argv:
-
+if not WINDOWS:
     PDAL_PLUGIN_DIR = get_pdal_config('--plugin-dir')
     PDAL_VERSION = Version(get_pdal_config('--version'))
     for item in get_pdal_config('--includes').split():
         if item.startswith("-I"):
             include_dirs.extend(item[2:].split(os.pathsep))
+    include_dirs.append(numpy.get_include())
 
     for item in get_pdal_config('--libs').split():
         if item.startswith("-L"):
             library_dirs.extend(item[2:].split(os.pathsep))
         elif item.startswith("-l"):
             libraries.append(item[2:])
+    if 'linux' in sys.platform or \
+       'linux2' in sys.platform or \
+       'darwin' in sys.platform:
+        extra_compile_args += ['-std=c++17', '-Wno-unknown-pragmas']
+else:
+    if os.environ.get('CONDA_PREFIX'):
+        prefix=os.path.expandvars('%CONDA_PREFIX%')
+        library_dirs = ['%s\Library\lib' % prefix]
+
+    libraries = ['pdalcpp','pdal_util','ws2_32']
+    include_dirs.append(numpy.get_include())
+    extra_compile_args = ['/DNOMINMAX',
+                          '-D_CRT_SECURE_NO_WARNINGS=1', 
+                          '/wd4250',
+                          '/wd4800']
 
 if not PDAL_PLUGIN_DIR:
     try:
@@ -149,7 +148,6 @@ if not PDAL_PLUGIN_DIR:
     except KeyError:
         pass
 
-include_dirs.append(numpy.get_include())
 
 if platform.system() == 'Darwin':
     extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
@@ -159,67 +157,13 @@ if  PDAL_VERSION is not None \
     raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDAL_VERSION, module_version))
 
 
-if os.name in ['nt']:
-    if os.environ.get('CONDA_PREFIX'):
-        prefix=os.path.expandvars('%CONDA_PREFIX%')
-        library_dirs = ['%s\Library\lib' % prefix]
-
-    libraries = ['pdalcpp','pdal_util','ws2_32']
-
-    extra_compile_args = ['/DNOMINMAX','-D_CRT_SECURE_NO_WARNINGS=1', '/wd4250','/wd4800']
-
-if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
-    extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
-#     if 'GCC' in sys.version:
-#         # try to ensure the ABI for Conda GCC 4.8
-#         if '4.8' in sys.version:
-#             extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
-
-
-# # This junk is here because the PDAL embedded environment needs the
-# # Python library at compile time so it knows what to open. If the
-# # Python environment was statically built (like Conda/OSX), we need to
-# # do -undefined dynamic_lookup which the Python LDSHARED variable
-# # gives us.
-PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
-if os.name in ['nt']:
-    pdal_config += '.bat'
-    PYTHON_LIB_DIR = os.path.join(sysconfig.get_config_var("prefix"), "libs")
-    PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python%s.lib" % PYVERS)
-else:
-    PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
-                                sysconfig.get_config_var('LDLIBRARY'))
-SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
-
-# # If we were build shared, just point to that. Otherwise,
-# # point to the LDSHARED stuff and let dynamic_lookup find
-# # it for us
-if not SHARED:
-    if not os.name in ['nt']:
-        ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
-        ldshared = ldshared.replace('-bundle','')
-        ldshared = [i for i in ldshared.split(' ') if i != '']
-
 c = new_compiler()
-
-for d in include_dirs:
-    c.add_include_dir(d)
-c.add_include_dir(get_python_inc())
-
-c.add_library_dir(library_dirs[0])
-c.add_library('pdalcpp')
-
-c.add_library_dir(PYTHON_LIB_DIR)
-if os.name in ['nt']:
-    c.add_library("python%s" % PYVERS)
-else:
-    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
-    c.add_library(PYLIB)
-
 
 extension = None
 format = None
 library_type = 'shared_library'
+if WINDOWS:
+    library_type = 'shared_object'
 try:
     extension = c.dylib_lib_extension
 except AttributeError:
@@ -229,23 +173,53 @@ try:
     format = c.dylib_lib_format
 except AttributeError:
     format = c.shared_lib_format
-if not os.name in ['nt']:
-    c.add_library_dir(sysconfig.get_config_var('LIBDIR'))
-    PYLIB = sysconfig.get_config_var('LDLIBRARY').replace(extension,'').replace('lib','')
-    c.add_library(PYLIB)
-    c.add_library('c++')
 
-
+# # This junk is here because the PDAL embedded environment needs the
+# # Python library at compile time so it knows what to open. If the
+# # Python environment was statically built (like Conda/OSX), we need to
+# # do -undefined dynamic_lookup which the Python LDSHARED variable
+# # gives us.
+PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
+PYTHON_LIBRARY_NAME = None
+PYTHON_LIBRARY = None
+PYTHON_INCLUDE_DIR = get_python_inc()
+if WINDOWS:
+    PYTHON_LIB_DIR = os.path.join(sysconfig.get_config_var("prefix"), "libs")
+    PYTHON_LIBRARY_NAME = "python%s" % PYVERS
+    PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python%s.lib" % PYVERS)
 else:
-    library_type = 'shared_object'
-    for l in library_dirs:
-        c.add_library_dir(l)
-    c.add_library_dir(os.path.join(sysconfig.get_config_var('base'),'libs'))
-    extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
-    c.add_library('pdal_util')
-    c.add_library('ws2_32')
-    c.add_library('pdalcpp')
+    PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
+    PYTHON_LIBRARY_NAME = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
+    PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
+                                  sysconfig.get_config_var('LDLIBRARY'))
 
+SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
+
+library_dirs.append(PYTHON_LIB_DIR)
+libraries.append(PYTHON_LIBRARY_NAME)
+include_dirs.append(PYTHON_INCLUDE_DIR)
+
+# # If we were build shared, just point to that. Otherwise,
+# # point to the LDSHARED stuff and let dynamic_lookup find
+# # it for us
+if not SHARED:
+    if not WINDOWS:
+        ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
+        ldshared = ldshared.replace('-bundle','')
+        ldshared = [i for i in ldshared.split(' ') if i != '']
+
+for d in include_dirs:
+    c.add_include_dir(d)
+
+assert(len(libraries) == len(library_dirs))
+for i in range(len(library_dirs)):
+    c.add_library_dir(library_dirs[i])
+    c.add_library(libraries[i])
+
+if not WINDOWS:
+    c.add_library('c++')
+else:
+    extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
 
 
 READER_FILENAME = format % ('pdal_plugin_reader_numpy', extension)
@@ -279,13 +253,13 @@ if platform.system() == 'Darwin':
     import delocate
 
     def relocate(LIBRARY_NAME, library_output_dir):
-        names = delocate.tools.get_install_names(os.path.join(library_output_dir, LIBRARY_NAME))
-        inst_id = delocate.tools.get_install_id(os.path.join(library_output_dir, LIBRARY_NAME))
-        set_id = delocate.tools.set_install_id(os.path.join(library_output_dir, LIBRARY_NAME), os.path.join('@rpath', LIBRARY_NAME))
+        LIB = os.path.join(library_output_dir, LIBRARY_NAME)
+        names = delocate.tools.get_install_names(LIB)
+        inst_id = delocate.tools.get_install_id(LIB)
+        set_id = delocate.tools.set_install_id(LIB, os.path.join('@rpath', LIBRARY_NAME))
 
     relocate(READER_FILENAME, lib_output_dir)
     relocate(FILTER_FILENAME, lib_output_dir)
-#    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 extensions = []
 extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
