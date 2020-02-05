@@ -17,9 +17,5 @@ jobs:
       pip3 install -e .
     displayName: 'Build'
   - script: |
-      pwd
-      ls
-      ls build/pdal/*
-      which py.test
       py.test
     displayName: 'Test'
