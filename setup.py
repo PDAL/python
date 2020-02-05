@@ -110,10 +110,10 @@ lib_output_dir = os.path.join(base, 'lib' + plat_specifier)
 temp_output_dir = os.path.join(base, 'temp' + plat_specifier)
 
 
-PDAL_PLUGIN_DIR = None
+PDAL_DRIVER_PATH = None
 PDAL_VERSION = None
 if not WINDOWS:
-    PDAL_PLUGIN_DIR = get_pdal_config('--plugin-dir')
+    PDAL_DRIVER_PATH = get_pdal_config('--plugin-dir')
     PDAL_VERSION = Version(get_pdal_config('--version'))
     for item in get_pdal_config('--includes').split():
         if item.startswith("-I"):
@@ -142,17 +142,15 @@ else:
                           '/wd4250',
                           '/wd4800']
 
-SKIP_PDAL_PYTHON_EMBED = os.environ.get('SKIP_PDAL_PYTHON_EMBED', None)
-if not PDAL_PLUGIN_DIR:
-    try:
-        PDAL_PLUGIN_DIR = os.environ['PDAL_PLUGIN_DIR']
-    except KeyError:
-        if not SKIP_PDAL_PYTHON_EMBED:
-            message = 'The PDAL_PLUGIN_DIR environment variable ' \
-                      'must be defined to install filters.python ' \
-                      'and readers.numpy. Define the SKIP_PDAL_PYTHON_EMBED ' \
-                      'variable to skip them'
-            raise Exception(message)
+SKIP_PDAL_PYTHON_EMBED = os.environ.get('SKIP_PDAL_PYTHON_EMBED', False)
+if not PDAL_DRIVER_PATH:
+    PDAL_DRIVER_PATH = os.environ.get('PDAL_DRIVER_PATH', None)
+    if not SKIP_PDAL_PYTHON_EMBED and not PDAL_DRIVER_PATH:
+        message = 'The PDAL_DRIVER_PATH environment variable ' \
+                  'must be defined to install filters.python ' \
+                  'and readers.numpy. Define the SKIP_PDAL_PYTHON_EMBED ' \
+                  'variable to skip them'
+        raise Exception(message)
 
 
 
@@ -272,10 +270,12 @@ if USE_CYTHON and "clean" not in sys.argv:
     extensions = cythonize([extension], compiler_directives={'language_level':3})
 
 DATA_FILES = None
-if PDAL_PLUGIN_DIR:
+if PDAL_DRIVER_PATH and not SKIP_PDAL_PYTHON_EMBED:
     libs = [os.path.join(lib_output_dir,READER_FILENAME),
             os.path.join(lib_output_dir,FILTER_FILENAME)]
-    DATA_FILES          = [(PDAL_PLUGIN_DIR, libs)]
+    DATA_FILES          = [(PDAL_DRIVER_PATH, libs)]
+else:
+    DATA_FILES = []
 
 setup_args = dict(
     name                = 'PDAL',
