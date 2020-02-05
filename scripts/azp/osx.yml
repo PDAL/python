@@ -42,9 +42,11 @@ jobs:
   - script: |
       source activate pdal
       python setup.py build
+      ls lib/
     displayName: 'Build'
   - script: |
       source activate pdal
-      py.test
+      which pytest
+      pytest
     displayName: 'Test'
 

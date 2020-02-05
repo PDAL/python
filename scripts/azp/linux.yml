@@ -17,5 +17,8 @@ jobs:
       python3 setup.py build
     displayName: 'Build'
   - script: |
-      py.test
+      pwd
+      ls
+      which pytest
+      pytest
     displayName: 'Test'
