@@ -33,7 +33,7 @@ jobs:
     displayName: Install PDAL
   - script: |
       source activate pdal
-      pip install -e .
+      python setup.py build
     displayName: 'Build'
   - script: |
       source activate pdal
