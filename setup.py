@@ -193,6 +193,7 @@ else:
                                   sysconfig.get_config_var('LDLIBRARY'))
 
 SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
+print('SHARED: ', SHARED)
 
 library_dirs.append(PYTHON_LIB_DIR)
 
@@ -212,6 +213,7 @@ if not SHARED:
         ldshared = ldshared.replace('-bundle','')
         ldshared = [i for i in ldshared.split(' ') if i != '']
         c.linker_so = sysconfig.get_config_var('LDSHARED').split(' ')
+        print (c.linker_so)
 
 for d in include_dirs:
     c.add_include_dir(d)
