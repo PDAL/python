@@ -195,7 +195,11 @@ else:
 SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
 
 library_dirs.append(PYTHON_LIB_DIR)
-libraries.append(PYTHON_LIBRARY_NAME)
+
+# We don't link the Python library if we're not SHARED
+if not SHARED:
+    libraries.append(PYTHON_LIBRARY_NAME)
+
 include_dirs.append(PYTHON_INCLUDE_DIR)
 
 
