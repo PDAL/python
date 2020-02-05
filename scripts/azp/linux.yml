@@ -17,5 +17,5 @@ jobs:
       pip3 install -e .
     displayName: 'Build'
   - script: |
-      pytest
+      python3 -m pytest
     displayName: 'Test'
