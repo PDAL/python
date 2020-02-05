@@ -19,6 +19,7 @@ jobs:
   - script: |
       pwd
       ls
-      which pytest
-      pytest
+      ls build/lib*
+      which py.test
+      py.test
     displayName: 'Test'

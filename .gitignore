@@ -4,3 +4,6 @@ __pycache__
 build/*
 PDAL.egg-info/*
 dist/*
+*.o
+*.so
+*.dylib
