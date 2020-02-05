@@ -168,7 +168,7 @@ if WINDOWS:
 if 'darwin' in sys.platform:
     extension = c.dylib_lib_extension
     format = c.dylib_lib_format
-if 'linux' in sys.platform:
+else:
     extension = c.shared_lib_extension
     format = c.shared_lib_format
 
