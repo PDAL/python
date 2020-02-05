@@ -164,15 +164,14 @@ format = None
 library_type = 'shared_library'
 if WINDOWS:
     library_type = 'shared_object'
-try:
-    extension = c.dylib_lib_extension
-except AttributeError:
-    extension = c.shared_lib_extension
-try:
 
+if 'darwin' in sys.platform:
+    extension = c.dylib_lib_extension
     format = c.dylib_lib_format
-except AttributeError:
+if 'linux' in sys.platform:
+    extension = c.shared_lib_extension
     format = c.shared_lib_format
+
 
 # # This junk is here because the PDAL embedded environment needs the
 # # Python library at compile time so it knows what to open. If the
@@ -188,8 +187,8 @@ if WINDOWS:
     PYTHON_LIBRARY_NAME = "python%s" % PYVERS
     PYTHON_LIBRARY = os.path.join(PYTHON_LIB_DIR, "python%s.lib" % PYVERS)
 else:
-    PYTHON_LIB_DIR = sysconfig.get_config_var('LIBDIR')
-    PYTHON_LIBRARY_NAME = sysconfig.get_config_var('LDLIBRARY').replace(c.dylib_lib_extension,'').replace('lib','')
+    PYTHON_LIB_DIR = sysconfig.get_config_var('LIBPL')
+    PYTHON_LIBRARY_NAME = sysconfig.get_config_var('LDLIBRARY').replace(extension,'').replace('lib','')
     PYTHON_LIBRARY = os.path.join(sysconfig.get_config_var('LIBDIR'),
                                   sysconfig.get_config_var('LDLIBRARY'))
 
@@ -199,6 +198,7 @@ library_dirs.append(PYTHON_LIB_DIR)
 libraries.append(PYTHON_LIBRARY_NAME)
 include_dirs.append(PYTHON_INCLUDE_DIR)
 
+
 # # If we were build shared, just point to that. Otherwise,
 # # point to the LDSHARED stuff and let dynamic_lookup find
 # # it for us
@@ -207,6 +207,7 @@ if not SHARED:
         ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
         ldshared = ldshared.replace('-bundle','')
         ldshared = [i for i in ldshared.split(' ') if i != '']
+        c.linker_so = sysconfig.get_config_var('LDSHARED').split(' ')
 
 for d in include_dirs:
     c.add_include_dir(d)
@@ -215,11 +216,13 @@ for d in library_dirs:
 for d in libraries:
     c.add_library(d)
 
-if not WINDOWS:
-    c.add_library('c++')
-else:
+# os.environ['LDFLAGS'] = '-framework CoreFoundation'
+#
+# if not WINDOWS:
+#     c.add_library('c++')
+# else:
+if WINDOWS:
     extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
-
 
 READER_FILENAME = format % ('pdal_plugin_reader_numpy', extension)
 FILTER_FILENAME = format % ('pdal_plugin_filter_python', extension)
@@ -247,18 +250,6 @@ reader_lib = c.link(library_type, reader_objs + plang,
                      output_filename = READER_FILENAME,
                      output_dir = lib_output_dir,
                      extra_preargs = extra_link_args)
-
-if platform.system() == 'Darwin':
-    import delocate
-
-    def relocate(LIBRARY_NAME, library_output_dir):
-        LIB = os.path.join(library_output_dir, LIBRARY_NAME)
-        names = delocate.tools.get_install_names(LIB)
-        inst_id = delocate.tools.get_install_id(LIB)
-        set_id = delocate.tools.set_install_id(LIB, os.path.join('@rpath', LIBRARY_NAME))
-
-    relocate(READER_FILENAME, lib_output_dir)
-    relocate(FILTER_FILENAME, lib_output_dir)
 
 extensions = []
 extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
@@ -313,12 +304,10 @@ setup_args = dict(
     install_requires   = [
         'numpy',
         'packaging',
-        'delocate ; platform_system=="darwin"',
         'cython'],
     setup_requires   = [
         'numpy',
         'packaging',
-        'delocate ; platform_system=="darwin"',
         'cython'],
 )
 output = setup(ext_modules=extensions, **setup_args)
