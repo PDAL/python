@@ -42,7 +42,6 @@ jobs:
   - script: |
       source activate pdal
       pip install -e .
-      ls lib/
     displayName: 'Build'
   - script: |
       source activate pdal
