@@ -128,7 +128,7 @@ if not WINDOWS:
     if 'linux' in sys.platform or \
        'linux2' in sys.platform or \
        'darwin' in sys.platform:
-        extra_compile_args += ['-std=c++17', '-Wno-unknown-pragmas']
+        extra_compile_args += ['-std=c++17', '-Wno-unknown-pragmas', '-fPIC']
 else:
     if os.environ.get('CONDA_PREFIX'):
         prefix=os.path.expandvars('%CONDA_PREFIX%')
@@ -216,7 +216,6 @@ for d in library_dirs:
 for d in libraries:
     c.add_library(d)
 
-# os.environ['LDFLAGS'] = '-framework CoreFoundation'
 #
 # if not WINDOWS:
 #     c.add_library('c++')
