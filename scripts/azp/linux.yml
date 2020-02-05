@@ -14,12 +14,12 @@ jobs:
       pip3 install numpy packaging cython pytest
     displayName: 'Dependencies'
   - script: |
-      python3 setup.py build
+      pip3 install -e .
     displayName: 'Build'
   - script: |
       pwd
       ls
-      ls build/lib*
+      ls build/pdal/*
       which py.test
       py.test
     displayName: 'Test'

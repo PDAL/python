@@ -27,7 +27,7 @@ jobs:
         echo %PATH%
         set CC=cl.exe
         set CXX=cl.exe
-        python setup.py build
+        pip install -e .
       displayName: 'Build'
     - script: |
         ECHO ON
