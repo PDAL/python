@@ -47,5 +47,6 @@ jobs:
       source activate pdal
       which pytest
       pytest
+      pdal --drivers|grep py
     displayName: 'Test'
 

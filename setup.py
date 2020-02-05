@@ -142,11 +142,17 @@ else:
                           '/wd4250',
                           '/wd4800']
 
+SKIP_PDAL_PYTHON_EMBED = os.environ.get('SKIP_PDAL_PYTHON_EMBED', None)
 if not PDAL_PLUGIN_DIR:
     try:
         PDAL_PLUGIN_DIR = os.environ['PDAL_PLUGIN_DIR']
     except KeyError:
-        pass
+        if not SKIP_PDAL_PYTHON_EMBED:
+            message = 'The PDAL_PLUGIN_DIR environment variable ' \
+                      'must be defined to install filters.python ' \
+                      'and readers.numpy. Define the SKIP_PDAL_PYTHON_EMBED ' \
+                      'variable to skip them'
+            raise Exception(message)
 
 
 
@@ -208,10 +214,10 @@ include_dirs.append(PYTHON_INCLUDE_DIR)
 # # it for us
 if not SHARED:
     if not WINDOWS:
-        ldshared = ' '.join(sysconfig.get_config_var('LDSHARED').split(' ')[1:])
-        ldshared = ldshared.replace('-bundle','')
-        ldshared = [i for i in ldshared.split(' ') if i != '']
-        c.linker_so = sysconfig.get_config_var('LDSHARED').split(' ')
+        ldshared = sysconfig.get_config_var('LDSHARED').split(' ')
+        ldshared.remove('-bundle')
+        c.linker_so = ldshared
+        PYTHON_LIBRARY = '""';
 
 for d in include_dirs:
     c.add_include_dir(d)
@@ -219,6 +225,7 @@ for d in library_dirs:
     c.add_library_dir(d)
 for d in libraries:
     c.add_library(d)
+    c.add_library(PYTHON_LIBRARY_NAME)
 
 if WINDOWS:
     extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
