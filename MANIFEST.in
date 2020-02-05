@@ -4,3 +4,4 @@ include CHANGES.txt README.rst
 recursive-include test *.py
 recursive-include pdal *.pyx
 recursive-include pdal *.hpp
+recursive-include pdal *.cpp
