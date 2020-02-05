@@ -149,8 +149,6 @@ if not PDAL_PLUGIN_DIR:
         pass
 
 
-if platform.system() == 'Darwin':
-    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 if  PDAL_VERSION is not None \
     and PDAL_VERSION < Version('2.0.0'):
@@ -193,12 +191,13 @@ else:
                                   sysconfig.get_config_var('LDLIBRARY'))
 
 SHARED = sysconfig.get_config_var('Py_ENABLE_SHARED')
-print('SHARED: ', SHARED)
 
 library_dirs.append(PYTHON_LIB_DIR)
+if platform.system() == 'Darwin':
+    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
 
 # We don't link the Python library if we're not SHARED
-if not SHARED:
+if SHARED:
     libraries.append(PYTHON_LIBRARY_NAME)
 
 include_dirs.append(PYTHON_INCLUDE_DIR)
@@ -213,7 +212,6 @@ if not SHARED:
         ldshared = ldshared.replace('-bundle','')
         ldshared = [i for i in ldshared.split(' ') if i != '']
         c.linker_so = sysconfig.get_config_var('LDSHARED').split(' ')
-        print (c.linker_so)
 
 for d in include_dirs:
     c.add_include_dir(d)
@@ -222,10 +220,6 @@ for d in library_dirs:
 for d in libraries:
     c.add_library(d)
 
-#
-# if not WINDOWS:
-#     c.add_library('c++')
-# else:
 if WINDOWS:
     extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
 
