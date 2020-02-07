@@ -68,8 +68,6 @@ public:
     const Fields& fields() const;
     ArrayIter& iterator();
 
-    Array(Array&& foo)  = default;
-
 
 private:
     inline PyObject* buildNumpyDescription(PointViewPtr view) const;
