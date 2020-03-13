@@ -102,6 +102,8 @@ library_dirs = []
 libraries = []
 extra_link_args = []
 extra_compile_args = []
+extra_extension_compile_args = []
+extra_stage_compile_args = []
 
 base = 'build'
 plat_specifier = ".%s-%d.%d" % (get_platform(), *sys.version_info[:2])
@@ -138,9 +140,11 @@ else:
     libraries = ['pdalcpp','pdal_util','ws2_32']
     include_dirs.append(numpy.get_include())
     extra_compile_args = ['/DNOMINMAX',
-                          '-D_CRT_SECURE_NO_WARNINGS=1',
-                          '/wd4250',
-                          '/wd4800']
+                                '-D_CRT_SECURE_NO_WARNINGS=1',
+                                '/wd4250',
+                                '/wd4800']
+    extra_stage_compile_args+=['-DPDAL_DLL_EXPORT=1']
+
 
 SKIP_PDAL_PYTHON_EMBED = os.environ.get('SKIP_PDAL_PYTHON_EMBED', False)
 if not PDAL_DRIVER_PATH:
@@ -225,25 +229,23 @@ for d in libraries:
     c.add_library(d)
     c.add_library(PYTHON_LIBRARY_NAME)
 
-if WINDOWS:
-    extra_compile_args+=['-DPDAL_DLL_EXPORT=1']
-
 READER_FILENAME = format % ('pdal_plugin_reader_numpy', extension)
 FILTER_FILENAME = format % ('pdal_plugin_filter_python', extension)
 
 if PYTHON_LIBRARY:
     c.define_macro('PDAL_PYTHON_LIBRARY="%s"' % PYTHON_LIBRARY)
 
+extra_stage_compile_args += extra_compile_args
 plang = c.compile(glob.glob('./pdal/plang/*.cpp'),
                   extra_preargs = extra_compile_args)
 
 filter_objs = c.compile(glob.glob('./pdal/filters/*.cpp') ,
                         output_dir = temp_output_dir,
-                        extra_preargs = extra_compile_args)
+                        extra_preargs = extra_stage_compile_args)
 
 reader_objs = c.compile(glob.glob('./pdal/io/*.cpp') ,
                         output_dir = temp_output_dir,
-                        extra_preargs = extra_compile_args)
+                        extra_preargs = extra_stage_compile_args)
 
 filter_lib = c.link(library_type, filter_objs + plang,
                      output_filename = FILTER_FILENAME,
@@ -256,6 +258,7 @@ reader_lib = c.link(library_type, reader_objs + plang,
                      extra_preargs = extra_link_args)
 
 extensions = []
+extra_extension_compile_args += extra_compile_args
 extension_sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
 extension = Extension("*",
                        extension_sources,

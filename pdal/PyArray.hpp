@@ -39,6 +39,8 @@
 #include <pdal/PointView.hpp>
 #include <pdal/io/MemoryViewReader.hpp>
 
+#include <utility>
+
 namespace pdal
 {
 namespace python
@@ -66,6 +68,7 @@ public:
     const Fields& fields() const;
     ArrayIter& iterator();
 
+
 private:
     inline PyObject* buildNumpyDescription(PointViewPtr view) const;
 
@@ -75,7 +78,7 @@ private:
     Fields m_fields;
     bool m_rowMajor;
     Shape m_shape {};
-    std::vector<std::shared_ptr<ArrayIter>> m_iterators;
+    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
 };
 
 class ArrayIter
