@@ -4,17 +4,30 @@ jobs:
 - job: linux
   pool:
     vmImage: ubuntu-16.04
-  container:
-      image: continuumio/miniconda3:latest
-      options: --privileged
   timeoutInMinutes: 60
   steps:
+  - bash: echo "##vso[task.prependpath]$CONDA/bin"
+    displayName: Add conda to PATH
   - script: |
+      . /opt/conda/etc/profile.d/conda.sh
+      conda create --yes --quiet --name pdal
+      source activate pdal
+      conda config --set always_yes True --set show_channel_urls True
+      conda config --add channels conda-forge
+      conda config --set channel_priority strict
+      conda install --yes --quiet --name pdal -c conda-forge pdal pytest numpy compilers
+  - script: |
+      . /opt/conda/etc/profile.d/conda.sh
+      source activate pdal
       conda install -c conda-forge compilers pdal pytest numpy
     displayName: 'Dependencies'
   - script: |
+      . /opt/conda/etc/profile.d/conda.sh
+      source activate pdal
       pip3 install  .
     displayName: 'Build'
   - script: |
+      . /opt/conda/etc/profile.d/conda.sh
+      source activate pdal
       python3 -m pytest
     displayName: 'Test'
