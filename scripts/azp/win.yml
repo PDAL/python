@@ -18,7 +18,7 @@ jobs:
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
-        call conda install --yes --quiet --name pdal -c conda-forge  pdal numpy packaging cython pytest -y
+        call conda install --yes --quiet --name pdal -c conda-forge  pdal -y
       displayName: Install PDAL
     - script: |
         ECHO ON
@@ -27,7 +27,8 @@ jobs:
         echo %PATH%
         set CC=cl.exe
         set CXX=cl.exe
-        pip install -e .
+        # . --install-option="-DPdal_DIR=%CONDA_PREFIX%\Library\lib\cmake\PDAL"
+        pip install .
       displayName: 'Build'
     - script: |
         ECHO ON
