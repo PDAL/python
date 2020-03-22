@@ -10,11 +10,11 @@ jobs:
   timeoutInMinutes: 60
   steps:
   - script: |
-      sudo apt-get update -y; sudo apt-get install python3-pip -y
+      apt-get update -y; apt-get install python3-pip -y
       pip3 install numpy packaging cython pytest
     displayName: 'Dependencies'
   - script: |
-      pip3 install -e .
+      pip3 install  .
     displayName: 'Build'
   - script: |
       python3 -m pytest

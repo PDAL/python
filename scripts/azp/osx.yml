@@ -41,7 +41,7 @@ jobs:
     displayName: Configure OSX SDK
   - script: |
       source activate pdal
-      pip install -e .
+      pip install .
     displayName: 'Build'
   - script: |
       source activate pdal
