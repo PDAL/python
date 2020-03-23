@@ -38,8 +38,11 @@ target_include_directories( ${extension}
 target_link_libraries(${extension} ${PDAL_LIBRARIES})
 python_extension_module(${extension})
 
-
+if (MSVC)
+set(reader "libpdal_plugin_reader_numpy")
+else()
 set(reader "pdal_plugin_reader_numpy")
+endif()
 
 set(PLANG ./plang/Invocation.cpp
           ./plang/Environment.cpp
@@ -60,9 +63,16 @@ target_include_directories( ${reader}
 
 target_link_libraries(${reader} ${PDAL_LIBRARIES} ${PYTHON_LIBRARY})
 target_compile_definitions(${reader} PRIVATE
-    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}")
+    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
+if (MSVC)
+  target_link_libraries(${reader} ${PDAL_LIBRARIES} ws2_32)
+endif()
 
+if (MSVC)
+set(filter "libpdal_plugin_filter_python")
+else()
 set(filter "pdal_plugin_filter_python")
+endif()
 
 set(FILTER_SRC
     ./filters/PythonFilter.cpp
@@ -78,8 +88,12 @@ target_include_directories( ${filter}
     ${Python3_NumPy_INCLUDE_DIRS})
 
 target_link_libraries(${filter} ${PDAL_LIBRARIES} ${PYTHON_LIBRARY})
+if (MSVC)
+  target_link_libraries(${filter} ${PDAL_LIBRARIES} ws2_32)
+endif()
+
 target_compile_definitions(${filter} PRIVATE
-    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}")
+    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
 
 
 install(TARGETS ${extension} LIBRARY DESTINATION ${PROJECT_NAME})
