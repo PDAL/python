@@ -57,9 +57,14 @@ set(READER_SRC
 
 install(TARGETS ${extension} LIBRARY DESTINATION ${PROJECT_NAME})
 
-PDAL_PYTHON_ADD_PLUGIN(numpy_reader
+PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
     FILES  
-        ${READER_SRC}
+    ./io/NumpyReader.cpp
+    ./io/NumpyReader.hpp
+    ./plang/Invocation.cpp
+          ./plang/Environment.cpp
+          ./plang/Redirector.cpp
+          ./plang/Script.cpp
     LINK_WITH 
         ${PDAL_LIBRARIES} 
         ${PYTHON_LIBRARY}
@@ -69,49 +74,19 @@ PDAL_PYTHON_ADD_PLUGIN(numpy_reader
         ${Python3_NumPy_INCLUDE_DIRS}
     )
 
-##add_library(${reader} SHARED ${READER_SRC} )
-#target_include_directories( ${reader}
-#    PRIVATE
-#    .
-#    ${PDAL_INCLUDE_DIRS}
-#    ${Python3_INCLUDE_DIRS}
-#    ${Python3_NumPy_INCLUDE_DIRS})
-#
-#target_link_libraries(${reader} ${PDAL_LIBRARIES} ${PYTHON_LIBRARY})
-#target_compile_definitions(${reader} PRIVATE
-#    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
-#if (MSVC)
-#  target_link_libraries(${reader} ${PDAL_LIBRARIES} ws2_32)
-#endif()
-#
-#if (MSVC)
-#set(filter "libpdal_plugin_filter_python")
-#else()
-#set(filter "pdal_plugin_filter_python")
-#endif()
-#
-#set(FILTER_SRC
-#    ./filters/PythonFilter.cpp
-#    ./filters/PythonFilter.hpp
-#    ${PLANG})
-#
-#add_library(${filter} SHARED ${FILTER_SRC} )
-#target_include_directories( ${filter}
-#    PRIVATE
-#    .
-#    ${PDAL_INCLUDE_DIRS}
-#    ${Python3_INCLUDE_DIRS}
-#    ${Python3_NumPy_INCLUDE_DIRS})
-#
-#target_link_libraries(${filter} ${PDAL_LIBRARIES} ${PYTHON_LIBRARY})
-#if (MSVC)
-#  target_link_libraries(${filter} ${PDAL_LIBRARIES} ws2_32)
-#endif()
-#
-#target_compile_definitions(${filter} PRIVATE
-#    PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
-#
-#
-#install(TARGETS ${extension} LIBRARY DESTINATION ${PROJECT_NAME})
-#install(TARGETS ${reader} LIBRARY DESTINATION ${CMAKE_INSTALL_DIR})
-#install(TARGETS ${filter} LIBRARY DESTINATION ${CMAKE_INSTALL_DIR})
+PDAL_PYTHON_ADD_PLUGIN(python_filter reader python
+    FILES  
+    ./filters/PythonFilter.cpp
+    ./filters/PythonFilter.hpp
+    ./plang/Invocation.cpp
+          ./plang/Environment.cpp
+          ./plang/Redirector.cpp
+          ./plang/Script.cpp
+    LINK_WITH 
+        ${PDAL_LIBRARIES} 
+        ${PYTHON_LIBRARY}
+    SYSTEM_INCLUDES
+        ${PDAL_INCLUDE_DIRS}
+        ${Python3_INCLUDE_DIRS}
+        ${Python3_NumPy_INCLUDE_DIRS}
+    )

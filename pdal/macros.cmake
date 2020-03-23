@@ -1,4 +1,6 @@
-function(pdal_target_compile_settings target)
+# Taken and adapted from PDAL's cmake macros.cmake
+
+function(pdal_python_target_compile_settings target)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD_REQUIRED TRUE)
     target_compile_definitions(${target} PRIVATE
@@ -67,17 +69,16 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
         set(${_name} "pdal_plugin_${_type}_${_shortname}")
     endif()
 
-    if (WIN32)
-	    list(APPEND ${PDAL_PYTHON_ADD_PLUGIN_FILES} ${PDAL_TARGET_OBJECTS})
-    endif()
 
     add_library(${${_name}} SHARED ${PDAL_PYTHON_ADD_PLUGIN_FILES})
-    pdal_target_compile_settings(${${_name}})
+    pdal_python_target_compile_settings(${${_name}})
     target_include_directories(${${_name}} PRIVATE
         ${PROJECT_BINARY_DIR}/include
         ${PDAL_INCLUDE_DIR}
         ${PDAL_PYTHON_ADD_PLUGIN_INCLUDES}
     )
+    target_compile_definitions(${${_name}} PRIVATE
+     PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
     target_compile_definitions(${${_name}} PRIVATE PDAL_DLL_EXPORT)
     if (PDAL_PYTHON_ADD_PLUGIN_SYSTEM_INCLUDES)
         target_include_directories(${${_name}} SYSTEM PRIVATE
@@ -90,9 +91,6 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             ${PDAL_PYTHON_ADD_PLUGIN_LINK_WITH}
             ${WINSOCK_LIBRARY}
     )
-
-
-
     install(TARGETS ${${_name}}
         LIBRARY DESTINATION ${CMAKE_INSTALL_DIR}
         )
