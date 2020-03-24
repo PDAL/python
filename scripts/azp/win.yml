@@ -11,6 +11,7 @@ jobs:
 
     - script: |
         ECHO ON
+        call conda update -n base -c defaults conda
         call conda create --yes --quiet --name pdal
       displayName: Create conda environment
 
