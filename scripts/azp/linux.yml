@@ -10,19 +10,13 @@ jobs:
     displayName: Add conda to PATH
   - script: |
       conda create --yes --quiet --name pdal
-      conda config --set always_yes True --set show_channel_urls True
-      conda config --add channels conda-forge
-      conda config --set channel_priority strict
       conda install --yes --quiet --name pdal -c conda-forge pdal pytest numpy compilers
-  - script: |
-      activate pdal
-      conda install -c conda-forge compilers pdal pytest numpy
     displayName: 'Dependencies'
   - script: |
       activate pdal
-      pip3 install  .
+      pip install  .
     displayName: 'Build'
   - script: |
       activate pdal
-      python3 -m pytest
+      python -m pytest
     displayName: 'Test'

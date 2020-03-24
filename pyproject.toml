@@ -1,3 +1,2 @@
 [build-system]
-requires = ["setuptools", "wheel", "scikit-build", "cmake", "ninja", "pytest", "cython", "packaging","numpy"]
-build-backend = "setuptools.build_meta"
+requires = [ "wheel", "scikit-build", "cmake", "ninja", "pytest", "cython", "packaging","numpy"]
