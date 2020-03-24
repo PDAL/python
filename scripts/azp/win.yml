@@ -19,7 +19,7 @@ jobs:
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
-        call conda install --yes --quiet --name pdal -c conda-forge  compilers pdal pytest -y
+        call conda install --yes --quiet --name pdal -c conda-forge  compilers  ninja pdal pytest -y
       displayName: Install PDAL
     - script: |
         ECHO ON
