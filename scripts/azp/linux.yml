@@ -9,8 +9,7 @@ jobs:
   - bash: echo "##vso[task.prependpath]$CONDA/bin"
     displayName: Add conda to PATH
   - script: |
-      conda create --yes --quiet --name pdal
-      conda install --yes --quiet --name pdal -c conda-forge pdal pytest numpy compilers
+      conda create --yes --name pdal -c conda-forge pdal pytest numpy compilers
     displayName: 'Dependencies'
   - script: |
       activate pdal
