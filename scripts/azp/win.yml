@@ -29,6 +29,7 @@ jobs:
         call activate pdal
         echo %VSINSTALLDIR%
         echo %PATH%
+        set VCTargetsPath="C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160"
         pip install -e .
       displayName: 'Build'
     - script: |

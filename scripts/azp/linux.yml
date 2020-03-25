@@ -16,10 +16,11 @@ jobs:
       source activate pdal
       echo $CONDA_PREFIX
       echo $CONDA_DEFAULT_ENV
-      pip install  -e .
-    displayName: 'Build'
+      pip install  .
+      pdal --drivers
+    displayName: 'System install'
   - script: |
       source activate pdal
+      pip install  -e .
       py.test
-      pdal --drivers
-    displayName: 'Test'
+    displayName: 'Local test'
