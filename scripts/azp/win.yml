@@ -3,7 +3,7 @@ jobs:
 - job: win
 
   pool:
-    vmImage: windows-2019
+    vmImage: vs2017-win2016
   timeoutInMinutes: 360
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
