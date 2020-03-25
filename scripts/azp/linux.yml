@@ -21,4 +21,5 @@ jobs:
   - script: |
       source activate pdal
       py.test
+      pdal --drivers| grep 'python\|numpy'
     displayName: 'Test'
