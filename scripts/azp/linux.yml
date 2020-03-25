@@ -21,6 +21,5 @@ jobs:
   - script: |
       source activate pdal
       py.test
-      pdal --drivers| grep python
-      pdal --drivers| grep numpy
+      pdal --drivers
     displayName: 'Test'

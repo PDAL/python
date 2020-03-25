@@ -47,7 +47,6 @@ jobs:
       which pytest
       pytest
       pdal --version
-      pdal --drivers| grep python
-      pdal --drivers| grep numpy
+      pdal --drivers
     displayName: 'Test'
 
