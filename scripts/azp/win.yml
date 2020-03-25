@@ -8,7 +8,10 @@ jobs:
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       displayName: Add conda to PATH
-
+    - script: |
+        rmdir C:\strawberry /s /q
+      continueOnError: true
+      displayName: remove strawberryperl
     - script: |
         ECHO ON
         call conda update -n base -c defaults conda
@@ -24,6 +27,7 @@ jobs:
     - script: |
         ECHO ON
         call activate pdal
+        call "C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\vcvarsall.bat" x86_amd64
         pip install -e .
       displayName: 'Build'
     - script: |
