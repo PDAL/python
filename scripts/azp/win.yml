@@ -22,16 +22,14 @@ jobs:
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
-        call conda install --yes --quiet --name pdal -c conda-forge scikit-build ninja pdal pytest conda-build -y
+        call conda install --yes --quiet --name pdal -c conda-forge scikit-build numpy python ninja pdal pytest conda-build -y
       displayName: Install PDAL
     - script: |
         ECHO ON
         call activate pdal
-        ninja -h
-        #        set VCTargetsPath=C:\\Program Files (x86)\\MSBuild\\Microsoft.Cpp\\v4.0\\V140\\
-        # pip install -e .  --install-option="--skip-generator-test --generator=Ninja"
+        set CC=cl.exe
+        set CXX=cl.exe
         pip install -e .
-        # --install-option="-DPdal_DIR=%CONDA_PREFIX%\Library\lib\cmake\PDAL"
       displayName: 'Build'
     - script: |
         call activate pdal
