@@ -3,7 +3,7 @@ jobs:
 - job: win
 
   pool:
-    vmImage: vs2017-win2016
+    vmImage: windows-2019
   timeoutInMinutes: 360
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
@@ -28,8 +28,8 @@ jobs:
         ECHO ON
         call activate pdal
         ninja -h
-        set VCTargetsPath=C:\\Program Files (x86)\\MSBuild\\Microsoft.Cpp\\v4.0\\V140\\
-        #pip install -e .  --install-option="--skip-generator-test --generator=Ninja"
+        #        set VCTargetsPath=C:\\Program Files (x86)\\MSBuild\\Microsoft.Cpp\\v4.0\\V140\\
+        # pip install -e .  --install-option="--skip-generator-test --generator=Ninja"
         pip install -e .
         # --install-option="-DPdal_DIR=%CONDA_PREFIX%\Library\lib\cmake\PDAL"
       displayName: 'Build'
