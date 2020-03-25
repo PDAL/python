@@ -27,7 +27,10 @@ jobs:
     - script: |
         ECHO ON
         call activate pdal
-        call "C:\Program Files (x86)\Common Files\Microsoft\Visual C++ for Python\9.0\vcvarsall.bat" x86_amd64
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+        echo %PATH%
+        set CC=cl.exe
+        set CXX=cl.exe
         pip install -e .
       displayName: 'Build'
     - script: |
