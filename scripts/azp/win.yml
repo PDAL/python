@@ -22,12 +22,12 @@ jobs:
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
-        call conda install --yes --quiet --name pdal -c conda-forge scikit-build compilers  ninja pdal pytest -y
+        call conda install --yes --quiet --name pdal -c conda-forge scikit-build compilers  ninja pdal pytest cmake -y
       displayName: Install PDAL
     - script: |
         ECHO ON
         call activate pdal
-        pip install -e .  --install-option="-DCMAKE_GENERATOR=Ninja"
+        pip install -e .  --install-option="--skip-generator-test --generator=Ninja"
         # --install-option="-DPdal_DIR=%CONDA_PREFIX%\Library\lib\cmake\PDAL"
       displayName: 'Build'
     - script: |
