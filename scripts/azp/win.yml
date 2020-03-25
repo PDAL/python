@@ -24,7 +24,7 @@ jobs:
     - script: |
         ECHO ON
         call activate pdal
-        pip install .
+        pip install -e .
       displayName: 'Build'
     - script: |
         call activate pdal

@@ -21,6 +21,7 @@ jobs:
   - script: |
       ECHO ON
       source activate base
+      conda update -n base -c defaults conda -y
       conda create --yes --quiet --name pdal
     displayName: Create conda environment
 
@@ -39,7 +40,7 @@ jobs:
     displayName: Configure OSX SDK
   - script: |
       source activate pdal
-      pip install .
+      pip install -e .
     displayName: 'Build'
   - script: |
       source activate pdal
