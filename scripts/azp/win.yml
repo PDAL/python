@@ -28,8 +28,7 @@ jobs:
         ECHO ON
         call activate pdal
         ninja -h
-        msbuild /verbosity:diag
-        set VCTargetsPath="C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\""
+        set VCTargetsPath=C:\\Program Files (x86)\\MSBuild\\Microsoft.Cpp\\v4.0\\V140\\
         #pip install -e .  --install-option="--skip-generator-test --generator=Ninja"
         pip install -e .
         # --install-option="-DPdal_DIR=%CONDA_PREFIX%\Library\lib\cmake\PDAL"
