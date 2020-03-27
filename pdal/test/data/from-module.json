@@ -1,0 +1,11 @@
+{
+  "pipeline":[
+    "./1.2-with-color.las",
+    {
+      "type": "filters.python",
+      "script": "./test1.py",
+      "module": "anything",
+      "function": "fff"
+    }
+  ]
+}

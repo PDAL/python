@@ -59,7 +59,7 @@ endfunction()
 macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
     set(options)
     set(oneValueArgs)
-    set(multiValueArgs FILES LINK_WITH INCLUDES SYSTEM_INCLUDES)
+    set(multiValueArgs FILES LINK_WITH INCLUDES SYSTEM_INCLUDES COMPILE_OPTIONS)
     cmake_parse_arguments(PDAL_PYTHON_ADD_PLUGIN "${options}" "${oneValueArgs}"
         "${multiValueArgs}" ${ARGN})
     if(WIN32)
@@ -77,6 +77,7 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
         ${PDAL_INCLUDE_DIR}
         ${PDAL_PYTHON_ADD_PLUGIN_INCLUDES}
     )
+    target_link_options(${${_name}} BEFORE PRIVATE ${PDAL_PYTHON_ADD_PLUGIN_COMPILE_OPTIONS})
     target_compile_definitions(${${_name}} PRIVATE
      PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}" PDAL_DLL_EXPORT)
     target_compile_definitions(${${_name}} PRIVATE PDAL_DLL_EXPORT)
@@ -86,8 +87,6 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
     endif()
     target_link_libraries(${${_name}}
         PRIVATE
-            ${PDAL_BASE_LIB_NAME}
-            ${PDAL_UTIL_LIB_NAME}
             ${PDAL_PYTHON_ADD_PLUGIN_LINK_WITH}
             ${WINSOCK_LIBRARY}
     )
@@ -99,3 +98,46 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             INSTALL_NAME_DIR "@rpath")
     endif()
 endmacro(PDAL_PYTHON_ADD_PLUGIN)
+
+
+macro(PDAL_PYTHON_ADD_TEST _name)
+    set(options)
+    set(oneValueArgs)
+    set(multiValueArgs FILES LINK_WITH INCLUDES SYSTEM_INCLUDES)
+    cmake_parse_arguments(PDAL_PYTHON_ADD_TEST "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    if (WIN32)
+        set(WINSOCK_LIBRARY ws2_32)
+    endif()
+    add_executable(${_name} ${PDAL_PYTHON_ADD_TEST_FILES})
+        
+    pdal_python_target_compile_settings(${_name})
+    target_include_directories(${_name} PRIVATE
+        ${PDAL_PYTHON_ADD_TEST_INCLUDES})
+    if (PDAL_PYTHON_ADD_TEST_SYSTEM_INCLUDES)
+        target_include_directories(${_name} SYSTEM PRIVATE
+            ${PDAL_PYTHON_ADD_TEST_SYSTEM_INCLUDES})
+    endif()
+    set_property(TARGET ${_name} PROPERTY FOLDER "Tests")
+    target_link_libraries(${_name}
+        PRIVATE
+            ${PDAL_PYTHON_ADD_TEST_LINK_WITH}
+            gtest
+            ${WINSOCK_LIBRARY}
+    )
+    target_compile_definitions(${_name} PRIVATE
+        PDAL_PYTHON_LIBRARY="${PYTHON_LIBRARY}")
+    add_test(NAME ${_name}
+        COMMAND
+            "${PROJECT_BINARY_DIR}/bin/${_name}"
+        WORKING_DIRECTORY
+            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/..")
+    # Ensure plugins are loaded from build dir
+    # https://github.com/PDAL/PDAL/issues/840
+#    if (WIN32)
+#        set_property(TEST ${_name} PROPERTY ENVIRONMENT
+#            "PDAL_DRIVER_PATH=${PROJECT_BINARY_DIR}/bin")
+#    else()
+#        set_property(TEST ${_name} PROPERTY ENVIRONMENT
+#            "PDAL_DRIVER_PATH=${PROJECT_BINARY_DIR}/lib")
+#    endif()
+endmacro(PDAL_PYTHON_ADD_TEST)

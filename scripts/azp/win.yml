@@ -35,6 +35,7 @@ jobs:
     - script: |
         call activate pdal
         py.test
+        pdal info --drivers
       displayName: 'Test'
 
 
