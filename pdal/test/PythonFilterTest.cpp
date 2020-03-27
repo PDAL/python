@@ -38,6 +38,7 @@
 #include <pdal/StageFactory.hpp>
 #include <pdal/io/FauxReader.hpp>
 #include <pdal/filters/StatsFilter.hpp>
+#include <pdal/util/FileUtils.hpp>
 
 #include "../plang/Invocation.hpp"
 #include "../plang/Environment.hpp"
