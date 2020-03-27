@@ -24,7 +24,8 @@ RUN cd pdal-python \
 ENV PDAL_DRIVER_PATH=/pdal-python/_skbuild/linux-x86_64-3.8/cmake-install/lib/
 
 
-
+# docker build -t pdal-python
+# docker run -t -i --cap-add=SYS_PTRACE --security-opt seccomp=unconfined pdal-python
 #gdb --args /pdal-python/_skbuild/linux-x86_64-3.8/cmake-build/pdal_filters_python_test
 
 
