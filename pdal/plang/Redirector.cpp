@@ -171,7 +171,7 @@ PyObject* Redirector::init()
 
 void Redirector::set_stdout(std::ostream* ostr)
 {
-    stdout_write_type writeFunc = [ostr](std::string msg) { *ostr << msg; };
+    stdout_write_type writeFunc = [ostr](std::string msg) { std::cerr << "Ostr = " << ostr << "!\n"; *ostr << msg; };
     stdout_flush_type flushFunc = [ostr]{ ostr->flush(); };
 
     this->set_stdout(writeFunc, flushFunc);
