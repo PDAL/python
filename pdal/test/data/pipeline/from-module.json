@@ -1,6 +1,6 @@
 {
   "pipeline":[
-    "/Users/acbell/pdal/test/data/las/1.2-with-color.las",
+    "./pdal/test/data/1.2-with-color.las",
     {
       "type": "filters.python",
       "script": "/Users/acbell/pdal/test/data/plang/test1.py",
