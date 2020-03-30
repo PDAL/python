@@ -139,7 +139,7 @@ TEST_F(PythonFilterTest, pipelineJSON)
     PipelineManager manager;
 
     manager.readPipeline(
-        Support::configuredpath("programmable-update-y-dims.json"));
+        Support::datapath("programmable-update-y-dims.json"));
     manager.execute();
     PointViewSet viewSet = manager.views();
     EXPECT_EQ(viewSet.size(), 1u);
@@ -570,7 +570,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_PipelineJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::configuredpath("from-module.json"));
+    mgr.readPipeline(Support::datapath("from-module.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
@@ -579,7 +579,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_EmbedJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::configuredpath("predicate-embed.json"));
+    mgr.readPipeline(Support::datapath("predicate-embed.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
@@ -1119,7 +1119,7 @@ static void run_pipeline(std::string const& pipeline)
     const std::string cmd = "pdal pipeline";
 
     std::string output;
-    std::string file(Support::configuredpath(pipeline));
+    std::string file(Support::datapath(pipeline));
     int stat = pdal::Utils::run_shell_command(cmd + " " + file, output);
     EXPECT_EQ(0, stat);
     if (stat)
