@@ -19,7 +19,6 @@ jobs:
       displayName: Create conda environment
 
     - script: |
-        failOnStderr: true
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
@@ -35,10 +34,11 @@ jobs:
         pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build\Release
-        .\%SKPATH%\cmake-build\Release\pdal_filters_python_test
-        .\%SKPATH%\cmake-build\Release\pdal_io_numpy_test
+        %SKPATH%\cmake-build\Release\pdal_filters_python_test
+        %SKPATH%\cmake-build\Release\pdal_io_numpy_test
         pdal --version
         pdal --drivers
+      failOnStderr: true
       displayName: 'Test'
 
 
