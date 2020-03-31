@@ -1,5 +1,7 @@
 pdal/libpdalpython.cpp
 *.pyc
+_skbuild/*
+.vscode/*
 __pycache__
 build/*
 PDAL.egg-info/*
