@@ -30,14 +30,7 @@ jobs:
       source activate pdal
       conda install --yes --quiet --name pdal -c conda-forge scikit-build pdal pytest numpy conda-forge-ci-setup=2 -y
     displayName: Install PDAL
-  - script: |
-      source activate pdal
-      export CI=azure
-      source run_conda_forge_build_setup
-    env: {
-      OSX_FORCE_SDK_DOWNLOAD: "1"
-    }
-    displayName: Configure OSX SDK
+
   - script: |
       source activate pdal
       which pytest
