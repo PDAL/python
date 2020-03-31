@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2019, Hobu Inc. (info@hobu.co)
+* Copyright (c) 2011, Michael P. Gerlek (mpg@flaxen.com)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. nor the
+*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -32,77 +32,31 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
-#pragma once
+#ifndef UNITTEST_TESTCONFIG_INCLUDED
+#define UNITTEST_TESTCONFIG_INCLUDED
 
-#include <numpy/ndarraytypes.h>
+#define UNITTEST_TESTCONFIG_DATA_PATH "./pdal/test/data/"
+#define UNITTEST_TESTCONFIG_CONFIGURED_PATH "./pdal/test/data/"
+#define UNITTEST_TESTCONFIG_BINARY_PATH ""
+#define UNITTEST_TESTCONFIG_OCI_CONNECTION ""
 
-#include <pdal/PointView.hpp>
-#include <pdal/io/MemoryViewReader.hpp>
+#include <string>
 
-#include <utility>
-
-namespace pdal
+namespace TestConfig 
 {
-namespace python
-{
 
-class ArrayIter;
+inline std::string dataPath()
+    { return UNITTEST_TESTCONFIG_DATA_PATH; }
 
-class PDAL_DLL Array
-{
-public:
-    using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryViewReader::Field>;
+inline std::string configuredPath()
+    { return UNITTEST_TESTCONFIG_CONFIGURED_PATH; }
 
-    // Create an array for reading data from PDAL.
-    Array();
+inline std::string binaryPath()
+    { return UNITTEST_TESTCONFIG_BINARY_PATH; }
 
-    // Create an array for writing data to PDAL.
-    Array(PyArrayObject* array);
+inline std::string oracleConnection()
+    { return UNITTEST_TESTCONFIG_OCI_CONNECTION; }
 
-    ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
-    ArrayIter& iterator();
+}
 
-
-private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-
-    PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
-    Fields m_fields;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
-};
-
-class ArrayIter
-{
-public:
-    ArrayIter(const ArrayIter&) = delete;
-    ArrayIter() = delete;
-
-    ArrayIter(Array& array);
-    ~ArrayIter();
-
-    ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
-
-private:
-    NpyIter *m_iter;
-    NpyIter_IterNextFunc *m_iterNext;
-    char **m_data;
-    npy_intp *m_size;
-    npy_intp *m_stride;
-    bool m_done;
-};
-
-} // namespace python
-} // namespace pdal
-
+#endif

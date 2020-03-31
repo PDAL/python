@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2019, Hobu Inc. (info@hobu.co)
+* Copyright (c) 2011, Michael P. Gerlek (mpg@flaxen.com)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. nor the
+*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -34,75 +34,39 @@
 
 #pragma once
 
-#include <numpy/ndarraytypes.h>
+#include <pdal/Filter.hpp>
+#include <pdal/JsonFwd.hpp>
 
-#include <pdal/PointView.hpp>
-#include <pdal/io/MemoryViewReader.hpp>
+#include "../plang/Invocation.hpp"
 
-#include <utility>
 
 namespace pdal
 {
-namespace python
-{
 
-class ArrayIter;
-
-class PDAL_DLL Array
+class PDAL_DLL PythonFilter : public Filter
 {
 public:
-    using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryViewReader::Field>;
+    PythonFilter();
+    virtual ~PythonFilter();
 
-    // Create an array for reading data from PDAL.
-    Array();
-
-    // Create an array for writing data to PDAL.
-    Array(PyArrayObject* array);
-
-    ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
-    ArrayIter& iterator();
-
+    std::string getName() const;
 
 private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
+    PythonFilter& operator=(const PythonFilter&) = delete;
+    PythonFilter(const PythonFilter&) = delete;
 
+    virtual void addArgs(ProgramArgs& args);
+    virtual void addDimensions(PointLayoutPtr layout);
+    virtual void prepared(PointTableRef table);
+    virtual void ready(PointTableRef table);
+    virtual PointViewSet run(PointViewPtr view);
+    virtual void done(PointTableRef table);
 
-    PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
-    Fields m_fields;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
+    std::unique_ptr<plang::Script> m_script;
+    std::unique_ptr<plang::Invocation> m_pythonMethod;
+
+    struct Args;
+    std::unique_ptr<Args> m_args;
 };
 
-class ArrayIter
-{
-public:
-    ArrayIter(const ArrayIter&) = delete;
-    ArrayIter() = delete;
-
-    ArrayIter(Array& array);
-    ~ArrayIter();
-
-    ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
-
-private:
-    NpyIter *m_iter;
-    NpyIter_IterNextFunc *m_iterNext;
-    char **m_data;
-    npy_intp *m_size;
-    npy_intp *m_stride;
-    bool m_done;
-};
-
-} // namespace python
 } // namespace pdal
-

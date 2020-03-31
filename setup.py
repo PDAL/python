@@ -16,37 +16,11 @@ import os
 import platform
 import sys
 import numpy
-from Cython.Build import cythonize
-
-USE_CYTHON = True
-try:
-    from Cython.Build import cythonize
-except ImportError:
-    USE_CYTHON = False
-
-ext = '.pyx' if USE_CYTHON else '.cpp'
-
-from setuptools import setup
+import glob
+import sysconfig
+from skbuild import setup
 from packaging.version import Version
 
-
-logging.basicConfig()
-log = logging.getLogger(__file__)
-
-# python -W all setup.py ...
-if 'all' in sys.warnoptions:
-    log.level = logging.DEBUG
-
-
-# Second try: use PDAL_CONFIG environment variable
-if 'PDAL_CONFIG' in os.environ:
-    pdal_config = os.environ['PDAL_CONFIG']
-    log.debug('pdal_config: %s', pdal_config)
-else:
-    pdal_config = 'pdal-config'
-    # in case of windows...
-    if os.name in ['nt']:
-        pdal_config += '.bat'
 
 
 def get_pdal_config(option):
@@ -55,7 +29,7 @@ def get_pdal_config(option):
     This code was adapted from Shapely's geos-config stuff
     '''
     import subprocess
-    pdal_config = globals().get('pdal_config')
+    pdal_config = os.environ.get('PDAL_CONFIG','pdal-config')
     if not pdal_config or not isinstance(pdal_config, str):
         raise OSError('Path to pdal-config is not set')
     try:
@@ -72,7 +46,6 @@ def get_pdal_config(option):
         result = stdout.decode('ascii').strip()
     else:
         result = stdout.strip()
-    log.debug('%s %s: %r', pdal_config, option, result)
     return result
 
 # Get the version from the pdal module
@@ -84,7 +57,7 @@ with open('pdal/__init__.py', 'r') as fp:
             break
 
 if not module_version:
-    raise ValueError("Could not determine PDAL's version")
+    raise ValueError("Could not determine Python package version")
 
 # Handle UTF-8 encoding of certain text files.
 open_kwds = {}
@@ -99,95 +72,6 @@ with open('CHANGES.txt', 'r', **open_kwds) as fp:
 
 long_description = readme + '\n\n' +  changes
 
-include_dirs = []
-library_dirs = []
-libraries = []
-extra_link_args = []
-extra_compile_args = []
-
-from setuptools.extension import Extension as DistutilsExtension
-
-PDALVERSION = None
-if pdal_config and "clean" not in sys.argv:
-    # Collect other options from PDAL
-    try:
-
-        # Running against different major versions is going to fail.
-        # Minor versions might too, depending on numpy.
-        for item in get_pdal_config('--python-version').split():
-            if item:
-                # 2.7.4 or 3.5.2
-                built_version = item.split('.')
-                built_major = int(built_version[0])
-                running_major = int(sys.version_info[0])
-                if built_major != running_major:
-                    message = "Version mismatch. PDAL Python support was compiled against version %d.x but setup is running version is %d.x. "
-                    raise Exception(message % (built_major, running_major))
-
-    # older versions of pdal-config do not include --python-version switch
-    except ValueError:
-        pass
-    PDALVERSION = Version(get_pdal_config('--version'))
-
-    separator = ':'
-    if os.name in ['nt']:
-        separator = ';'
-
-    for item in get_pdal_config('--includes').split():
-        if item.startswith("-I"):
-            include_dirs.extend(item[2:].split(separator))
-
-    for item in get_pdal_config('--libs').split():
-        if item.startswith("-L"):
-            library_dirs.extend(item[2:].split(separator))
-        elif item.startswith("-l"):
-            libraries.append(item[2:])
-
-include_dirs.append(numpy.get_include())
-
-if platform.system() == 'Darwin':
-    extra_link_args.append('-Wl,-rpath,'+library_dirs[0])
-
-DEBUG=True
-if DEBUG:
-    if os.name != 'nt':
-        extra_compile_args += ['-g','-O0']
-
-if PDALVERSION is not None and PDALVERSION < Version('2.0.0'):
-    raise Exception("PDAL version '%s' is not compatible with PDAL Python library version '%s'"%(PDALVERSION, module_version))
-
-
-if os.name in ['nt']:
-    if os.environ.get('OSGEO4W_ROOT'):
-        library_dirs = ['c:/%s/lib' % os.environ.get('OSGEO4W_ROOT')]
-    if os.environ.get('CONDA_PREFIX'):
-        prefix=os.path.expandvars('%CONDA_PREFIX%')
-        library_dirs = ['%s\Library\lib' % prefix]
-
-    libraries = ['pdalcpp','pdal_util','ws2_32']
-
-    extra_compile_args = ['/DNOMINMAX',]
-
-if 'linux' in sys.platform or 'linux2' in sys.platform or 'darwin' in sys.platform:
-    extra_compile_args += ['-std=c++11', '-Wno-unknown-pragmas']
-    if 'GCC' in sys.version:
-        # try to ensure the ABI for Conda GCC 4.8
-        if '4.8' in sys.version:
-            extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=0']
-
-
-
-sources=['pdal/libpdalpython'+ext, "pdal/PyPipeline.cpp", "pdal/PyArray.cpp" ]
-extensions = [DistutilsExtension("*",
-                                   sources,
-                                   include_dirs=include_dirs,
-                                   library_dirs=library_dirs,
-                                   extra_compile_args=extra_compile_args,
-                                   libraries=libraries,
-                                   extra_link_args=extra_link_args,)]
-if USE_CYTHON and "clean" not in sys.argv:
-    from Cython.Build import cythonize
-    extensions= cythonize(extensions, compiler_directives={'language_level':3})
 
 setup_args = dict(
     name                = 'PDAL',
@@ -200,9 +84,10 @@ setup_args = dict(
     author_email        = 'howard@hobu.co',
     maintainer          = 'Howard Butler',
     maintainer_email    = 'howard@hobu.co',
-    url                 = 'http://pdal.io',
+    url                 = 'https://pdal.io',
     long_description    = long_description,
     test_suite          = 'test',
+    cmake_source_dir    = 'pdal',
     packages            = [
         'pdal',
     ],
@@ -212,12 +97,12 @@ setup_args = dict(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering :: GIS',
     ],
-    cmdclass           = {},
-    install_requires   = ['numpy', 'packaging', 'cython'],
+
 )
-setup(ext_modules=extensions, **setup_args)
+output = setup(**setup_args)
 

@@ -45,7 +45,7 @@ typedef struct Dimension
     std::string name;
     std::string description;
     std::string type;
-    int size;
+    size_t size;
     std::string units;
 } Dimension;
 

@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2019, Hobu Inc. (info@hobu.co)
+* Copyright (c) 2011, Michael P. Gerlek (mpg@flaxen.com)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. nor the
+*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -32,77 +32,35 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
-#pragma once
+#include "../plang/Script.hpp"
 
-#include <numpy/ndarraytypes.h>
-
-#include <pdal/PointView.hpp>
-#include <pdal/io/MemoryViewReader.hpp>
-
-#include <utility>
+#pragma warning(disable: 4127) // conditional expression is constant
 
 namespace pdal
 {
-namespace python
+namespace plang
 {
 
-class ArrayIter;
-
-class PDAL_DLL Array
+Script::Script( const std::string& source,
+                const std::string& module,
+                const std::string& function)
+    : m_source(source)
+    , m_module(module)
+    , m_function(function)
 {
-public:
-    using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryViewReader::Field>;
-
-    // Create an array for reading data from PDAL.
-    Array();
-
-    // Create an array for writing data to PDAL.
-    Array(PyArrayObject* array);
-
-    ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
-    ArrayIter& iterator();
+}
 
 
-private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-
-    PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
-    Fields m_fields;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
-};
-
-class ArrayIter
+std::ostream& operator << (std::ostream& os, Script const& script)
 {
-public:
-    ArrayIter(const ArrayIter&) = delete;
-    ArrayIter() = delete;
+    os << "source=[" << strlen(script.source()) << " bytes], ";
+    os << "module=" << script.module() << ", ";
+    os << "function=" << script.function();
+    os << std::endl;
 
-    ArrayIter(Array& array);
-    ~ArrayIter();
+    return os;
+}
 
-    ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
-
-private:
-    NpyIter *m_iter;
-    NpyIter_IterNextFunc *m_iterNext;
-    char **m_data;
-    npy_intp *m_size;
-    npy_intp *m_stride;
-    bool m_done;
-};
-
-} // namespace python
-} // namespace pdal
+} //namespace plang
+} //namespace pdal
 

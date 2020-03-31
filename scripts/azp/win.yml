@@ -8,9 +8,13 @@ jobs:
   steps:
     - powershell: Write-Host "##vso[task.prependpath]$env:CONDA\Scripts"
       displayName: Add conda to PATH
-
+    - script: |
+        rmdir C:\strawberry /s /q
+      continueOnError: true
+      displayName: remove strawberryperl
     - script: |
         ECHO ON
+        call conda update -n base -c defaults conda
         call conda create --yes --quiet --name pdal
       displayName: Create conda environment
 
@@ -18,23 +22,24 @@ jobs:
         ECHO ON
         call activate pdal
         call conda config --set always_yes True --set show_channel_urls True
-        call conda install --yes --quiet --name pdal -c conda-forge  pdal numpy packaging cython -y
+        call conda install --yes --quiet --name pdal -c conda-forge scikit-build numpy python=3.8 ninja pdal pytest conda-build -y
       displayName: Install PDAL
     - script: |
         ECHO ON
         call activate pdal
         call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
-        echo %PATH%
         set CC=cl.exe
         set CXX=cl.exe
-        python setup.py build
-      displayName: 'Build'
-    - script: |
-        ECHO ON
-        call activate pdal
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+        pip install -e .
+        pytest
+        for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
+        set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
         set PYTHONHOME=%CONDA_PREFIX%
-        python setup.py test
-      displayName: 'Test'
+        %SKPATH%\cmake-build\pdal_filters_python_test.exe
+        %SKPATH%\cmake-build\pdal_io_numpy_test.exe
+        pdal --version
+        pdal --drivers
+      failOnStderr: true
+      displayName: 'Local test'
 
 

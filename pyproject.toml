@@ -1,0 +1,2 @@
+[build-system]
+requires = [ "wheel", "scikit-build", "cmake", "ninja", "pytest", "cython", "packaging","numpy"]

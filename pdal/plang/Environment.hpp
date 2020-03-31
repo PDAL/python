@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2019, Hobu Inc. (info@hobu.co)
+* Copyright (c) 2012, Michael P. Gerlek (mpg@flaxen.com)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. nor the
+*     * Neither the name of Hobu, Inc. or Flaxen Consulting LLC nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -34,75 +34,52 @@
 
 #pragma once
 
-#include <numpy/ndarraytypes.h>
+#include <Python.h>
+#undef toupper
+#undef tolower
+#undef isspace
 
-#include <pdal/PointView.hpp>
-#include <pdal/io/MemoryViewReader.hpp>
+#include <pdal/pdal_internal.hpp>
+#include <pdal/Metadata.hpp>
+#include <pdal/Dimension.hpp>
 
-#include <utility>
+#include "Redirector.hpp"
+#include "Script.hpp"
 
 namespace pdal
 {
-namespace python
+namespace plang
 {
 
-class ArrayIter;
+PDAL_DLL PyObject *fromMetadata(MetadataNode m);
+PDAL_DLL void addMetadata(PyObject *list, MetadataNode m);
 
-class PDAL_DLL Array
-{
-public:
-    using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryViewReader::Field>;
+PDAL_DLL std::string getTraceback();
 
-    // Create an array for reading data from PDAL.
-    Array();
+class Environment;
+typedef Environment *EnvironmentPtr;
 
-    // Create an array for writing data to PDAL.
-    Array(PyArrayObject* array);
-
-    ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
-    ArrayIter& iterator();
-
-
-private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-
-    PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
-    Fields m_fields;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
-};
-
-class ArrayIter
+class PDAL_DLL Environment
 {
 public:
-    ArrayIter(const ArrayIter&) = delete;
-    ArrayIter() = delete;
+    Environment();
+    ~Environment();
 
-    ArrayIter(Array& array);
-    ~ArrayIter();
+    // these just forward into the Redirector class
+    void set_stdout(std::ostream* ostr);
+    void reset_stdout();
 
-    ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
+    void execute(Script& script) {};
+
+    static EnvironmentPtr get();
+
+    static int getPythonDataType(Dimension::Type t);
+    static pdal::Dimension::Type getPDALDataType(int t);
 
 private:
-    NpyIter *m_iter;
-    NpyIter_IterNextFunc *m_iterNext;
-    char **m_data;
-    npy_intp *m_size;
-    npy_intp *m_stride;
-    bool m_done;
+    Redirector m_redirector;
 };
 
-} // namespace python
+} // namespace plang
 } // namespace pdal
 

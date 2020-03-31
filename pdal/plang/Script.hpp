@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2019, Hobu Inc. (info@hobu.co)
+* Copyright (c) 2011, Michael P. Gerlek (mpg@flaxen.com)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. nor the
+*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -34,75 +34,45 @@
 
 #pragma once
 
-#include <numpy/ndarraytypes.h>
+#include <pdal/pdal_internal.hpp>
 
-#include <pdal/PointView.hpp>
-#include <pdal/io/MemoryViewReader.hpp>
-
-#include <utility>
+#include <pdal/Options.hpp>
 
 namespace pdal
 {
-namespace python
+namespace plang
 {
 
-class ArrayIter;
-
-class PDAL_DLL Array
+class PDAL_DLL Script
 {
 public:
-    using Shape = std::array<size_t, 3>;
-    using Fields = std::vector<MemoryViewReader::Field>;
+    Script(const std::string& sourceCode, const std::string& moduleName,
+        const std::string& functionName);
 
-    // Create an array for reading data from PDAL.
-    Array();
-
-    // Create an array for writing data to PDAL.
-    Array(PyArrayObject* array);
-
-    ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
-    ArrayIter& iterator();
-
-
-private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-
-    PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
-    Fields m_fields;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
-};
-
-class ArrayIter
-{
-public:
-    ArrayIter(const ArrayIter&) = delete;
-    ArrayIter() = delete;
-
-    ArrayIter(Array& array);
-    ~ArrayIter();
-
-    ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
+    // the Py functions want char* or const char* things, not std::string things
+    const char* source() const
+    {
+        return m_source.c_str();
+    }
+    const char* module() const
+    {
+        return m_module.c_str();
+    }
+    const char* function() const
+    {
+        return m_function.c_str();
+    }
 
 private:
-    NpyIter *m_iter;
-    NpyIter_IterNextFunc *m_iterNext;
-    char **m_data;
-    npy_intp *m_size;
-    npy_intp *m_stride;
-    bool m_done;
+    std::string m_source;
+    std::string m_module;
+    std::string m_function;
+
+    Script& operator=(Script const& rhs); // nope
 };
 
-} // namespace python
+PDAL_DLL std::ostream& operator<<(std::ostream& os, Script const& d);
+
+} // namespace plang
 } // namespace pdal
 
