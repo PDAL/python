@@ -36,7 +36,7 @@ jobs:
       which pytest
       pip install -e .
       pytest
-      SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")
+      SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
       export PDAL_DRIVER_PATH=$SKPATH
       ls
       ls _skbuild
