@@ -145,6 +145,10 @@ PDAL_PYTHON_ADD_TEST(pdal_io_numpy_test
     FILES
         ./test/NumpyReaderTest.cpp
         ./test/Support.cpp
+        ./plang/Invocation.cpp
+        ./plang/Environment.cpp
+        ./plang/Redirector.cpp
+        ./plang/Script.cpp
     LINK_WITH
         ${numpy_reader}
         ${Python3_LIBRARIES}
@@ -160,8 +164,10 @@ PDAL_PYTHON_ADD_TEST(pdal_filters_python_test
     FILES
         ./test/PythonFilterTest.cpp
         ./test/Support.cpp
-                ./plang/Invocation.cpp
+        ./plang/Invocation.cpp
         ./plang/Environment.cpp
+        ./plang/Redirector.cpp
+        ./plang/Script.cpp
     LINK_WITH
         ${python_filter}
         ${Python3_LIBRARIES}
