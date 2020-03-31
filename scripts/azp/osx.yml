@@ -40,13 +40,9 @@ jobs:
     displayName: Configure OSX SDK
   - script: |
       source activate pdal
-      pip install  .
-    displayName: 'System install'
-  - script: |
-      source activate pdal
       which pytest
       pytest
-      pip install  -e .
+      pip install .
       SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
       export PDAL_DRIVER_PATH=$SKPATH
       $SKPATH/pdal_filters_python_test
