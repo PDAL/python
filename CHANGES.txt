@@ -1,6 +1,20 @@
 Changes
 ================================================================================
 
+2.3.0
+--------------------------------------------------------------------------------
+
+* PDAL Python support 2.3.0 requires PDAL 2.1+. Older PDAL base libraries likely
+will not work.
+
+* Python support built using scikit-build
+
+* readers.numpy and filters.python are installed along with the extension.
+
+* Pipeline can take in a list of arrays that are passed to readers.numpy
+
+* readers.numpy now supports functions that return arrays. See https://pdal.io/stages/readers.numpy.html for more detail.
+
 2.0.0
 --------------------------------------------------------------------------------
 
