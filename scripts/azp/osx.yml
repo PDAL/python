@@ -41,7 +41,7 @@ jobs:
   - script: |
       source activate pdal
       which pytest
-      pip install .
+      pip install -e .
       pytest
       SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
       export PDAL_DRIVER_PATH=$SKPATH
