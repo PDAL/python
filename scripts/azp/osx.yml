@@ -28,25 +28,19 @@ jobs:
   - script: |
       ECHO ON
       source activate pdal
-      conda install --yes --quiet --name pdal -c conda-forge  pdal pytest numpy conda-forge-ci-setup=2 -y
+      conda install --yes --quiet --name pdal -c conda-forge scikit-build pdal pytest numpy conda-forge-ci-setup=2 -y
     displayName: Install PDAL
-  - script: |
-      source activate pdal
-      export CI=azure
-      source run_conda_forge_build_setup
-    env: {
-      OSX_FORCE_SDK_DOWNLOAD: "1"
-    }
-    displayName: Configure OSX SDK
+
   - script: |
       source activate pdal
       pip install -e .
-    displayName: 'Build'
-  - script: |
-      source activate pdal
-      which pytest
       pytest
+      SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
+      export PDAL_DRIVER_PATH=$SKPATH
+      $SKPATH/pdal_filters_python_test
+      $SKPATH/pdal_io_numpy_test
       pdal --version
       pdal --drivers
-    displayName: 'Test'
+    failOnStderr: true
+    displayName: 'Local test'
 

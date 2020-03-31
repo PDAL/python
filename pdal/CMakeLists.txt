@@ -7,13 +7,13 @@ include(${PROJECT_SOURCE_DIR}/macros.cmake NO_POLICY_SCOPE)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 
 enable_testing()
 
 # Python-finding settings
 set(Python3_FIND_STRATEGY "LOCATION")
-set(Python3_FIND_REGISTRY "LAST")	  
+set(Python3_FIND_REGISTRY "LAST")
 set(Python3_FIND_FRAMEWORK "LAST")
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 
@@ -33,24 +33,24 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-execute_process(
-    COMMAND
-    ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_config_var('LDSHARED').split(' ', 1)[1])"
-    OUTPUT_VARIABLE PYTHON_LDSHARED
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+#execute_process(
+#    COMMAND
+#    ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_config_var('LDSHARED').split(' ', 1)[1])"
+#    OUTPUT_VARIABLE PYTHON_LDSHARED
+#    OUTPUT_STRIP_TRAILING_WHITESPACE
+#)
 
-if (NOT Py_ENABLE_SHARED)
-    message(STATUS "Python ${Python3_EXECUTABLE} is statically linked")
-    if (APPLE)
-        # conda gives us -bundle, which isn't valid
-        message(STATUS "Removing extra -bundle argument from sysconfig.get_config_var('LDSHARED')")
-        string(REPLACE  "-bundle" "" PYTHON_LDSHARED "${PYTHON_LDSHARED}")
-        string(STRIP  ${PYTHON_LDSHARED} PYTHON_LDSHARED)
-    endif()
-  #  set(Python3_LIBRARIES ${PYTHON_LDSHARED})
-    message(STATUS "Setting Python3_LIBRARIES to '${Python3_LIBRARIES}' due to static Python")
-endif()
+#if (NOT Py_ENABLE_SHARED)
+#    message(STATUS "Python ${Python3_EXECUTABLE} is statically linked")
+#    if (APPLE)
+#        # conda gives us -bundle, which isn't valid
+#        message(STATUS "Removing extra -bundle argument from sysconfig.get_config_var('LDSHARED')")
+#        string(REPLACE  "-bundle" "" PYTHON_LDSHARED "${PYTHON_LDSHARED}")
+#        string(STRIP  ${PYTHON_LDSHARED} PYTHON_LDSHARED)
+#    endif()
+#  #  set(Python3_LIBRARIES ${PYTHON_LDSHARED})
+#    message(STATUS "Setting Python3_LIBRARIES to '${Python3_LIBRARIES}' due to static Python")
+#endif()
 
 set(EXTENSION_SRC
     PyArray.cpp
@@ -76,15 +76,15 @@ python_extension_module(${extension})
 install(TARGETS ${extension} LIBRARY DESTINATION ${PROJECT_NAME})
 
 PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
-    FILES  
+    FILES
         ./io/NumpyReader.cpp
         ./io/NumpyReader.hpp
         ./plang/Invocation.cpp
         ./plang/Environment.cpp
         ./plang/Redirector.cpp
         ./plang/Script.cpp
-    LINK_WITH 
-        ${PDAL_LIBRARIES} 
+    LINK_WITH
+        ${PDAL_LIBRARIES}
         ${Python3_LIBRARIES}
         ${CMAKE_DL_LIBS}
     SYSTEM_INCLUDES
@@ -122,15 +122,15 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  EXCLUDE_FROM_ALL)
 
 PDAL_PYTHON_ADD_PLUGIN(python_filter filter python
-    FILES  
+    FILES
         ./filters/PythonFilter.cpp
         ./filters/PythonFilter.hpp
         ./plang/Invocation.cpp
         ./plang/Environment.cpp
         ./plang/Redirector.cpp
         ./plang/Script.cpp
-    LINK_WITH 
-        ${PDAL_LIBRARIES} 
+    LINK_WITH
+        ${PDAL_LIBRARIES}
         ${Python3_LIBRARIES}
         ${CMAKE_DL_LIBS}
     SYSTEM_INCLUDES
@@ -145,8 +145,12 @@ PDAL_PYTHON_ADD_TEST(pdal_io_numpy_test
     FILES
         ./test/NumpyReaderTest.cpp
         ./test/Support.cpp
+        ./plang/Invocation.cpp
+        ./plang/Environment.cpp
+        ./plang/Redirector.cpp
+        ./plang/Script.cpp
     LINK_WITH
-        ${numpy_reader} 
+        ${numpy_reader}
         ${Python3_LIBRARIES}
         ${PDAL_LIBRARIES}
         ${CMAKE_DL_LIBS}
@@ -160,8 +164,10 @@ PDAL_PYTHON_ADD_TEST(pdal_filters_python_test
     FILES
         ./test/PythonFilterTest.cpp
         ./test/Support.cpp
-                ./plang/Invocation.cpp
+        ./plang/Invocation.cpp
         ./plang/Environment.cpp
+        ./plang/Redirector.cpp
+        ./plang/Script.cpp
     LINK_WITH
         ${python_filter}
         ${Python3_LIBRARIES}

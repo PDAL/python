@@ -38,6 +38,7 @@
 #include <pdal/StageFactory.hpp>
 #include <pdal/io/FauxReader.hpp>
 #include <pdal/filters/StatsFilter.hpp>
+#include <pdal/util/FileUtils.hpp>
 
 #include "../plang/Invocation.hpp"
 #include "../plang/Environment.hpp"
@@ -138,7 +139,7 @@ TEST_F(PythonFilterTest, pipelineJSON)
     PipelineManager manager;
 
     manager.readPipeline(
-        Support::configuredpath("programmable-update-y-dims.json"));
+        Support::datapath("programmable-update-y-dims.json"));
     manager.execute();
     PointViewSet viewSet = manager.views();
     EXPECT_EQ(viewSet.size(), 1u);
@@ -569,7 +570,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_PipelineJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::configuredpath("from-module.json"));
+    mgr.readPipeline(Support::datapath("from-module.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
@@ -578,7 +579,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_EmbedJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::configuredpath("predicate-embed.json"));
+    mgr.readPipeline(Support::datapath("predicate-embed.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
@@ -780,6 +781,9 @@ TEST(PLangTest, log)
 {
     // verify we can redirect the stdout inside the python script
 
+    std::string logfile("mylog_three.txt");
+//    std::string logfile(Support::temppath("mylog_three.txt"));
+
     Options reader_opts;
     {
         BOX3D bounds(1.0, 2.0, 3.0, 101.0, 102.0, 103.0);
@@ -791,7 +795,7 @@ TEST(PLangTest, log)
         reader_opts.add(opt2);
         reader_opts.add(opt3);
 
-        Option optlog("log", Support::temppath("mylog_three.txt"));
+        Option optlog("log", logfile);
         reader_opts.add(optlog);
     }
 
@@ -810,7 +814,7 @@ TEST(PLangTest, log)
             );
         const Option module("module", "xModule");
         const Option function("function", "xfunc");
-        xfilter_opts.add("log", Support::temppath("mylog_three.txt"));
+        xfilter_opts.add("log", logfile);
         xfilter_opts.add(source);
         xfilter_opts.add(module);
         xfilter_opts.add(function);
@@ -834,16 +838,15 @@ TEST(PLangTest, log)
         EXPECT_EQ(view->size(), 750u);
     }
 
-    bool ok = Support::compare_text_files(
-        Support::temppath("mylog_three.txt"),
+    bool ok = Support::compare_text_files(logfile,
         Support::datapath("logs/log_py.txt"));
 
     // TODO: fails on Windows
     // unknown file: error: C++ exception with description "pdalboost::filesystem::remove:
     // The process cannot access the file because it is being used by another process:
     // "C:/projects/pdal/test/data/../temp/mylog_three.txt"" thrown in the test body.
-    //if (ok)
-    //    FileUtils::deleteFile(Support::temppath("mylog_three.txt"));
+    if (ok)
+        FileUtils::deleteFile(Support::temppath("mylog_three.txt"));
 
     EXPECT_TRUE(ok);
 }
@@ -1110,7 +1113,7 @@ static void run_pipeline(std::string const& pipeline)
     const std::string cmd = "pdal pipeline";
 
     std::string output;
-    std::string file(Support::configuredpath(pipeline));
+    std::string file(Support::datapath(pipeline));
     int stat = pdal::Utils::run_shell_command(cmd + " " + file, output);
     EXPECT_EQ(0, stat);
     if (stat)

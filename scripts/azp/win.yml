@@ -31,11 +31,15 @@ jobs:
         set CC=cl.exe
         set CXX=cl.exe
         pip install -e .
-      displayName: 'Build'
-    - script: |
-        call activate pdal
-        py.test
-        pdal info --drivers
-      displayName: 'Test'
+        pytest
+        for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
+        set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
+        set PYTHONHOME=%CONDA_PREFIX%
+        %SKPATH%\cmake-build\pdal_filters_python_test.exe
+        %SKPATH%\cmake-build\pdal_io_numpy_test.exe
+        pdal --version
+        pdal --drivers
+      failOnStderr: true
+      displayName: 'Local test'
 
 
