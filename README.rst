@@ -2,10 +2,11 @@
 PDAL
 ================================================================================
 
-PDAL Python support allows you to process data with PDAL into `Numpy`_
-arrays. It supports embedding Python in PDAL pipelines with the `readers.numpy <https://pdal.io/stages/readers.numpy.html>`__
-and `filters.python <https://pdal.io/stages/filters.python.html>`__ stages, and it provides a PDAL extension module to control
-Python interaction with PDAL.
+PDAL Python support allows you to process data with PDAL into `Numpy`_ arrays.
+It supports embedding Python in PDAL pipelines with the `readers.numpy
+<https://pdal.io/stages/readers.numpy.html>`__ and `filters.python
+<https://pdal.io/stages/filters.python.html>`__ stages, and it provides a PDAL
+extension module to control Python interaction with PDAL.
 
 Additionally, you can use it to fetch `schema`_ and `metadata`_ from
 PDAL operations.
@@ -67,10 +68,10 @@ Reading  using Numpy Arrays
 The following more complex scenario demonstrates the full cycling between
 PDAL and Python:
 
- * Read a small testfile from GitHub into a Numpy array
- * Filters those arrays with Numpy for Intensity
- * Pass the filtered array to PDAL to be filtered again
- * Write the filtered array to an LAS file.
+* Read a small testfile from GitHub into a Numpy array
+* Filters those arrays with Numpy for Intensity
+* Pass the filtered array to PDAL to be filtered again
+* Write the filtered array to an LAS file.
 
 .. code-block:: python
 
@@ -93,8 +94,13 @@ PDAL and Python:
     count = pipeline.execute()
 
     # get the data from the first array
-    # [array([(637012.24, 849028.31, 431.66, 143, 1, 1, 1, 0, 1,  -9., 132, 7326, 245380.78254963,  68,  77,  88),
-    # dtype=[('X', '<f8'), ('Y', '<f8'), ('Z', '<f8'), ('Intensity', '<u2'), ('ReturnNumber', 'u1'), ('NumberOfReturns', 'u1'), ('ScanDirectionFlag', 'u1'), ('EdgeOfFlightLine', 'u1'), ('Classification', 'u1'), ('ScanAngleRank', '<f4'), ('UserData', 'u1'), ('PointSourceId', '<u2'), ('GpsTime', '<f8'), ('Red', '<u2'), ('Green', '<u2'), ('Blue', '<u2')])
+    # [array([(637012.24, 849028.31, 431.66, 143, 1,
+    # 1, 1, 0, 1,  -9., 132, 7326, 245380.78254963,  68,  77,  88),
+    # dtype=[('X', '<f8'), ('Y', '<f8'), ('Z', '<f8'), ('Intensity', '<u2'),
+    # ('ReturnNumber', 'u1'), ('NumberOfReturns', 'u1'), ('ScanDirectionFlag', 'u1'),
+    # ('EdgeOfFlightLine', 'u1'), ('Classification', 'u1'), ('ScanAngleRank', '<f4'),
+    # ('UserData', 'u1'), ('PointSourceId', '<u2'),
+    # ('GpsTime', '<f8'), ('Red', '<u2'), ('Green', '<u2'), ('Blue', '<u2')])
 
     arr = pipeline.arrays[0]
     print (len(arr)) # 1065 points

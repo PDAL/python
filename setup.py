@@ -86,6 +86,7 @@ setup_args = dict(
     maintainer_email    = 'howard@hobu.co',
     url                 = 'https://pdal.io',
     long_description    = long_description,
+    long_description_content_type = 'text/x-rst',
     test_suite          = 'test',
     cmake_source_dir    = 'pdal',
     packages            = [
