@@ -1,6 +1,9 @@
 exclude *.txt
 exclude MANIFEST.in
 include CHANGES.txt README.rst pyproject.toml
+include pdal/*.txt
+include test
+
 recursive-include test *.py
 recursive-include pdal *.pyx
 recursive-include pdal *.hpp
