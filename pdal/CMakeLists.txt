@@ -96,13 +96,11 @@ PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
     )
 
 
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(test/gtest)
 enable_testing()
 include_directories(test/gtest/include .. ${CMAKE_CURRENT_BINARY_DIR})
 
-# Prevent overriding the parent project's compiler/linker
-# settings on Windows
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 PDAL_PYTHON_ADD_PLUGIN(python_filter filter python
     FILES
