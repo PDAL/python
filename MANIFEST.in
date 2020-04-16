@@ -1,12 +1,11 @@
-exclude *.txt
 exclude MANIFEST.in
-include CHANGES.txt README.rst pyproject.toml
+include CHANGES.txt README.rst pyproject.toml tox.ini
 include pdal/*.txt
 include pdal/*.cmake
-include pdal/test/gtest/*
-include test
+include test/*
 
-recursive-include test *.py
+recursive-include pdal/test *
+recursive-include test *
 recursive-include pdal *.pyx
 recursive-include pdal *.hpp
 recursive-include pdal *.cpp
