@@ -120,6 +120,8 @@ private:
         Dimension::Id m_id;
         Dimension::Type m_type;
         int m_offset;
+        char m_byteorder;
+        int m_elsize;
     };
     std::vector<Field> m_fields;
     point_count_t m_index;

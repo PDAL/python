@@ -41,6 +41,7 @@
 #include <pdal/util/ProgramArgs.hpp>
 #include <pdal/util/FileUtils.hpp>
 #include <pdal/util/Algorithm.hpp>
+#include <pdal/util/Extractor.hpp>
 
 #include "../plang/Environment.hpp"
 
@@ -407,10 +408,13 @@ void NumpyReader::createFields(PointLayoutPtr layout)
             offset = PyLong_AsLong(offset_o);
 
             // Get type.
-            type = getType((PyArray_Descr *)PySequence_Fast_GET_ITEM(tup, 0),
-                name);
+            PyArray_Descr* dt = (PyArray_Descr *)PySequence_Fast_GET_ITEM(tup, 0);
+            type = getType(dt, name);
+
+            char byteorder = dt->byteorder;
+            int elsize = dt->elsize;
             id = registerDim(layout, name, type);
-            m_fields.push_back({id, type, offset});
+            m_fields.push_back({id, type, offset, byteorder, elsize});
         }
     }
 }
@@ -510,6 +514,12 @@ void NumpyReader::ready(PointTableRef table)
     for (npy_intp i = 0; i < m_ndims; ++i)
         log()->get(LogLevel::Debug) << "numpy shape dimension number '" <<
             i << "' is '" << m_shape[i] <<"'" << std::endl;
+
+    PointLayoutPtr layout = table.layout();
+    MetadataNode m = layout->toMetadata();
+
+    pdal::Utils::toJSON(m, log()->get(LogLevel::Debug3));
+
 }
 
 bool NumpyReader::nextPoint()
@@ -530,12 +540,101 @@ bool NumpyReader::nextPoint()
 }
 
 
+
+
 bool NumpyReader::loadPoint(PointRef& point, point_count_t position)
 {
     using namespace Dimension;
 
+    pdal::SwitchableExtractor extractor(p_data, *m_strideptr);
+
+    std::vector<char> buf(*m_strideptr,0);
+
+    float flt(0.0);
+    double dbl(0.0);
+    uint8_t uint8(0);
+    uint16_t uint16(0);
+    uint32_t uint32(0);
+    uint64_t uint64(0);
+    int8_t int8(0);
+    int16_t int16(0);
+    int32_t int32(0);
+    int64_t int64(0);
+
     for (const Field& f : m_fields)
-        point.setField(f.m_id, f.m_type, (void*)(p_data + f.m_offset));
+    {
+        if (f.m_byteorder == '>')
+            extractor.switchToBigEndian();
+        else
+            extractor.switchToLittleEndian();
+
+        if (Dimension::base(f.m_type) == Dimension::BaseType::Floating)
+        {
+            if (f.m_elsize == 4)
+            {
+                extractor >> flt;
+                point.setField<float>(f.m_id, flt);
+            }
+            else if (f.m_elsize == 8)
+            {
+                extractor >> dbl;
+                point.setField<double>(f.m_id, dbl);
+
+            }
+        }
+        else if (Dimension::base(f.m_type) == Dimension::BaseType::Signed)
+        {
+            if (f.m_elsize == 1)
+            {
+                extractor >> int8;
+                point.setField<int8_t>(f.m_id, int8);
+            }
+            if (f.m_elsize == 2)
+            {
+                extractor >> int16;
+                point.setField<int16_t>(f.m_id, int16);
+            }
+            if (f.m_elsize == 4)
+            {
+                extractor >> int32;
+                point.setField<int32_t>(f.m_id, int32);
+            }
+            if (f.m_elsize == 8)
+            {
+                extractor >> int64;
+                point.setField<int64_t>(f.m_id, int64);
+            }
+        }
+        else if (Dimension::base(f.m_type) == Dimension::BaseType::Unsigned)
+        {
+            if (f.m_elsize == 1)
+            {
+                extractor >> uint8;
+                point.setField<uint8_t>(f.m_id, uint8);
+            }
+            if (f.m_elsize == 2)
+            {
+                extractor >> uint16;
+                point.setField<uint16_t>(f.m_id, uint16);
+            }
+            if (f.m_elsize == 4)
+            {
+                extractor >> uint32;
+                point.setField<uint32_t>(f.m_id, uint32);
+            }
+            if (f.m_elsize == 8)
+            {
+                extractor >> int64;
+                point.setField<uint64_t>(f.m_id, uint64);
+            }
+        }
+        else
+        {
+            // skip it
+            extractor.skip(f.m_elsize);
+        }
+
+    }
 
     if (m_storeXYZ)
     {
