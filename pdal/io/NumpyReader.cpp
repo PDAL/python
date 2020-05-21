@@ -552,86 +552,79 @@ bool NumpyReader::loadPoint(PointRef& point, point_count_t position)
 
     float flt(0.0);
     double dbl(0.0);
-    uint8_t uint8(0);
-    uint16_t uint16(0);
-    uint32_t uint32(0);
-    uint64_t uint64(0);
-    int8_t int8(0);
-    int16_t int16(0);
-    int32_t int32(0);
-    int64_t int64(0);
+    uint8_t u8(0);
+    uint16_t u16(0);
+    uint32_t u32(0);
+    uint64_t u64(0);
+    int8_t i8(0);
+    int16_t i16(0);
+    int32_t i32(0);
+    int64_t i64(0);
 
     for (const Field& f : m_fields)
     {
+        log()->get(LogLevel::Debug) << "endian: " << f.m_byteorder << std::endl;
         if (f.m_byteorder == '>')
             extractor.switchToBigEndian();
         else
             extractor.switchToLittleEndian();
 
-        if (Dimension::base(f.m_type) == Dimension::BaseType::Floating)
+        switch (f.m_type)
         {
-            if (f.m_elsize == 4)
-            {
-                extractor >> flt;
-                point.setField<float>(f.m_id, flt);
-            }
-            else if (f.m_elsize == 8)
-            {
-                extractor >> dbl;
-                point.setField<double>(f.m_id, dbl);
+            case Dimension::Type::Signed8:
+                extractor >> i8;
+                point.setField(f.m_id, i8);
+                break;
 
-            }
-        }
-        else if (Dimension::base(f.m_type) == Dimension::BaseType::Signed)
-        {
-            if (f.m_elsize == 1)
-            {
-                extractor >> int8;
-                point.setField<int8_t>(f.m_id, int8);
-            }
-            if (f.m_elsize == 2)
-            {
-                extractor >> int16;
-                point.setField<int16_t>(f.m_id, int16);
-            }
-            if (f.m_elsize == 4)
-            {
-                extractor >> int32;
-                point.setField<int32_t>(f.m_id, int32);
-            }
-            if (f.m_elsize == 8)
-            {
-                extractor >> int64;
-                point.setField<int64_t>(f.m_id, int64);
-            }
-        }
-        else if (Dimension::base(f.m_type) == Dimension::BaseType::Unsigned)
-        {
-            if (f.m_elsize == 1)
-            {
-                extractor >> uint8;
-                point.setField<uint8_t>(f.m_id, uint8);
-            }
-            if (f.m_elsize == 2)
-            {
-                extractor >> uint16;
-                point.setField<uint16_t>(f.m_id, uint16);
-            }
-            if (f.m_elsize == 4)
-            {
-                extractor >> uint32;
-                point.setField<uint32_t>(f.m_id, uint32);
-            }
-            if (f.m_elsize == 8)
-            {
-                extractor >> int64;
-                point.setField<uint64_t>(f.m_id, uint64);
-            }
-        }
-        else
-        {
-            // skip it
-            extractor.skip(f.m_elsize);
+            case Dimension::Type::Signed16:
+                extractor >> i16;
+                point.setField(f.m_id, i16);
+                break;
+
+            case Dimension::Type::Signed32:
+                extractor >> i32;
+                point.setField(f.m_id, i32);
+                break;
+
+            case Dimension::Type::Signed64:
+                extractor >> i64;
+                point.setField(f.m_id, i64);
+                break;
+
+            case Dimension::Type::Unsigned8:
+                extractor >> u8;
+                point.setField(f.m_id, u8);
+                break;
+
+            case Dimension::Type::Unsigned16:
+                extractor >> u16;
+                point.setField(f.m_id, u16);
+                break;
+
+            case Dimension::Type::Unsigned32:
+                extractor >> u32;
+                point.setField(f.m_id, u32);
+                break;
+
+            case Dimension::Type::Unsigned64:
+                extractor >> u64;
+                point.setField(f.m_id, u64);
+                break;
+
+            case Dimension::Type::Float:
+                extractor >> flt;
+                point.setField(f.m_id, flt);
+                break;
+
+            case Dimension::Type::Double:
+                extractor >> dbl;
+                point.setField(f.m_id, dbl);
+                break;
+
+            default:
+                // skip it
+                extractor.skip(f.m_elsize);
+
         }
 
     }

@@ -91,7 +91,7 @@ TEST(NumpyReaderTest, NumpyReaderTest_read_array)
     EXPECT_EQ(view->layout()->pointSize(), 24u);
 
     EXPECT_EQ(view->getFieldAs<double>(pdal::Dimension::Id::Intensity,5000),
-        0.0);
+        0.5);
     EXPECT_EQ(view->getFieldAs<uint32_t>(pdal::Dimension::Id::X,5000), 50u);
     EXPECT_EQ(view->getFieldAs<uint32_t>(pdal::Dimension::Id::X,5023), 50u);
     EXPECT_EQ(view->getFieldAs<uint32_t>(pdal::Dimension::Id::Y,5023), 23u);
