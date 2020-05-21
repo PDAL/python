@@ -41,6 +41,7 @@
 #include <pdal/util/ProgramArgs.hpp>
 #include <pdal/util/FileUtils.hpp>
 #include <pdal/util/Algorithm.hpp>
+#include <pdal/util/Extractor.hpp>
 
 #include "../plang/Environment.hpp"
 
@@ -407,10 +408,13 @@ void NumpyReader::createFields(PointLayoutPtr layout)
             offset = PyLong_AsLong(offset_o);
 
             // Get type.
-            type = getType((PyArray_Descr *)PySequence_Fast_GET_ITEM(tup, 0),
-                name);
+            PyArray_Descr* dt = (PyArray_Descr *)PySequence_Fast_GET_ITEM(tup, 0);
+            type = getType(dt, name);
+
+            char byteorder = dt->byteorder;
+            int elsize = dt->elsize;
             id = registerDim(layout, name, type);
-            m_fields.push_back({id, type, offset});
+            m_fields.push_back({id, type, offset, byteorder, elsize});
         }
     }
 }
@@ -510,6 +514,12 @@ void NumpyReader::ready(PointTableRef table)
     for (npy_intp i = 0; i < m_ndims; ++i)
         log()->get(LogLevel::Debug) << "numpy shape dimension number '" <<
             i << "' is '" << m_shape[i] <<"'" << std::endl;
+
+    PointLayoutPtr layout = table.layout();
+    MetadataNode m = layout->toMetadata();
+
+    pdal::Utils::toJSON(m, log()->get(LogLevel::Debug3));
+
 }
 
 bool NumpyReader::nextPoint()
@@ -530,12 +540,93 @@ bool NumpyReader::nextPoint()
 }
 
 
+
+
 bool NumpyReader::loadPoint(PointRef& point, point_count_t position)
 {
     using namespace Dimension;
 
+    pdal::SwitchableExtractor extractor(p_data, *m_strideptr);
+
+    std::vector<char> buf(*m_strideptr,0);
+
+    float flt(0.0);
+    double dbl(0.0);
+    uint8_t u8(0);
+    uint16_t u16(0);
+    uint32_t u32(0);
+    uint64_t u64(0);
+    int8_t i8(0);
+    int16_t i16(0);
+    int32_t i32(0);
+    int64_t i64(0);
+
     for (const Field& f : m_fields)
-        point.setField(f.m_id, f.m_type, (void*)(p_data + f.m_offset));
+    {
+        if (f.m_byteorder == '>')
+            extractor.switchToBigEndian();
+        else
+            extractor.switchToLittleEndian();
+
+        switch (f.m_type)
+        {
+            case Dimension::Type::Signed8:
+                extractor >> i8;
+                point.setField(f.m_id, i8);
+                break;
+
+            case Dimension::Type::Signed16:
+                extractor >> i16;
+                point.setField(f.m_id, i16);
+                break;
+
+            case Dimension::Type::Signed32:
+                extractor >> i32;
+                point.setField(f.m_id, i32);
+                break;
+
+            case Dimension::Type::Signed64:
+                extractor >> i64;
+                point.setField(f.m_id, i64);
+                break;
+
+            case Dimension::Type::Unsigned8:
+                extractor >> u8;
+                point.setField(f.m_id, u8);
+                break;
+
+            case Dimension::Type::Unsigned16:
+                extractor >> u16;
+                point.setField(f.m_id, u16);
+                break;
+
+            case Dimension::Type::Unsigned32:
+                extractor >> u32;
+                point.setField(f.m_id, u32);
+                break;
+
+            case Dimension::Type::Unsigned64:
+                extractor >> u64;
+                point.setField(f.m_id, u64);
+                break;
+
+            case Dimension::Type::Float:
+                extractor >> flt;
+                point.setField(f.m_id, flt);
+                break;
+
+            case Dimension::Type::Double:
+                extractor >> dbl;
+                point.setField(f.m_id, dbl);
+                break;
+
+            default:
+                // skip it
+                extractor.skip(f.m_elsize);
+
+        }
+
+    }
 
     if (m_storeXYZ)
     {
