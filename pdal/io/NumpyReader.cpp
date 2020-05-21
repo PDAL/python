@@ -563,7 +563,6 @@ bool NumpyReader::loadPoint(PointRef& point, point_count_t position)
 
     for (const Field& f : m_fields)
     {
-        log()->get(LogLevel::Debug) << "endian: " << f.m_byteorder << std::endl;
         if (f.m_byteorder == '>')
             extractor.switchToBigEndian();
         else
