@@ -24,7 +24,6 @@ jobs:
       pip install  -e .
       SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
       export PDAL_DRIVER_PATH=$SKPATH
-      export PYTHONWARNINGS="ignore"
       $SKPATH/pdal_filters_python_test
       $SKPATH/pdal_io_numpy_test
       py.test
