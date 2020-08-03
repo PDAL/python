@@ -28,7 +28,7 @@ jobs:
   - script: |
       ECHO ON
       source activate pdal
-      conda install --yes --quiet --name pdal -c conda-forge scikit-build pdal pytest numpy conda-forge-ci-setup=2 -y
+      conda install --yes --quiet --name pdal -c conda-forge python=3.8 scikit-build pdal pytest numpy conda-forge-ci-setup=2 -y
     displayName: Install PDAL
 
   - script: |
