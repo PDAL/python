@@ -48,15 +48,18 @@ jobs:
         $SKPATH/pdal_filters_python_test
         $SKPATH/pdal_io_numpy_test
         py.test
-
       if: matrix.os != 'windows-latest'
+
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
+
     - name: Test
       shell: cmd /C CALL "{0}"
       run: |
         set CC=cl.exe
         set CXX=cl.exe
+        pip install --upgrade pip
+        set
         pip install -e . -- -DPDAL_DIR=%CONDA_PREFIX%\lib\cmake
         pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
