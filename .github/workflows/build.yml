@@ -51,7 +51,7 @@ jobs:
 
       if: matrix.os != 'windows-latest'
     - name: Test
-      shell: shell: cmd /C CALL "{0}"
+      shell: cmd /C CALL "{0}"
       run: |
         set CC=cl.exe
         set CXX=cl.exe
