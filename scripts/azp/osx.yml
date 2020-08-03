@@ -29,7 +29,6 @@ jobs:
       ECHO ON
       source activate pdal
       conda install --yes --quiet --name pdal -c conda-forge scikit-build pdal pytest numpy conda-forge-ci-setup=2 -y
-      pip install setuptools --upgrade
     displayName: Install PDAL
 
   - script: |
@@ -42,6 +41,6 @@ jobs:
       $SKPATH/pdal_io_numpy_test
       pdal --version
       pdal --drivers
-    failOnStderr: true
+    failOnStderr: false
     displayName: 'Local test'
 
