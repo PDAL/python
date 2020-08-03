@@ -41,6 +41,6 @@ jobs:
       $SKPATH/pdal_io_numpy_test
       pdal --version
       pdal --drivers
-    failOnStderr: true
+    failOnStderr: false
     displayName: 'Local test'
 

@@ -39,7 +39,7 @@ jobs:
         %SKPATH%\cmake-build\pdal_io_numpy_test.exe
         pdal --version
         pdal --drivers
-      failOnStderr: true
+      failOnStderr: false
       displayName: 'Local test'
 
 
