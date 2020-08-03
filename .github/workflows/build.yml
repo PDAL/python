@@ -38,6 +38,7 @@ jobs:
         pip install  .
         pdal --drivers
 
+      if: matrix.os != 'windows-latest'
     - name: Test
       shell: bash -l {0}
       run: |
