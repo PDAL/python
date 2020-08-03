@@ -57,7 +57,7 @@ jobs:
       run: |
         set CC=cl.exe
         set CXX=cl.exe
-        pip install -e .
+        pip install -e . -- -DPDAL_DIR=%CONDA_PREFIX%\lib\cmake
         pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
