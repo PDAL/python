@@ -18,6 +18,7 @@ import sys
 import numpy
 import glob
 import sysconfig
+import setuptools
 from skbuild import setup
 from packaging.version import Version
 
