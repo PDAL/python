@@ -63,7 +63,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: goanpeca/setup-miniconda@v1
+    - uses: goanpeca/setup-miniconda@v1.3.5
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
@@ -73,8 +73,8 @@ jobs:
       shell: cmd /C CALL {0}
       run: |
 
-        conda info
-        conda list
+        conda info &&
+        conda list &&
         where python
 
     - name: Windows dependencies
