@@ -91,10 +91,7 @@ jobs:
 
         call conda activate test
         where python
-        python -m pip install ninja
-        where ninja
-        ninja -h
-        python -m pip install  .
+        python setup.py install -- -G "Ninja"
 
     - name: Test
       shell: cmd /C CALL "{0}"
