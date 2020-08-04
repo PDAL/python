@@ -25,10 +25,8 @@ jobs:
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
         activate-environment: test
         channels: conda-forge,defaults
-        channel-priority: true
 
     - name: Dependencies
       shell: bash -l {0}
