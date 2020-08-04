@@ -80,7 +80,7 @@ jobs:
         set CC=cl.exe
         set CXX=cl.exe
         call conda activate test
-        python -m pip install -e .
+        python -m pip install -e . -- -G "Ninja"
 
     - name: Test
       shell: cmd /C CALL {0}
