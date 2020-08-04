@@ -86,7 +86,7 @@ jobs:
         ECHO ON
         set CC=cl.exe
         set CXX=cl.exe
-        #        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x86_amd64
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x86_amd64
 
         where python
         python -m pip install -e .
