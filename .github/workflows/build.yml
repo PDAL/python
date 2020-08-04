@@ -9,14 +9,14 @@ on:
     - '*'
 
 jobs:
-  conda:
+  unix:
     name: ${{ matrix.os }} - ${{ matrix.python-version }}
 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: true
       matrix:
-        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        os: ['ubuntu-latest', 'macos-latest' ]
         python-version: ['3.7','3.8']
 
     steps:
@@ -40,7 +40,6 @@ jobs:
         pip install  .
         pdal --drivers
 
-      if: matrix.os != 'windows-latest'
     - name: Test
       shell: bash -l {0}
       run: |
@@ -50,23 +49,49 @@ jobs:
         $SKPATH/pdal_filters_python_test
         $SKPATH/pdal_io_numpy_test
         py.test
-      if: matrix.os != 'windows-latest'
+
+
+  windows:
+    name: ${{ matrix.os }} - ${{ matrix.python-version }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['windows-latest']
+        python-version: ['3.7','3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: goanpeca/setup-miniconda@v1.6.0
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+        activate-environment: test
+        channels: conda-forge,defaults
+        auto-activate-base: false
 
     - uses: ilammy/msvc-dev-cmd@v1
-      if: matrix.os == 'windows-latest'
 
     - name: Cmd.exe
       shell: cmd /C CALL {0}
       run: >-
         conda info &&
         conda list
-      if: matrix.os == 'windows-latest'
 
     - name: Windows dependencies
       shell: cmd /C CALL {0}
       run: |
         conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers ninja pdal pytest conda-build -y
-    - name: Test Windows
+
+    - name: Install
+      shell: bash -l {0}
+      run: |
+        pip install  -e .
+        pdal --drivers
+
+
+    - name: Test
       shell: cmd /C CALL "{0}"
       run: |
         set CC=cl.exe
@@ -81,5 +106,4 @@ jobs:
         %SKPATH%\cmake-build\pdal_io_numpy_test.exe
         pdal --version
         pdal --drivers
-      if: matrix.os == 'windows-latest'
 
