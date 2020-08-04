@@ -27,6 +27,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
         activate-environment: test
         channels: conda-forge,defaults
+        auto-activate-base: false
 
     - name: Dependencies
       shell: bash -l {0}
@@ -54,12 +55,18 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       if: matrix.os == 'windows-latest'
 
+    - name: Cmd.exe
+      shell: cmd /C CALL {0}
+      run: >-
+        conda info &&
+        conda list
+      if: matrix.os == 'windows-latest'
+
     - name: Test Windows
       shell: cmd /C CALL "{0}"
       run: |
         set CC=cl.exe
         set CXX=cl.exe
-        pip install --upgrade pip
         set
         pip install -e . -- -DPDAL_DIR=%CONDA_PREFIX%\lib\cmake
         pytest
