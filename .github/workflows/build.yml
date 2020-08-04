@@ -71,7 +71,7 @@ jobs:
 
     - name: Cmd.exe
       shell: cmd /C CALL {0}
-      run: |
+      run: >-
 
         conda info &&
         conda list &&
