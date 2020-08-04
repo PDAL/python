@@ -66,31 +66,36 @@ jobs:
     - uses: goanpeca/setup-miniconda@v1
       with:
         auto-update-conda: true
+        activate-environment: test
         python-version: ${{ matrix.python-version }}
+
+    - name: Cmd.exe
+      shell: cmd /C CALL {0}
+      run: >-
+
+        conda info --envs &&
+        conda list &&
+        call conda act
 
     - name: Dependencies
       shell: cmd /C CALL {0}
       run: |
-        call conda activate test
         conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers ninja pdal pytest conda-build -y
 
     - name: Install
       shell: cmd /C CALL {0}
       run: |
         ECHO ON
-        call conda activate test
         set CC=cl.exe
         set CXX=cl.exe
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x86_amd64
+        #        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x86_amd64
 
-        call conda activate test
         where python
         python -m pip install -e .
 
     - name: Test
       shell: cmd /C CALL {0}
       run: |
-        call conda activate test
         pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
