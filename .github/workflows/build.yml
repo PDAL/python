@@ -73,9 +73,7 @@ jobs:
       shell: cmd /C CALL {0}
       run: >-
 
-        conda info --envs &&
-        conda list &&
-        call conda act
+        conda info --envs
 
     - name: Dependencies
       shell: cmd /C CALL {0}
