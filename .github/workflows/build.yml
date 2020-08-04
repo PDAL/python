@@ -67,9 +67,7 @@ jobs:
       with:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-        activate-environment: test
         channels: conda-forge
-        auto-activate-base: false
 
     - uses: ilammy/msvc-dev-cmd@v1
 
@@ -93,7 +91,6 @@ jobs:
         set CXX=cl.exe
         set
         where pdal
-        conda activate test
         pip install -e . -- -DPDAL_DIR=%CONDA_PREFIX%\lib\cmake
 
     - name: Test
