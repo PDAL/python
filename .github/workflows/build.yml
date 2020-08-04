@@ -85,19 +85,16 @@ jobs:
         conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers ninja pdal pytest conda-build -y
 
     - name: Install
-      shell: bash -l {0}
-      run: |
-        pip install  -e .
-        pdal --drivers
-
-
-    - name: Test
       shell: cmd /C CALL "{0}"
       run: |
         set CC=cl.exe
         set CXX=cl.exe
         set
         pip install -e . -- -DPDAL_DIR=%CONDA_PREFIX%\lib\cmake
+
+    - name: Test
+      shell: cmd /C CALL "{0}"
+      run: |
         pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
