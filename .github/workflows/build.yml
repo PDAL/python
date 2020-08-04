@@ -62,6 +62,10 @@ jobs:
         conda list
       if: matrix.os == 'windows-latest'
 
+    - name: Windows dependencies
+      shell: cmd /C CALL {0}
+      run: |
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers ninja pdal pytest conda-build -y
     - name: Test Windows
       shell: cmd /C CALL "{0}"
       run: |
