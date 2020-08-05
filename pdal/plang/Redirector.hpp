@@ -11,6 +11,7 @@
 #pragma once
 
 #include <functional>
+#include <iostream>
 
 #pragma warning(disable: 4127) // conditional expression is constant
 
