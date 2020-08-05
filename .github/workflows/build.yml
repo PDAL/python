@@ -85,7 +85,7 @@ jobs:
 
         call conda activate test
         where python
-        python setup.py install -- -G "Ninja"
+        python setup.py develop -- -G "Ninja"
         python -m pdal
 
     - name: Test
@@ -103,6 +103,7 @@ jobs:
 
   dist:
     name: Distribution
+    needs: [windows, unix]
 
     runs-on: ${{ matrix.os }}
     strategy:
