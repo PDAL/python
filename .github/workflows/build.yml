@@ -28,7 +28,7 @@ jobs:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
         activate-environment: test
-        channels: conda-forge,defaults
+        channels: conda-forge
         auto-activate-base: false
 
     - name: Dependencies
@@ -86,13 +86,14 @@ jobs:
         call conda activate test
         where python
         python setup.py install -- -G "Ninja"
+        python -m pdal
 
     - name: Test
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
         set PYTHONHOME=%CONDA_PREFIX%
-        call pytest
+        py.test
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
         %SKPATH%\cmake-build\pdal_filters_python_test.exe
