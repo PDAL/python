@@ -1,0 +1,139 @@
+name: Build
+
+on:
+  pull_request:
+    branches:
+    - '*'
+  push:
+    branches:
+    - '*'
+  release:
+    types:
+      - published
+jobs:
+  unix:
+    name: ${{ matrix.os }} - ${{ matrix.python-version }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-latest', 'macos-latest' ]
+        python-version: ['3.7','3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: goanpeca/setup-miniconda@v1
+      with:
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+        activate-environment: test
+        channels: conda-forge
+        auto-activate-base: false
+
+    - name: Dependencies
+      shell: bash -l {0}
+      run: |
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers ninja pdal pytest conda-build -y
+
+    - name: Install
+      shell: bash -l {0}
+      run: |
+        pip install  .
+        pdal --drivers
+
+    - name: Test
+      shell: bash -l {0}
+      run: |
+        pip install  -e .
+        SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
+        export PDAL_DRIVER_PATH=$SKPATH
+        $SKPATH/pdal_filters_python_test
+        $SKPATH/pdal_io_numpy_test
+        py.test
+
+
+  windows:
+    name: ${{ matrix.os }} - ${{ matrix.python-version }}
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['windows-latest']
+        python-version: ['3.7','3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: goanpeca/setup-miniconda@v1.1.2
+      with:
+        channels: conda-forge
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+
+
+    - name: Dependencies
+      shell: cmd /C CALL "{0}"
+      run: |
+
+        call conda activate test
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+
+    - name: Install
+      shell: cmd /C CALL "{0}"
+      run: |
+
+        call conda activate test
+        where python
+        python setup.py develop -- -G "Ninja"
+
+    - name: Test
+      shell: cmd /C CALL "{0}"
+      run: |
+        call conda activate test
+        set PYTHONHOME=%CONDA_PREFIX%
+        py.test
+        for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
+        set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
+        %SKPATH%\cmake-build\pdal_filters_python_test.exe
+        %SKPATH%\cmake-build\pdal_io_numpy_test.exe
+        pdal --version
+        pdal --drivers
+
+  dist:
+    name: Distribution
+    needs: [windows, unix]
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: goanpeca/setup-miniconda@v1.1.2
+      with:
+        channels: conda-forge
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+
+    - name: Dependencies
+      shell: bash -l {0}
+      run: |
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+
+    - name: sdist
+      shell: bash -l {0}
+      run: |
+        python setup.py sdist
+        ls dist
+
+    - uses: pypa/gh-action-pypi-publish@master
+      name: Publish package
+      if: github.event_name == 'release' && github.event.action == 'published'
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_token }}
+        packages_dir: ./dist
