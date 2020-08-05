@@ -82,7 +82,6 @@ jobs:
     - name: Install
       shell: cmd /C CALL "{0}"
       run: |
-        ECHO ON
 
         call conda activate test
         where python
@@ -92,10 +91,10 @@ jobs:
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
-        pytest
+        set PYTHONHOME=%CONDA_PREFIX%
+        call pytest
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
-        set PYTHONHOME=%CONDA_PREFIX%
         %SKPATH%\cmake-build\pdal_filters_python_test.exe
         %SKPATH%\cmake-build\pdal_io_numpy_test.exe
         pdal --version
