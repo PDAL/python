@@ -154,9 +154,10 @@ PDAL and Python:
 .. _`schema`: http://www.pdal.io/dimensions.html
 .. _`metadata`: http://www.pdal.io/development/metadata.html
 
+![Build](https://github.com/PDAL/python/workflows/Build/badge.svg)
 
-.. image:: https://ci.appveyor.com/api/projects/status/of4kecyahpo8892d
-   :target: https://ci.appveyor.com/project/hobu/python/
+.. image:: https://github.com/PDAL/python/workflows/Build/badge.svg
+   :target: https://github.com/PDAL/python/actions?query=workflow%3ABuild
 
 Requirements
 ================================================================================
@@ -165,4 +166,5 @@ Requirements
 * Python >=3.6
 * Cython (eg :code:`pip install cython`)
 * Packaging (eg :code:`pip install packaging`)
+* scikit-build (eg :code:`pip install scikit-build`)
 
