@@ -7,7 +7,9 @@ on:
   push:
     branches:
     - '*'
-
+  release:
+    types:
+      - published
 jobs:
   unix:
     name: ${{ matrix.os }} - ${{ matrix.python-version }}
@@ -69,20 +71,20 @@ jobs:
         auto-update-conda: true
         python-version: ${{ matrix.python-version }}
 
-    - name: Cmd.exe
-      shell: cmd /C CALL "{0}"
-      run: >-
-
-        call conda activate test &&
-        conda info --envs
 
     - name: Dependencies
-      shell: cmd /C CALL "{0}"
+      shell: bash -l {0}
       run: |
 
         call conda activate test
-        where python
         conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+
+    - name: sdist
+      shell: bash -l {0}
+      run: |
+
+        call conda activate test
+        python setup.py sdist
 
     - name: Install
       shell: cmd /C CALL "{0}"
@@ -106,3 +108,39 @@ jobs:
         pdal --version
         pdal --drivers
 
+  dist:
+    name: Distribution
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ['ubuntu-latest']
+        python-version: ['3.8']
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: goanpeca/setup-miniconda@v1.1.2
+      with:
+        channels: conda-forge
+        auto-update-conda: true
+        python-version: ${{ matrix.python-version }}
+
+    - name: Dependencies
+      shell: bash -l {0}
+      run: |
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+
+    - name: sdist
+      shell: bash -l {0}
+      run: |
+        python setup.py sdist
+        ls dist
+
+    - uses: pypa/gh-action-pypi-publish@master
+      name: Publish package
+      if: github.event_name == 'release' && github.event.action == 'published'
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_token }}
+        packages_dir: ./dist
