@@ -99,10 +99,6 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
         };
 
         r.setIncrementer(incrementer);
-        PyObject* parray = (PyObject*)array->getPythonArray();
-        if (!parray)
-            throw pdal_error("array was none!");
-
         roots[0]->setInput(r);
     }
 

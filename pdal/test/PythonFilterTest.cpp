@@ -682,10 +682,10 @@ TEST(PLangTest, PLangTest_aliases)
         "def yow(ins,outs):\n"
         "  \n"
         "  #print ins['X']\n"
-        "  #print ins['prefix.X']\n"
+        "  #print ins['prefix_X']\n"
         "  \n"
         "  X = ins['X']\n"
-        "  prefixX = ins['prefix.X']\n"
+        "  prefixX = ins['prefix_X']\n"
         "  \n"
         "  #print X\n"
         "  #print prefixX\n"
@@ -697,19 +697,19 @@ TEST(PLangTest, PLangTest_aliases)
         "  #print prefixY\n"
         "  \n"
         "  outs['Y'] = Y\n"
-        "  outs['prefix.Y'] = prefixY\n"
+        "  outs['prefix_Y'] = prefixY\n"
         "  \n"
         "  #print outs['Y']\n"
-        "  #print outs['prefix.Y']\n"
+        "  #print outs['prefix_Y']\n"
         "  return True\n"
         ;
 
     PointTable table;
     table.layout()->registerDim(Dimension::Id::X);
     table.layout()->registerDim(Dimension::Id::Y);
-    Dimension::Id prefixX = table.layout()->assignDim("prefix.X",
+    Dimension::Id prefixX = table.layout()->assignDim("prefix_X",
         Dimension::Type::Double);
-    Dimension::Id prefixY = table.layout()->assignDim("prefix.Y",
+    Dimension::Id prefixY = table.layout()->assignDim("prefix_Y",
         Dimension::Type::Double);
     PointViewPtr view(new PointView(table));
     view->setField(Dimension::Id::X, 0, 1);

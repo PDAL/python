@@ -93,28 +93,21 @@ def getDimensions():
 
 cdef class PyPipeline:
     cdef Pipeline *thisptr      # hold a c++ instance which we're wrapping
-
+    cdef vector[Array *] c_arrays;
 
     def __cinit__(self, unicode json, list arrays=None):
         cdef char* x = NULL
-        cdef Py_ssize_t n_arrays;
-        if arrays:
-            n_arrays = len(arrays)
-
-        cdef vector[Array*] c_arrays;
-        cdef np.ndarray np_array;
-        cdef Array* a
 
         if arrays is not None:
             for array in arrays:
-                a = new Array(array)
-                c_arrays.push_back(a)
-
-            self.thisptr = new Pipeline(json.encode('UTF-8'), c_arrays)
+                self.c_arrays.push_back(new Array(array))
+            self.thisptr = new Pipeline(json.encode('UTF-8'), self.c_arrays)
         else:
             self.thisptr = new Pipeline(json.encode('UTF-8'))
 
     def __dealloc__(self):
+        for array in self.c_arrays:
+            del array
         del self.thisptr
 
     property pipeline:
