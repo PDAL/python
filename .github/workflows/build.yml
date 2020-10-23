@@ -31,6 +31,12 @@ jobs:
         channels: conda-forge
         auto-activate-base: false
 
+    - name: Linux dependencies
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash -l {0}
+      run: |
+          apt-get install gcc-multilib -y
+
     - name: Dependencies
       shell: bash -l {0}
       run: |
