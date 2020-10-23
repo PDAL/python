@@ -154,15 +154,13 @@ PDAL and Python:
 .. _`schema`: http://www.pdal.io/dimensions.html
 .. _`metadata`: http://www.pdal.io/development/metadata.html
 
-![Build](https://github.com/PDAL/python/workflows/Build/badge.svg)
-
 .. image:: https://github.com/PDAL/python/workflows/Build/badge.svg
    :target: https://github.com/PDAL/python/actions?query=workflow%3ABuild
 
 Requirements
 ================================================================================
 
-* PDAL 2.1+
+* PDAL 2.2+
 * Python >=3.6
 * Cython (eg :code:`pip install cython`)
 * Packaging (eg :code:`pip install packaging`)
