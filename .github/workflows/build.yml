@@ -35,7 +35,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
       run: |
-          apt-get install gcc-multilib -y
+          sudo apt-get install gcc-multilib -y
 
     - name: Dependencies
       shell: bash -l {0}
