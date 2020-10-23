@@ -244,11 +244,19 @@ PyObject *fromMetadata(MetadataNode m)
             PyList_Append(submeta, fromMetadata(child));
     }
     PyObject *data = PyDict_New();
-    PyDict_SetItemString(data, "name", PyUnicode_FromString(name.data()));
-    PyDict_SetItemString(data, "value", PyUnicode_FromString(value.data()));
-    PyDict_SetItemString(data, "type", PyUnicode_FromString(type.data()));
-    PyDict_SetItemString(data, "description",
-        PyUnicode_FromString(description.data()));
+
+    auto getString = [](const std::string& s)
+    {
+        PyObject *o = PyUnicode_FromString(s.data());
+        if (!o)
+            o = PyUnicode_FromString("<INVALID UNICODE>");
+        return o;
+    };
+
+    PyDict_SetItemString(data, "name", getString(name));
+    PyDict_SetItemString(data, "value", getString(value));
+    PyDict_SetItemString(data, "type", getString(value));
+    PyDict_SetItemString(data, "description", getString(description));
 
     if (children.size())
         PyDict_SetItemString(data, "children", submeta);
