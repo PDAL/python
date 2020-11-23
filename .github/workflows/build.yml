@@ -45,7 +45,7 @@ jobs:
     - name: Install
       shell: bash -l {0}
       run: |
-        pip install  . --install-option="-DWITH_TESTS=ON"
+        pip install  . --build-option="-DWITH_TESTS=ON"
         pdal --drivers
 
     - name: Test
