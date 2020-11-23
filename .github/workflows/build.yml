@@ -45,10 +45,12 @@ jobs:
     - name: Install
       shell: bash -l {0}
       run: |
-          #        pip install  . --build-option="-DWITH_TESTS=ON"
         python setup.py install -- -G "Ninja" -DWITH_TESTS=ON
 
         pdal --drivers
+
+
+#        pip install  . --build-option="-DWITH_TESTS=ON"
 
     - name: Test
       shell: bash -l {0}
