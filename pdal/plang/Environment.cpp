@@ -111,9 +111,10 @@ Environment::Environment()
     // the return.
     auto initNumpy = []()
     {
-#undef NUMPY_IMPORT_ARRAY_RETVAL
-#define NUMPY_IMPORT_ARRAY_RETVAL
-        import_array();
+// #undef NUMPY_IMPORT_ARRAY_RETVAL
+// #define NUMPY_IMPORT_ARRAY_RETVAL VOID
+        _import_array();
+        return ;
     };
 
     if (!Py_IsInitialized())

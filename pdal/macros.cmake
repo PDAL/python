@@ -91,7 +91,7 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             ${WINSOCK_LIBRARY}
     )
     install(TARGETS ${${_name}}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_DIR}
+        LIBRARY DESTINATION ${PROJECT_NAME}
         )
     if (APPLE)
         set_target_properties(${${_name}} PROPERTIES
@@ -109,7 +109,7 @@ macro(PDAL_PYTHON_ADD_TEST _name)
         set(WINSOCK_LIBRARY ws2_32)
     endif()
     add_executable(${_name} ${PDAL_PYTHON_ADD_TEST_FILES})
-        
+
     pdal_python_target_compile_settings(${_name})
     target_include_directories(${_name} PRIVATE
         ${PDAL_PYTHON_ADD_TEST_INCLUDES})

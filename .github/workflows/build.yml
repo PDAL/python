@@ -45,7 +45,7 @@ jobs:
     - name: Install
       shell: bash -l {0}
       run: |
-        pip install  .
+        pip install  . --install-option="-DWITH_TESTS=ON"
         pdal --drivers
 
     - name: Test
@@ -91,7 +91,7 @@ jobs:
 
         call conda activate test
         where python
-        python setup.py develop -- -G "Ninja"
+        python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
 
     - name: Test
       shell: cmd /C CALL "{0}"

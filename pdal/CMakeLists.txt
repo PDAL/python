@@ -7,9 +7,9 @@ include(${PROJECT_SOURCE_DIR}/macros.cmake NO_POLICY_SCOPE)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+option(WITH_TESTS "Enable tests" OFF)
 set(CMAKE_BUILD_TYPE "Release")
 
-enable_testing()
 
 # Python-finding settings
 set(Python3_FIND_STRATEGY "LOCATION")
@@ -95,13 +95,6 @@ PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
         ${PYTHON_LINK_LIBRARY}
     )
 
-
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-add_subdirectory(test/gtest)
-enable_testing()
-include_directories(test/gtest/include .. ${CMAKE_CURRENT_BINARY_DIR})
-
-
 PDAL_PYTHON_ADD_PLUGIN(python_filter filter python
     FILES
         ./filters/PythonFilter.cpp
@@ -122,40 +115,52 @@ PDAL_PYTHON_ADD_PLUGIN(python_filter filter python
         ${PYTHON_LINK_LIBRARY}
     )
 
-PDAL_PYTHON_ADD_TEST(pdal_io_numpy_test
-    FILES
-        ./test/NumpyReaderTest.cpp
-        ./test/Support.cpp
-        ./plang/Invocation.cpp
-        ./plang/Environment.cpp
-        ./plang/Redirector.cpp
-        ./plang/Script.cpp
-    LINK_WITH
-        ${numpy_reader}
-        ${Python3_LIBRARIES}
-        ${PDAL_LIBRARIES}
-        ${CMAKE_DL_LIBS}
-    SYSTEM_INCLUDES
-        ${PDAL_INCLUDE_DIRS}
-        ${Python3_INCLUDE_DIRS}
-        ${Python3_NumPy_INCLUDE_DIRS}
-)
 
-PDAL_PYTHON_ADD_TEST(pdal_filters_python_test
-    FILES
-        ./test/PythonFilterTest.cpp
-        ./test/Support.cpp
-        ./plang/Invocation.cpp
-        ./plang/Environment.cpp
-        ./plang/Redirector.cpp
-        ./plang/Script.cpp
-    LINK_WITH
-        ${python_filter}
-        ${Python3_LIBRARIES}
-        ${PDAL_LIBRARIES}
-        ${CMAKE_DL_LIBS}
-    SYSTEM_INCLUDES
-        ${PDAL_INCLUDE_DIRS}
-        ${Python3_INCLUDE_DIRS}
-        ${Python3_NumPy_INCLUDE_DIRS}
-)
+if (WITH_TESTS)
+    enable_testing()
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    add_subdirectory(test/gtest)
+    enable_testing()
+    include_directories(test/gtest/include .. ${CMAKE_CURRENT_BINARY_DIR})
+
+
+
+
+    PDAL_PYTHON_ADD_TEST(pdal_io_numpy_test
+        FILES
+            ./test/NumpyReaderTest.cpp
+            ./test/Support.cpp
+            ./plang/Invocation.cpp
+            ./plang/Environment.cpp
+            ./plang/Redirector.cpp
+            ./plang/Script.cpp
+        LINK_WITH
+            ${numpy_reader}
+            ${Python3_LIBRARIES}
+            ${PDAL_LIBRARIES}
+            ${CMAKE_DL_LIBS}
+        SYSTEM_INCLUDES
+            ${PDAL_INCLUDE_DIRS}
+            ${Python3_INCLUDE_DIRS}
+            ${Python3_NumPy_INCLUDE_DIRS}
+    )
+
+    PDAL_PYTHON_ADD_TEST(pdal_filters_python_test
+        FILES
+            ./test/PythonFilterTest.cpp
+            ./test/Support.cpp
+            ./plang/Invocation.cpp
+            ./plang/Environment.cpp
+            ./plang/Redirector.cpp
+            ./plang/Script.cpp
+        LINK_WITH
+            ${python_filter}
+            ${Python3_LIBRARIES}
+            ${PDAL_LIBRARIES}
+            ${CMAKE_DL_LIBS}
+        SYSTEM_INCLUDES
+            ${PDAL_INCLUDE_DIRS}
+            ${Python3_INCLUDE_DIRS}
+            ${Python3_NumPy_INCLUDE_DIRS}
+    )
+endif (WITH_TESTS)
