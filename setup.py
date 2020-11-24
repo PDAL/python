@@ -93,8 +93,6 @@ setup_args = dict(
     packages            = [
         'pdal',
     ],
-    package_data        = {'pdal':['libpdal_plugin_filter_python.so','libpdal_plugin_reader_numpy.so','libpdalpython.cpython-37m-x86_64-linux-gnu.so']},
-    include_package_data = True,
     classifiers         = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
