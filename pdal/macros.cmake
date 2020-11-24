@@ -91,7 +91,7 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             ${WINSOCK_LIBRARY}
     )
     install(TARGETS ${${_name}}
-        LIBRARY DESTINATION ${PACKAGE_NAME}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_DIR}/${PACKAGE_NAME}
         )
     if (APPLE)
         set_target_properties(${${_name}} PROPERTIES
