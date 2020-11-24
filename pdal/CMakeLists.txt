@@ -172,7 +172,7 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
     message(STATUS  "CMAKE_INSTALL_DIR: ${CMAKE_INSTALL_DIR}")
     message(STATUS  "PROJECT_NAME: ${PROJECT_NAME}")
     install(TARGETS ${${_name}}
-        LIBRARY DESTINATION ${PROJECT_NAME}
+        LIBRARY DESTINATION "${PROJECT_NAME}/lib"
         )
     if (APPLE)
         set_target_properties(${${_name}} PROPERTIES
