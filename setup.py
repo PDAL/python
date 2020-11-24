@@ -93,7 +93,7 @@ setup_args = dict(
     packages            = [
         'pdal',
     ],
-    include_package_data = True,
+    include_package_data = False,
     classifiers         = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
