@@ -2,6 +2,7 @@ exclude MANIFEST.in
 include CHANGES.txt README.rst pyproject.toml tox.ini
 include pdal/*.txt
 include pdal/*.cmake
+include pdal/*.so
 include test/*
 
 recursive-include pdal/test *
