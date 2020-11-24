@@ -73,12 +73,8 @@ with open('CHANGES.txt', 'r', **open_kwds) as fp:
 
 long_description = readme + '\n\n' +  changes
 
-def exclude_static_libraries(cmake_manifest):
-    print (cmake_manifest)
-    return list(filter(lambda name: not (name.endswith('.a')), cmake_manifest))
 
 setup_args = dict(
-        cmake_process_manifest_hook=exclude_static_libraries,
     name                = 'PDAL',
     version             = str(module_version),
     requires            = ['Python (>=3.0)', 'Numpy'],
