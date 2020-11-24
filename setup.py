@@ -73,6 +73,7 @@ with open('CHANGES.txt', 'r', **open_kwds) as fp:
 
 long_description = readme + '\n\n' +  changes
 
+# https://github.com/ktbarrett/hello/blob/master/CMakeLists.txt
 
 setup_args = dict(
     name                = 'PDAL',
