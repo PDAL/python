@@ -268,9 +268,9 @@ PDAL_PYTHON_ADD_PLUGIN(python_filter filter python
 if (WITH_TESTS)
     enable_testing()
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-    add_subdirectory(test/gtest)
+    add_subdirectory(pdal/test/gtest)
     enable_testing()
-    include_directories(test/gtest/include .. ${CMAKE_CURRENT_BINARY_DIR})
+    include_directories(pdal/test/gtest/include .. ${CMAKE_CURRENT_BINARY_DIR})
 
 
 
