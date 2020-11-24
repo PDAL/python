@@ -73,7 +73,7 @@ target_include_directories( ${extension}
 target_link_libraries(${extension} ${PDAL_LIBRARIES})
 python_extension_module(${extension})
 
-install(TARGETS ${extension} LIBRARY DESTINATION ${PROJECT_NAME})
+install(TARGETS ${extension} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
     FILES
