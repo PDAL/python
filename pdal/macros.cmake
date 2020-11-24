@@ -91,7 +91,7 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             ${WINSOCK_LIBRARY}
     )
     install(TARGETS ${${_name}}
-        LIBRARY DESTINATION ${PROJECT_NAME}
+        LIBRARY DESTINATION "."
         )
     if (APPLE)
         set_target_properties(${${_name}} PROPERTIES
