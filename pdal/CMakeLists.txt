@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11.0)
-project(pdal)
+project(PDAL)
 
 # macros for creating targets
 #include(${PROJECT_SOURCE_DIR}/macros.cmake NO_POLICY_SCOPE)
