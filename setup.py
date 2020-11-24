@@ -90,7 +90,6 @@ setup_args = dict(
     long_description    = long_description,
     long_description_content_type = 'text/x-rst',
     test_suite          = 'test',
-    cmake_source_dir    = 'pdal',
     packages            = [
         'pdal',
     ],
