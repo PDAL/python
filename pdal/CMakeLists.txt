@@ -168,6 +168,9 @@ macro(PDAL_PYTHON_ADD_PLUGIN _name _type _shortname)
             ${PDAL_PYTHON_ADD_PLUGIN_LINK_WITH}
             ${WINSOCK_LIBRARY}
     )
+
+    message(STATUS  "CMAKE_INSTALL_DIR: ${CMAKE_INSTALL_DIR}")
+    message(STATUS  "PROJECT_NAME: ${PROJECT_NAME}")
     install(TARGETS ${${_name}}
         LIBRARY DESTINATION ${CMAKE_INSTALL_DIR}/pdal
         )
