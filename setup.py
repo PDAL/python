@@ -73,6 +73,7 @@ with open('CHANGES.txt', 'r', **open_kwds) as fp:
 
 long_description = readme + '\n\n' +  changes
 
+# https://github.com/ktbarrett/hello/blob/master/CMakeLists.txt
 
 setup_args = dict(
     name                = 'PDAL',
@@ -89,10 +90,10 @@ setup_args = dict(
     long_description    = long_description,
     long_description_content_type = 'text/x-rst',
     test_suite          = 'test',
-    cmake_source_dir    = 'pdal',
     packages            = [
         'pdal',
     ],
+    include_package_data = False,
     classifiers         = [
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
