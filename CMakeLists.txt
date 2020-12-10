@@ -223,6 +223,14 @@ macro(PDAL_PYTHON_ADD_TEST _name)
 #    endif()
 endmacro(PDAL_PYTHON_ADD_TEST)
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    # For newer versions of python (3.8+), C extensions don't link against
+    # libpython and instead get symbol definitions from the python interpreter
+    # executable. PDAL plugins need to link against libpython, but if a plugin
+    # is loaded inside a python process, it must resolve symbols from the python
+    # executable instead of libpython. Using flat namespace allows that.
+    set(PYTHON_LINK_LIBRARY ${PYTHON_LINK_LIBRARY} -Wl,-flat_namespace)
+endif()
 
 PDAL_PYTHON_ADD_PLUGIN(numpy_reader reader numpy
     FILES
