@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.11.0)
 project(PDAL)
 
-# macros for creating targets
-#include(${PROJECT_SOURCE_DIR}/macros.cmake NO_POLICY_SCOPE)
-
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 option(WITH_TESTS "Enable tests" OFF)
 set(CMAKE_BUILD_TYPE "Release")
-
 
 # Python-finding settings
 set(Python3_FIND_STRATEGY "LOCATION")
@@ -26,56 +22,7 @@ if(SKBUILD)
   message(STATUS "The project is built using scikit-build")
 endif()
 
-execute_process(
-    COMMAND
-    ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_config_var('Py_ENABLE_SHARED'))"
-    OUTPUT_VARIABLE Py_ENABLE_SHARED
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
-
-#execute_process(
-#    COMMAND
-#    ${Python3_EXECUTABLE} -c "from distutils import sysconfig; print(sysconfig.get_config_var('LDSHARED').split(' ', 1)[1])"
-#    OUTPUT_VARIABLE PYTHON_LDSHARED
-#    OUTPUT_STRIP_TRAILING_WHITESPACE
-#)
-
-#if (NOT Py_ENABLE_SHARED)
-#    message(STATUS "Python ${Python3_EXECUTABLE} is statically linked")
-#    if (APPLE)
-#        # conda gives us -bundle, which isn't valid
-#        message(STATUS "Removing extra -bundle argument from sysconfig.get_config_var('LDSHARED')")
-#        string(REPLACE  "-bundle" "" PYTHON_LDSHARED "${PYTHON_LDSHARED}")
-#        string(STRIP  ${PYTHON_LDSHARED} PYTHON_LDSHARED)
-#    endif()
-#  #  set(Python3_LIBRARIES ${PYTHON_LDSHARED})
-#    message(STATUS "Setting Python3_LIBRARIES to '${Python3_LIBRARIES}' due to static Python")
-#endif()
-
 add_subdirectory(pdal)
-#set(EXTENSION_SRC
-#    ./pdal/PyArray.cpp
-#    ./pdal/PyArray.hpp
-#    ./pdal/PyDimension.hpp
-#    ./pdal/PyPipeline.cpp
-#    ./pdal/PyPipeline.hpp)
-#
-#set(extension "libpdalpython")
-#add_cython_target(${extension} "./pdal/libpdalpython.pyx" CXX PY3)
-#
-#add_library(${extension} MODULE ${EXTENSION_SRC} libpdalpython)
-#target_include_directories( ${extension}
-#    PRIVATE
-#    .
-#    ${PDAL_INCLUDE_DIRS}
-#    ${Python3_INCLUDE_DIRS}
-#    ${Python3_NumPy_INCLUDE_DIRS})
-#
-#target_link_libraries(${extension} ${PDAL_LIBRARIES})
-#python_extension_module(${extension})
-#
-#install(TARGETS ${extension} LIBRARY DESTINATION "${PROJECT_NAME}/pdal")
-
 
 # Taken and adapted from PDAL's cmake macros.cmake
 
