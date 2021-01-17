@@ -1,5 +1,5 @@
 exclude MANIFEST.in
-include CHANGES.txt README.rst pyproject.toml tox.ini
+include CHANGES.txt README.rst pyproject.toml tox.ini CMakeLists.txt
 include pdal/*.txt
 include pdal/*.cmake
 include test/*
