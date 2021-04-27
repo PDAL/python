@@ -61,8 +61,14 @@ public:
     void update(PointViewPtr view);
     PyArrayObject *getPythonArray() const;
 
+    bool rowMajor() const;
+    Shape shape() const;
+    ArrayIter& iterator();
+
 
 private:
+    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
+
     PyArrayObject* m_mesh;
 
     Mesh& operator=(Mesh const& rhs);

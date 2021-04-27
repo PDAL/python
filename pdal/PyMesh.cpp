@@ -34,6 +34,8 @@
 
 #include "PyMesh.hpp"
 
+#include <numpy/arrayobject.h>
+
 
 namespace pdal
 {
@@ -49,7 +51,7 @@ Mesh::Mesh() : m_mesh(nullptr)
         throw pdal_error("Could not import numpy.core.multiarray.");
 }
 
-Array::~Array()
+Mesh::~Mesh()
 {
     if (m_mesh)
         Py_XDECREF((PyObject *)m_mesh);
@@ -62,10 +64,10 @@ void Mesh::update(PointViewPtr view)
     npy_intp size;
 
     if (m_mesh)
-        Py_XDECREF((PyObject *)m_array);
+        Py_XDECREF((PyObject *)m_mesh);
     m_mesh = nullptr;  // Just in case of an exception.
 
-    TriangleMesh* mesh = view->mesh();
+    TriangularMesh* mesh = view->mesh();
     if (mesh)
     {
         hasMesh = true;
@@ -91,8 +93,8 @@ void Mesh::update(PointViewPtr view)
 
     for (PointId idx = 0; idx < size; idx++)
     {
-        char *p = (char *)PyArray_GETPTR1(m_array, idx);
-        Triangle t = *mesh.Triangle(idx);
+        char *p = (char *)PyArray_GETPTR1(m_mesh, idx);
+        Triangle t = *mesh->Triangle(idx);
         *p << (uint32_t)t.m_a << (uint32_t)t.m_b << (uint32_t)t.m_c;
     }
 }
@@ -123,11 +125,11 @@ PyObject* Mesh::buildNumpyDescription(PointViewPtr view) const
     PyObject* titles = PyList_New(3);
 
     PyList_SetItem(titles, 0, PyUnicode_FromString("A"));
-    PyList_SetItem(formats, 0, PyUnicode_FromString("u4");
+    PyList_SetItem(formats, 0, PyUnicode_FromString("u4"));
     PyList_SetItem(titles, 1, PyUnicode_FromString("B"));
-    PyList_SetItem(formats, 1, PyUnicode_FromString("u4");
+    PyList_SetItem(formats, 1, PyUnicode_FromString("u4"));
     PyList_SetItem(titles, 2, PyUnicode_FromString("C"));
-    PyList_SetItem(formats, 2, PyUnicode_FromString("u4");
+    PyList_SetItem(formats, 2, PyUnicode_FromString("u4"));
    
 
     PyDict_SetItemString(dict, "names", titles);
@@ -141,15 +143,11 @@ bool Mesh::rowMajor() const
     return m_rowMajor;
 }
 
-Array::Shape Mesh::shape() const
+Mesh::Shape Mesh::shape() const
 {
     return m_shape;
 }
 
-const Mesh::Fields& Mesh::fields() const
-{
-    return m_fields;
-}
 
 MeshIter& Mesh::iterator()
 {
