@@ -49,6 +49,7 @@ namespace python
 {
 
 class Array;
+class Mesh;
 
 class python_error : public std::runtime_error
 {
@@ -84,7 +85,7 @@ public:
         return m_executor->getLog();
     }
     std::vector<pdal::python::Array *> getArrays() const;
-    std::vector<Mesh *> Pipeline::getMesh() const;
+    std::vector<pdal::python::Mesh *> Pipeline::getMesh() const;
     void setLogLevel(int level);
     int getLogLevel() const;
 

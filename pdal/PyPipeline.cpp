@@ -182,8 +182,8 @@ std::vector<Mesh *> Pipeline::getMesh() const
     for (auto i: pvset)
     {
         Mesh *mesh = new python::Mesh;
-        mesh->update(i)
-        output.push_back(mesh)
+        mesh->update(i);
+        output.push_back(mesh);
     }
     return output;
 }
