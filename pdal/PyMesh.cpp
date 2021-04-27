@@ -97,7 +97,7 @@ void Mesh::update(PointViewPtr view)
         const Triangle& t = (*mesh)[idx];
         char *t = new char[12]
         t << (uint32_t)t.m_a << (uint32_t)t.m_b << (uint32_t)t.m_c;
-        std::copy( p, p+16, t);
+        std::copy( p, p+12, t);
     }
 }
 
