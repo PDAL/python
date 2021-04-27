@@ -93,11 +93,14 @@ void Mesh::update(PointViewPtr view)
 
     for (PointId idx = 0; idx < size; idx++)
     {
-        char *p = (char *)PyArray_GETPTR1(m_mesh, idx);
+        char* p = (char *)PyArray_GETPTR1(m_mesh, idx);
         const Triangle& t = (*mesh)[idx];
-        char *data = new char[12];
-        data << (uint32_t)t.m_a << (uint32_t)t.m_b << (uint32_t)t.m_c;
-        std::copy( p, p+12, data);
+        uint32_t* a = (uint32_t)t.m_a;
+        std::memcpy(a, p, 4);
+        uint32_t* b = (uint32_t)t.m_b;
+        std::memcpy(b, p + 4, 4);
+        uint32_t* c = (uint32_t)t.m_c;
+        std::memcpy(c, p + 8, 4);
     }
 }
 
