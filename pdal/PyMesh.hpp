@@ -45,6 +45,7 @@ namespace pdal
 {
 namespace python
 {
+class MeshIter;
 
 class PDAL_DLL Mesh
 {
@@ -65,10 +66,10 @@ private:
     PyArrayObject* m_mesh;
 
     Mesh& operator=(Mesh const& rhs);
-    Fields m_fields;
     bool m_rowMajor;
     Shape m_shape {};
     std::vector<std::unique_ptr<MeshIter>> m_iterators;
+};
 
 class MeshIter
 {

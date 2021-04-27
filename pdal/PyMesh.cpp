@@ -42,7 +42,7 @@ namespace python
 
 // Create new empty mesh
 //
-Mesh::Mesh() m_mesh(nullptr)
+Mesh::Mesh() : m_mesh(nullptr)
 {
     hasMesh = false;
     if (_import_array() < 0)
