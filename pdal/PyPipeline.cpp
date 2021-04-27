@@ -45,6 +45,7 @@
 #include <pdal/pdal_features.hpp>
 
 #include "PyArray.hpp"
+#include "PyMesh.hpp"
 
 namespace pdal
 {
@@ -165,6 +166,24 @@ std::vector<Array *> Pipeline::getArrays() const
         Array *array = new python::Array;
         array->update(i);
         output.push_back(array);
+    }
+    return output;
+}
+
+std::vector<Mesh *> Pipeline::getMesh() const
+{
+    std::vector<Mesh *> output;
+
+    if (!m_executor->executed())
+        throw python_error("call execute() before fetching the mesh");
+
+    const PointViewSet& pvset = m_executor->getManagerConst().views();
+
+    for (auto i: pvset)
+    {
+        Mesh *mesh = new python::Mesh;
+        mesh->update(i)
+        output.push_back(mesh)
     }
     return output;
 }
