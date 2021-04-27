@@ -95,7 +95,7 @@ void Mesh::update(PointViewPtr view)
     {
         char *p = (char *)PyArray_GETPTR1(m_mesh, idx);
         const Triangle& t = (*mesh)[idx];
-        char *data = new char[12]
+        char *data = new char[12];
         data << (uint32_t)t.m_a << (uint32_t)t.m_b << (uint32_t)t.m_c;
         std::copy( p, p+12, data);
     }
