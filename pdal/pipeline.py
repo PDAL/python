@@ -45,3 +45,7 @@ class Pipeline(object):
     def get_arrays(self):
         return self.p.arrays
     arrays = property(get_arrays)
+
+    def get_meshes(self):
+        return self.p.meshes
+    meshes = property(get_meshes)

@@ -94,7 +94,7 @@ void Mesh::update(PointViewPtr view)
     for (PointId idx = 0; idx < size; idx++)
     {
         char *p = (char *)PyArray_GETPTR1(m_mesh, idx);
-        Triangle t = *mesh->Triangle(idx);
+        const Triangle& t = (*mesh)[idx];
         *p << (uint32_t)t.m_a << (uint32_t)t.m_b << (uint32_t)t.m_c;
     }
 }

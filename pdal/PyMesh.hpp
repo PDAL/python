@@ -63,7 +63,7 @@ public:
 
     bool rowMajor() const;
     Shape shape() const;
-    ArrayIter& iterator();
+    MeshIter& iterator();
 
 
 private:
