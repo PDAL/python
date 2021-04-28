@@ -153,10 +153,12 @@ Accessing Mesh Data
 
 Some PDAL stages (for instance ``filters.delaunay``) create TIN type mesh data. 
 
-This data can be accessed in Python using the ``Pipeline.meshes`` property, which returns ``numpy.ndarray`` 
-of shape (1,n) where n is the number of Triangles in the mesh. If the PointView contains no mesh data, then n = 0.
+This data can be accessed in Python using the ``Pipeline.meshes`` property, which returns a ``numpy.ndarray`` 
+of shape (1,n) where n is the number of Triangles in the mesh. 
 
-Each Triangle is a tuple ``(A,B,C)`` where A, B and C are indicees into the PointView for the point that is the vertex for the Triangle.
+If the PointView contains no mesh data, then n = 0.
+
+Each Triangle is a tuple ``(A,B,C)`` where A, B and C are indices into the PointView identifying the point that is the vertex for the Triangle.
 
 Meshio Integration
 ................................................................................
@@ -167,12 +169,11 @@ into the `Meshio <https://github.com/nschloe/meshio>`__ library.
 The ``pdal.Pipeline`` class provides the ``get_meshio(idx: int) -> meshio.Mesh`` method. This 
 method creates a `Mesh` object from the `PointView` array and mesh properties.
 
-.. note:: The meshio integration requires that meshio is installed (e.g. ``pip install meshio``). If it
-is not, then the method fails with an informative RuntimeError.
+.. note:: The meshio integration requires that meshio is installed (e.g. ``pip install meshio``). If it is not, then the method fails with an informative RuntimeError.
 
 Simple use of the functionality could be as follows:
 
--- code-block:: python
+.. code-block:: python
   import pdal
 
   ...
@@ -187,8 +188,7 @@ Advanced Mesh Use Case
 
 USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into tiles and store the tiles in PostGIS.
 
-.. note:: Like ``Pipeline.arrays``, ``Pipeline.meshes`` returns a list of ``numpy.ndarray`` to provide for the case 
-where the output from a Pipeline is multiple PointViews
+.. note:: Like ``Pipeline.arrays``, ``Pipeline.meshes`` returns a list of ``numpy.ndarray`` to provide for the case where the output from a Pipeline is multiple PointViews
 
 (example using 1.2-with-color.las and not doing the ground classification for clarity)
 
