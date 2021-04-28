@@ -1,5 +1,5 @@
 /******************************************************************************
-* Copyright (c) 2016, Howard Butler (howard@hobu.co)
+* Copyright (c) 2021, Runette Software Ltd (www.runette.co.uk)
 *
 * All rights reserved.
 *
@@ -13,7 +13,7 @@
 *       notice, this list of conditions and the following disclaimer in
 *       the documentation and/or other materials provided
 *       with the distribution.
-*     * Neither the name of Hobu, Inc. or Flaxen Geo Consulting nor the
+*     * Neither the name of Hobu, Inc. nor the
 *       names of its contributors may be used to endorse or promote
 *       products derived from this software without specific prior
 *       written permission.
@@ -34,64 +34,70 @@
 
 #pragma once
 
-#include <pdal/PipelineManager.hpp>
-#include <pdal/PipelineWriter.hpp>
-#include <pdal/util/FileUtils.hpp>
-#include <pdal/PipelineExecutor.hpp>
 
-#include <string>
-#include <sstream>
-#include <memory>
+#include <pdal/PointView.hpp>
+#include <numpy/ndarraytypes.h>
+
+#include <utility>
 
 namespace pdal
 {
 namespace python
 {
+class MeshIter;
 
-class Array;
-class Mesh;
-
-class python_error : public std::runtime_error
+class PDAL_DLL Mesh
 {
 public:
-    inline python_error(std::string const& msg) : std::runtime_error(msg)
-        {}
-};
+    using Shape = std::array<size_t, 3>;
 
-class Pipeline
-{
-public:
-    Pipeline(std::string const& json);
-    Pipeline(std::string const& json,
-        std::vector<pdal::python::Array*> arrays);
-    ~Pipeline();
+    bool hasMesh;
 
-    int64_t execute();
-    bool validate();
-    inline std::string getPipeline() const
-    {
-        return m_executor->getPipeline();
-    }
-    inline std::string getMetadata() const
-    {
-        return m_executor->getMetadata();
-    }
-    inline std::string getSchema() const
-    {
-        return m_executor->getSchema();
-    }
-    inline std::string getLog() const
-    {
-        return m_executor->getLog();
-    }
-    std::vector<pdal::python::Array *> getArrays() const;
-    std::vector<pdal::python::Mesh *> getMeshes() const;
-    void setLogLevel(int level);
-    int getLogLevel() const;
+    Mesh();
+
+    ~Mesh();
+
+    void update(PointViewPtr view);
+    PyArrayObject *getPythonArray() const;
+
+    bool rowMajor() const;
+    Shape shape() const;
+    MeshIter& iterator();
+
 
 private:
-    std::shared_ptr<pdal::PipelineExecutor> m_executor;
+    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
+
+    PyArrayObject* m_mesh;
+
+    Mesh& operator=(Mesh const& rhs);
+    bool m_rowMajor;
+    Shape m_shape {};
+    std::vector<std::unique_ptr<MeshIter>> m_iterators;
 };
+
+class MeshIter
+{
+public:
+    MeshIter(const MeshIter&) = delete;
+    MeshIter() = delete;
+
+    MeshIter(Mesh& mesh);
+    ~MeshIter();
+
+    MeshIter& operator++();
+    operator bool () const;
+    char *operator * () const;
+
+private:
+    NpyIter *m_iter;
+    NpyIter_IterNextFunc *m_iterNext;
+    char **m_data;
+    npy_intp *m_size;
+    npy_intp *m_stride;
+    bool m_done;
+};    
 
 } // namespace python
 } // namespace pdal
+

@@ -45,3 +45,26 @@ class Pipeline(object):
     def get_arrays(self):
         return self.p.arrays
     arrays = property(get_arrays)
+
+    def get_meshes(self):
+        return self.p.meshes
+    meshes = property(get_meshes)
+
+    def get_meshio(self, idx: int):
+        try:
+            from meshio import Mesh
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "The get_meshio function can only be used if you have installed meshio. Try pip install meshio")
+        array = self.arrays[idx]
+        mesh = self.meshes[idx]
+        if len(mesh) == 0:
+            return None
+        return Mesh(
+            np.stack((array['X'], array['Y'], array['Z']), 1),
+            [(
+                "triangle",
+                np.stack((mesh['A'], mesh['B'], mesh['C']), 1)
+            )
+            ]
+        )
