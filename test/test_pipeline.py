@@ -254,7 +254,7 @@ class TestMesh(PDALTest):
         self.assertEqual(len(meshes), 24)
 
         m = meshes[0]
-        self.assertEqual(m.dtype, "dtype([('A', '<u4'), ('B', '<u4'), ('C', '<u4')])")
+        self.assertEqual(str(m.dtype), "[('A', '<u4'), ('B', '<u4'), ('C', '<u4')]")
         self.assertEqual(len(m),134)
         self.assertEqual(m[0][0], 29)
 
