@@ -39,7 +39,6 @@
 #include <numpy/ndarraytypes.h>
 
 #include <utility>
-#include <string>
 
 namespace pdal
 {

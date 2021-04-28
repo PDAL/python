@@ -85,7 +85,7 @@ public:
         return m_executor->getLog();
     }
     std::vector<pdal::python::Array *> getArrays() const;
-    std::vector<pdal::python::Mesh *> getMesh() const;
+    std::vector<pdal::python::Mesh *> getMeshes() const;
     void setLogLevel(int level);
     int getLogLevel() const;
 

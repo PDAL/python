@@ -57,7 +57,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
         string getSchema() except +
         string getLog() except +
         vector[Array*] getArrays() except +
-        vector[Mesh*] getMesh() except +
+        vector[Mesh*] getMeshes() except +
         int getLogLevel()
         void setLogLevel(int)
 
@@ -161,7 +161,7 @@ cdef class PyPipeline:
     property meshes:
 
         def __get__(self):
-            v = self.thisptr.getMesh()
+            v = self.thisptr.getMeshes()
             output = []
             cdef vector[Mesh *].iterator it = v.begin()
             cdef Mesh* m

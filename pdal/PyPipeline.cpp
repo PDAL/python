@@ -170,7 +170,7 @@ std::vector<Array *> Pipeline::getArrays() const
     return output;
 }
 
-std::vector<Mesh *> Pipeline::getMesh() const
+std::vector<Mesh *> Pipeline::getMeshes() const
 {
     std::vector<Mesh *> output;
 
