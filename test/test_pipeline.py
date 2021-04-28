@@ -231,6 +231,33 @@ class TestDimensions(PDALTest):
         self.assertLess(len(dims), 100)
         self.assertGreater(len(dims), 71)
 
+class TestMesh(PDALTest):
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
+                         "missing test data")
+    def test_no_execute(self):
+        """Does fetching meshes without executing throw an exception"""
+        json = self.fetch_json('sort.json')
+        r = pdal.Pipeline(json)
+        with self.assertRaises(RuntimeError):
+            r.meshes
+
+    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'mesh.json')),
+                         "missing test data")
+    def test_mesh(self):
+        """Can we fetch PDAL face data as a numpy array"""
+        json = self.fetch_json('mesh.json')
+        r = pdal.Pipeline(json)
+        r.validate()
+        points = r.execute()
+        self.assertEqual(points, 1065)  
+        meshes = r.meshes
+        self.assertEqual(len(meshes), 24)
+
+        m = meshes[0]
+        self.assertEqual(m.dtype, "dtype([('A', '<u4'), ('B', '<u4'), ('C', '<u4')])")
+        self.assertEqual(len(m),134)
+        self.assertEqual(m[0][0], 29)
+
 def test_suite():
     return unittest.TestSuite(
         [TestPipeline()])
