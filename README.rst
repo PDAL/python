@@ -174,14 +174,14 @@ method creates a `Mesh` object from the `PointView` array and mesh properties.
 Simple use of the functionality could be as follows:
 
 .. code-block:: python
-  import pdal
+    import pdal
 
-  ...
-  pl = pdal.Pipeline(pipeline)
-  pl.execute()
+    ...
+    pl = pdal.Pipeline(pipeline)
+    pl.execute()
 
-  mesh = pl.get_meshio(0)
-  mesh.write('test.obj')
+    mesh = pl.get_meshio(0)
+    mesh.write('test.obj')
 
 Advanced Mesh Use Case
 ................................................................................
@@ -192,38 +192,38 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
 
 (example using 1.2-with-color.las and not doing the ground classification for clarity)
 
-.. code_block:: python
+.. code-block:: python
 
-  import pdal
-  import json
-  import psycopg2
-  import io
+    import pdal
+    import json
+    import psycopg2
+    import io
 
-  pipe = [
-      '.../python/test/data/1.2-with-color.las',
-      {"type":  "filters.splitter", "length": 1000}, 
-      {"type":  "filters.delaunay"}
-  ]
+    pipe = [
+        '.../python/test/data/1.2-with-color.las',
+        {"type":  "filters.splitter", "length": 1000}, 
+        {"type":  "filters.delaunay"}
+    ]
 
-  pl = pdal.Pipeline(json.dumps(pipe))
-  pl.execute()
+    pl = pdal.Pipeline(json.dumps(pipe))
+    pl.execute()
 
-  conn = psycopg(%CONNNECTION_STRING%)
-  buffer = io.StringIO
+    conn = psycopg(%CONNNECTION_STRING%)
+    buffer = io.StringIO
 
-  for idx in range(len(pl.meshes)):
-      m =  pl.get_meshio(idx)
-      if m:
-          m.write(buffer,  file_format = "wkt")
-          with conn.cursor() as curr:
-            curr.execute(
-                "INSERT INTO %table-name% (mesh) VALUES (ST_GeomFromEWKT(%(ewkt)s)", 
-                { "ewkt": buffer.getvalue()}
-            )
+    for idx in range(len(pl.meshes)):
+        m =  pl.get_meshio(idx)
+        if m:
+            m.write(buffer,  file_format = "wkt")
+            with conn.cursor() as curr:
+              curr.execute(
+                  "INSERT INTO %table-name% (mesh) VALUES (ST_GeomFromEWKT(%(ewkt)s)", 
+                  { "ewkt": buffer.getvalue()}
+              )
 
-  conn.commit()
-  conn.close()
-  buffer.close()
+    conn.commit()
+    conn.close()
+    buffer.close()
 
 
 
