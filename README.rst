@@ -174,6 +174,7 @@ method creates a `Mesh` object from the `PointView` array and mesh properties.
 Simple use of the functionality could be as follows:
 
 .. code-block:: python
+    
     import pdal
 
     ...
