@@ -1,0 +1,5 @@
+[
+    "test/data/1.2-with-color.las",
+    {"type":  "filters.splitter", "length": 1000}, 
+    {"type":  "filters.delaunay"}
+]

@@ -41,6 +41,11 @@ cdef extern from "PyArray.hpp" namespace "pdal::python":
         Array(np.ndarray) except +
         void *getPythonArray() except+
 
+cdef extern from "PyMesh.hpp" namespace "pdal::python":
+    cdef cppclass Mesh:
+        Mesh(np.ndarray) except +
+        void *getPythonArray() except +
+
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass Pipeline:
         Pipeline(const char* ) except +
@@ -52,6 +57,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
         string getSchema() except +
         string getLog() except +
         vector[Array*] getArrays() except +
+        vector[Mesh*] getMeshes() except +
         int getLogLevel()
         void setLogLevel(int)
 
@@ -152,6 +158,21 @@ cdef class PyPipeline:
                 inc(it)
             return output
 
+    property meshes:
+
+        def __get__(self):
+            v = self.thisptr.getMeshes()
+            output = []
+            cdef vector[Mesh *].iterator it = v.begin()
+            cdef Mesh* m
+            while it != v.end():
+                ptr = deref(it)
+                m = ptr#.get()
+                o = m.getPythonArray()
+                output.append(<object>o)
+                del ptr
+                inc(it)
+            return output
 
     def execute(self):
         if not self.thisptr:
