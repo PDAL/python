@@ -225,7 +225,7 @@ TEST_F(PythonFilterTest, metadata)
         "def myfunc(ins,outs):\n"
         "  global metadata\n"
         "  #print('before', globals(),  file=sys.stderr,)\n"
-        "  metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'filters.python', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'readers.faux', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
+        "  out_metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'filters.python', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'readers.faux', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
         " # print ('schema', schema, file=sys.stderr,)\n"
         "  return True\n"
     );
