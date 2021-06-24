@@ -225,7 +225,7 @@ TEST_F(PythonFilterTest, metadata)
         "def myfunc(ins,outs):\n"
         "  global metadata\n"
         "  #print('before', globals(),  file=sys.stderr,)\n"
-        "  out_metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'filters.python', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'readers.faux', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
+        "  out_metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'somechildren', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'otherchildren', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
         " # print ('schema', schema, file=sys.stderr,)\n"
         "  return True\n"
     );
@@ -248,7 +248,7 @@ TEST_F(PythonFilterTest, metadata)
 
     PointLayoutPtr layout(table.layout());
     MetadataNode m = table.metadata();
-    m = m.findChild("filters.python");
+    m = m.findChild("somechildren");
     MetadataNodeList l = m.children();
     EXPECT_EQ(l.size(), 3u);
     EXPECT_EQ(l[0].name(), "filters.python");
