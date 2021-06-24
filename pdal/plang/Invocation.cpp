@@ -384,7 +384,7 @@ PyObject *Invocation::prepareData(PointViewPtr& view)
     MetadataNode layoutMeta = view->layout()->toMetadata();
     MetadataNode srsMeta = view->spatialReference().toMetadata();
 
-    addGlobalObject(m_module, plang::fromMetadata(m_inputMetadata), "stage_metadata");
+    addGlobalObject(m_module, plang::fromMetadata(m_inputMetadata), "metadata");
     addGlobalObject(m_module, getPyJSON(m_pdalargs), "pdalargs");
     addGlobalObject(m_module, getPyJSON(Utils::toJSON(layoutMeta)), "schema");
     addGlobalObject(m_module, getPyJSON(Utils::toJSON(srsMeta)),
