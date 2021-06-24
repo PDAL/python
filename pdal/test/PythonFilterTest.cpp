@@ -249,6 +249,7 @@ TEST_F(PythonFilterTest, metadata)
     PointLayoutPtr layout(table.layout());
     MetadataNode m = table.metadata();
     m = m.findChild("somechildren");
+    Utils::toJSON(m, std::cerr);
     MetadataNodeList l = m.children();
     EXPECT_EQ(l.size(), 3u);
     EXPECT_EQ(l[0].name(), "filters.python");
