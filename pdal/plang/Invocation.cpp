@@ -384,7 +384,7 @@ PyObject *Invocation::prepareData(PointViewPtr& view)
     MetadataNode layoutMeta = view->layout()->toMetadata();
     MetadataNode srsMeta = view->spatialReference().toMetadata();
 
-    addGlobalObject(m_module, plang::fromMetadata(m_inputMetadata), "metadata");
+    addGlobalObject(m_module, plang::fromMetadata(m_inputMetadata), "stage_metadata");
     addGlobalObject(m_module, getPyJSON(m_pdalargs), "pdalargs");
     addGlobalObject(m_module, getPyJSON(Utils::toJSON(layoutMeta)), "schema");
     addGlobalObject(m_module, getPyJSON(Utils::toJSON(srsMeta)),
@@ -473,11 +473,10 @@ void Invocation::extractData(PointViewPtr& view, PyObject *arrays)
 
 void Invocation::extractMetadata(MetadataNode stageMetadata)
 {
-    PyObject *key = PyUnicode_FromString("metadata");
+    PyObject *key = PyUnicode_FromString("out_metadata");
     PyObject *dictionary = PyModule_GetDict(m_module);
     PyObject *pyMeta = PyDict_GetItem(dictionary, key);
-    if (pyMeta)
-        addMetadata(pyMeta, stageMetadata);
+    addMetadata(pyMeta, stageMetadata);
     Py_DECREF(key);
 }
 
