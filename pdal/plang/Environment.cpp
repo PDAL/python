@@ -299,16 +299,21 @@ void addMetadata(PyObject *dict, MetadataNode m)
     if (type.empty())
         type = Metadata::inferType(value);
 
-    m = m.addWithType(name, value, type, description);
+    m.addWithType(name, value, type, description);
     PyObject *submeta = PyDict_GetItemString(dict, "children");
     if (submeta)
     {
         if (!PyList_Check(submeta))
             throw pdal::pdal_error("Ouput metadata 'children' must be a list.");
-        for (Py_ssize_t i = 0; i < PyList_Size(submeta); ++i)
+        Py_ssize_t size = PyList_Size(submeta);
+        if (size)
         {
-            PyObject* p = PyList_GetItem(submeta, i);
-            addMetadata(p, m);
+            m = m.add("children");
+            for (Py_ssize_t i = 0; i < PyList_Size(submeta); ++i)
+            {
+                PyObject* p = PyList_GetItem(submeta, i);
+                addMetadata(p, m);
+            }
         }
     }
 }
