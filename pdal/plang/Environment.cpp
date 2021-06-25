@@ -87,13 +87,12 @@ std::string readPythonString(PyObject* dict, const std::string& key)
     std::string s;
 
     PyObject* o = PyDict_GetItemString(dict, key.c_str());
-    if (!o)
-        return s;
-
-    PyObject* r = PyObject_Str(o);
-    if (r)
-        s = PyUnicode_AsUTF8AndSize(r, NULL);
-
+    if (o)
+    {
+        PyObject* r = PyObject_Str(o);
+        if (r)
+            s = PyUnicode_AsUTF8AndSize(r, NULL);
+    }
     return s;
 }
 
