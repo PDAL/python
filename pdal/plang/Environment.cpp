@@ -79,6 +79,25 @@ static void loadPython()
 }
 #endif
 
+namespace
+{
+
+std::string readPythonString(PyObject* dict, const std::string& key)
+{
+    std::string s;
+
+    PyObject* o = PyDict_GetItemString(dict, key.c_str());
+    if (o)
+    {
+        PyObject* r = PyObject_Str(o);
+        if (r)
+            s = PyUnicode_AsUTF8AndSize(r, NULL);
+    }
+    return s;
+}
+
+} // unnamed namespace
+
 // http://www.linuxjournal.com/article/3641
 // http://www.codeproject.com/Articles/11805/Embedding-Python-in-C-C-Part-I
 // http://stackoverflow.com/questions/6596016/python-threads-in-c
@@ -199,9 +218,9 @@ std::string getTraceback()
             PyObject* r = PyObject_Repr(l);
             if (!r)
                 throw pdal::pdal_error("unable to get repr in getTraceback");
-            Py_ssize_t size;
-            const char *d = PyUnicode_AsUTF8AndSize(r, &size);
-            mssg << d;
+            const char *d = PyUnicode_AsUTF8AndSize(r, NULL);
+            if (d)
+                mssg << d;
         }
 
         // clean up
@@ -213,9 +232,9 @@ std::string getTraceback()
         PyObject* r = PyObject_Repr(value);
         if (!r)
             throw pdal::pdal_error("couldn't make string representation of traceback value");
-        Py_ssize_t size;
-        const char *d = PyUnicode_AsUTF8AndSize(r, &size);
-        mssg << d;
+        const char *d = PyUnicode_AsUTF8AndSize(r, NULL);
+        if (d)
+            mssg << d;
     }
     else
         mssg << "unknown error that we are unable to get a traceback for."
@@ -231,21 +250,6 @@ std::string getTraceback()
 // Returns a new reference.
 PyObject *fromMetadata(MetadataNode m)
 {
-    std::string name = m.name();
-    std::string value = m.value();
-    std::string type = m.type();
-    std::string description = m.description();
-
-    MetadataNodeList children = m.children();
-    PyObject *submeta(0);
-    if (children.size())
-    {
-        submeta = PyList_New(0);
-        for (MetadataNode& child : children)
-            PyList_Append(submeta, fromMetadata(child));
-    }
-    PyObject *data = PyDict_New();
-
     auto getString = [](const std::string& s)
     {
         PyObject *o = PyUnicode_FromString(s.data());
@@ -254,68 +258,59 @@ PyObject *fromMetadata(MetadataNode m)
         return o;
     };
 
-    PyDict_SetItemString(data, "name", getString(name));
-    PyDict_SetItemString(data, "value", getString(value));
-    PyDict_SetItemString(data, "type", getString(value));
-    PyDict_SetItemString(data, "description", getString(description));
+    PyObject *data = PyDict_New();
 
+    PyDict_SetItemString(data, "name", getString(m.name()));
+    PyDict_SetItemString(data, "value", getString(m.value()));
+    PyDict_SetItemString(data, "type", getString(m.type()));
+    PyDict_SetItemString(data, "description", getString(m.description()));
+
+    MetadataNodeList children = m.children();
     if (children.size())
+    {
+        PyObject *submeta = PyList_New(0);
+        for (MetadataNode& child : children)
+            PyList_Append(submeta, fromMetadata(child));
         PyDict_SetItemString(data, "children", submeta);
+    }
+
     return data;
 }
 
-std::string readPythonString(PyObject* dict, const std::string& key)
-{
-    std::stringstream ss;
 
-    PyObject* o = PyDict_GetItemString(dict, key.c_str());
-    if (!o)
-    {
-        std::stringstream oss;
-        oss << "Unable to get dictionary item '" << key << "'";
-        throw pdal_error(oss.str());
-    }
-
-    PyObject* r = PyObject_Str(o);
-    if (!r)
-        throw pdal::pdal_error("unable to get repr in readPythonString");
-    Py_ssize_t size;
-    const char *d = PyUnicode_AsUTF8AndSize(r, &size);
-    ss << d;
-
-    return ss.str();
-}
 void addMetadata(PyObject *dict, MetadataNode m)
 {
     if (!dict)
-    {
         return;
-    }
 
     if (!PyDict_Check(dict))
-        throw pdal::pdal_error("'metadata' member must be a dictionary!");
+        throw pdal::pdal_error("Output metadata must be in a dictionary.");
 
     std::string name = readPythonString(dict, "name");
     std::string value = readPythonString(dict, "value");
-
     std::string type = readPythonString(dict, "type");
+    std::string description = readPythonString(dict, "description");
+    if (name.empty())
+        return;
     if (type.empty())
         type = Metadata::inferType(value);
 
-    std::string description = readPythonString(dict, "description");
-
+    m.addWithType(name, value, type, description);
     PyObject *submeta = PyDict_GetItemString(dict, "children");
     if (submeta)
     {
         if (!PyList_Check(submeta))
-            throw pdal::pdal_error("'children' metadata member must be a list!");
-
-        for (Py_ssize_t i = 0; i < PyList_Size(submeta); ++i)
+            throw pdal::pdal_error("Ouput metadata 'children' must be a list.");
+        Py_ssize_t size = PyList_Size(submeta);
+        if (size)
         {
-            PyObject* p = PyList_GetItem(submeta, i);
-            addMetadata(p, m);
+            m = m.add("children");
+            for (Py_ssize_t i = 0; i < PyList_Size(submeta); ++i)
+            {
+                PyObject* p = PyList_GetItem(submeta, i);
+                addMetadata(p, m);
+            }
         }
-        MetadataNode child = m.addWithType(name, value, type, description);
     }
 }
 

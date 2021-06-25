@@ -223,9 +223,9 @@ TEST_F(PythonFilterTest, metadata)
         "import sys\n"
         "import redirector\n"
         "def myfunc(ins,outs):\n"
-        "  global metadata\n"
+        "  global out_metadata\n"
         "  #print('before', globals(),  file=sys.stderr,)\n"
-        "  metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'filters.python', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'readers.faux', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
+        "  out_metadata = {'name': 'root', 'value': 'a string', 'type': 'string', 'description': 'a description', 'children': [{'name': 'somechildren', 'value': 52, 'type': 'integer', 'description': 'a filter description', 'children': []}, {'name': 'otherchildren', 'value': 'another string', 'type': 'string', 'description': 'a reader description', 'children': []}]}\n"
         " # print ('schema', schema, file=sys.stderr,)\n"
         "  return True\n"
     );
@@ -250,10 +250,11 @@ TEST_F(PythonFilterTest, metadata)
     MetadataNode m = table.metadata();
     m = m.findChild("filters.python");
     MetadataNodeList l = m.children();
-    EXPECT_EQ(l.size(), 3u);
-    EXPECT_EQ(l[0].name(), "filters.python");
-    EXPECT_EQ(l[0].value(), "52");
-    EXPECT_EQ(l[0].description(), "a filter description");
+    EXPECT_EQ(l.size(), 2u);
+    m = m.findChild("children");
+    EXPECT_EQ(m.children().size(), 2u);
+    m = m.findChild("somechildren");
+    EXPECT_EQ(m.value(), "52");
 }
 
 TEST_F(PythonFilterTest, pdalargs)

@@ -473,11 +473,10 @@ void Invocation::extractData(PointViewPtr& view, PyObject *arrays)
 
 void Invocation::extractMetadata(MetadataNode stageMetadata)
 {
-    PyObject *key = PyUnicode_FromString("metadata");
+    PyObject *key = PyUnicode_FromString("out_metadata");
     PyObject *dictionary = PyModule_GetDict(m_module);
     PyObject *pyMeta = PyDict_GetItem(dictionary, key);
-    if (pyMeta)
-        addMetadata(pyMeta, stageMetadata);
+    addMetadata(pyMeta, stageMetadata);
     Py_DECREF(key);
 }
 
