@@ -228,7 +228,7 @@ class TestDimensions(PDALTest):
     def test_fetch_dimensions(self):
         """Ask PDAL for its valid dimensions list"""
         dims = pdal.dimensions
-        self.assertLess(len(dims), 100)
+        self.assertLess(len(dims), 120)
         self.assertGreater(len(dims), 71)
 
 class TestMesh(PDALTest):
