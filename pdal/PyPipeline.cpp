@@ -53,8 +53,8 @@ namespace python
 {
 
 // Create a pipeline for writing data to PDAL
-Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
-    m_executor(new PipelineExecutor(json))
+PyPipelineExecutor::PyPipelineExecutor(std::string const& json,
+    std::vector<Array*> arrays) : PipelineExecutor(json)
 {
 #ifndef _WIN32
     // See comment in alternate constructor below.
@@ -64,8 +64,7 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
     if (_import_array() < 0)
         throw pdal_error("Could not impory numpy.core.multiarray.");
 
-    PipelineManager& manager = m_executor->getManager();
-
+    PipelineManager& manager = getManager();
     std::stringstream strm(json);
     manager.readPipeline(strm);
     std::vector<Stage *> roots = manager.roots();
@@ -107,8 +106,7 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
 }
 
 // Create a pipeline for reading data from PDAL
-Pipeline::Pipeline(std::string const& json) :
-    m_executor(new PipelineExecutor(json))
+PyPipelineExecutor::PyPipelineExecutor(std::string const& json) : PipelineExecutor(json)
 {
     // Make the symbols in pdal_base global so that they're accessible
     // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
@@ -124,65 +122,32 @@ Pipeline::Pipeline(std::string const& json) :
         throw pdal_error("Could not impory numpy.core.multiarray.");
 }
 
-Pipeline::~Pipeline()
-{}
-
-
-void Pipeline::setLogLevel(int level)
+std::vector<Array*> PyPipelineExecutor::getArrays() const
 {
-    m_executor->setLogLevel(level);
-}
-
-
-int Pipeline::getLogLevel() const
-{
-    return static_cast<int>(m_executor->getLogLevel());
-}
-
-
-int64_t Pipeline::execute()
-{
-    return m_executor->execute();
-}
-
-bool Pipeline::validate()
-{
-    auto res =  m_executor->validate();
-    return res;
-}
-
-std::vector<Array *> Pipeline::getArrays() const
-{
-    std::vector<Array *> output;
-
-    if (!m_executor->executed())
+    if (!executed())
         throw python_error("call execute() before fetching arrays");
 
-    const PointViewSet& pvset = m_executor->getManagerConst().views();
-
-    for (auto i: pvset)
+    std::vector<Array *> output;
+    for (auto view: getManagerConst().views())
     {
         //ABELL - Leak?
         Array *array = new python::Array;
-        array->update(i);
+        array->update(view);
         output.push_back(array);
     }
     return output;
 }
 
-std::vector<Mesh *> Pipeline::getMeshes() const
+std::vector<Mesh*> PyPipelineExecutor::getMeshes() const
 {
-    std::vector<Mesh *> output;
-
-    if (!m_executor->executed())
+    if (!executed())
         throw python_error("call execute() before fetching the mesh");
 
-    const PointViewSet& pvset = m_executor->getManagerConst().views();
-
-    for (auto i: pvset)
+    std::vector<Mesh *> output;
+    for (auto view: getManagerConst().views())
     {
         Mesh *mesh = new python::Mesh;
-        mesh->update(i);
+        mesh->update(view);
         output.push_back(mesh);
     }
     return output;

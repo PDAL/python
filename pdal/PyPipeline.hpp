@@ -58,39 +58,15 @@ public:
         {}
 };
 
-class Pipeline
+class PyPipelineExecutor : public PipelineExecutor
 {
 public:
-    Pipeline(std::string const& json);
-    Pipeline(std::string const& json,
+    PyPipelineExecutor(std::string const& json);
+    PyPipelineExecutor(std::string const& json,
         std::vector<pdal::python::Array*> arrays);
-    ~Pipeline();
 
-    int64_t execute();
-    bool validate();
-    inline std::string getPipeline() const
-    {
-        return m_executor->getPipeline();
-    }
-    inline std::string getMetadata() const
-    {
-        return m_executor->getMetadata();
-    }
-    inline std::string getSchema() const
-    {
-        return m_executor->getSchema();
-    }
-    inline std::string getLog() const
-    {
-        return m_executor->getLog();
-    }
     std::vector<pdal::python::Array *> getArrays() const;
     std::vector<pdal::python::Mesh *> getMeshes() const;
-    void setLogLevel(int level);
-    int getLogLevel() const;
-
-private:
-    std::shared_ptr<pdal::PipelineExecutor> m_executor;
 };
 
 } // namespace python

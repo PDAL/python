@@ -1,5 +1,5 @@
+from .libpdalpython import Pipeline
 from .libpdalpython import getDimensions, getInfo
-from .pipeline import Pipeline
 
 __version__ = "2.4.2"
 
