@@ -61,13 +61,6 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
         int getLogLevel()
         void setLogLevel(int)
 
-cdef class PyArray:
-    cdef Array *thisptr
-    def __cinit__(self, np.ndarray array):
-        self.thisptr = new Array(array)
-    def __dealloc__(self):
-        del self.thisptr
-
 cdef extern from "PyDimension.hpp":
     ctypedef struct Dimension:
         string name;
