@@ -3,13 +3,12 @@
 
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libc.stdint cimport uint32_t, int64_t
+from libc.stdint cimport int64_t
 from libcpp cimport bool
-from cpython.version cimport PY_MAJOR_VERSION
+from types import SimpleNamespace
 cimport numpy as np
 np.import_array()
 
-from cpython cimport PyObject, Py_INCREF
 from cython.operator cimport dereference as deref, preincrement as inc
 
 cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
@@ -21,20 +20,18 @@ cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
     cdef string pluginInstallPath() except+
     cdef string versionString() except+
 
-def getVersionString():
-    return versionString()
-def getVersionMajor():
-    return versionMajor()
-def getVersionMinor():
-    return versionMinor()
-def getVersionPatch():
-    return versionPatch()
-def getSha1():
-    return sha1()
-def getDebugInformation():
-    return debugInformation()
-def getPluginInstallPath():
-    return pluginInstallPath()
+
+def getInfo():
+    return SimpleNamespace(
+        version=versionString(),
+        major=versionMajor(),
+        minor=versionMinor(),
+        patch=versionPatch(),
+        debug=debugInformation(),
+        sha1=sha1(),
+        plugin=pluginInstallPath(),
+    )
+
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
