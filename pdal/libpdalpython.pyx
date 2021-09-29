@@ -2,6 +2,7 @@
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
 import json
+from cpython.ref cimport Py_DECREF
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libc.stdint cimport int64_t
@@ -116,11 +117,11 @@ cdef class Pipeline:
 
     property arrays:
         def __get__(self):
-            return [<np.ndarray>a for a in self._executor.getArrays()]
+            return self._vector_to_list(self._executor.getArrays())
 
     property meshes:
         def __get__(self):
-            return [<np.ndarray>a for a in self._executor.getMeshes()]
+            return self._vector_to_list(self._executor.getMeshes())
 
     def execute(self):
         return self._executor.execute()
@@ -143,3 +144,10 @@ cdef class Pipeline:
             np.stack((array["X"], array["Y"], array["Z"]), 1),
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
+
+    cdef _vector_to_list(self, vector[np.PyArrayObject*] arrays):
+        output = []
+        for array in arrays:
+            output.append(<object>array)
+            Py_DECREF(output[-1])
+        return output
