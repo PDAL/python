@@ -45,7 +45,6 @@
 #include <pdal/pdal_features.hpp>
 
 #include "PyArray.hpp"
-#include "PyMesh.hpp"
 
 namespace pdal
 {
@@ -60,9 +59,6 @@ PyPipelineExecutor::PyPipelineExecutor(std::string const& json,
     // See comment in alternate constructor below.
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
-
-    if (_import_array() < 0)
-        throw pdal_error("Could not impory numpy.core.multiarray.");
 
     PipelineManager& manager = getManager();
     std::stringstream strm(json);
@@ -118,8 +114,6 @@ PyPipelineExecutor::PyPipelineExecutor(std::string const& json) : PipelineExecut
 #ifndef _WIN32
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
-    if (_import_array() < 0)
-        throw pdal_error("Could not impory numpy.core.multiarray.");
 }
 
 std::vector<Array*> PyPipelineExecutor::getArrays() const
@@ -129,12 +123,8 @@ std::vector<Array*> PyPipelineExecutor::getArrays() const
 
     std::vector<Array *> output;
     for (auto view: getManagerConst().views())
-    {
         //ABELL - Leak?
-        Array *array = new python::Array;
-        array->update(view);
-        output.push_back(array);
-    }
+        output.push_back(new python::Array(view));
     return output;
 }
 
@@ -145,14 +135,9 @@ std::vector<Mesh*> PyPipelineExecutor::getMeshes() const
 
     std::vector<Mesh *> output;
     for (auto view: getManagerConst().views())
-    {
-        Mesh *mesh = new python::Mesh;
-        mesh->update(view);
-        output.push_back(mesh);
-    }
+        output.push_back(new python::Mesh(view));
     return output;
 }
 
 } // namespace python
 } // namespace pdal
-

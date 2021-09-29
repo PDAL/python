@@ -1,8 +1,6 @@
 set(EXTENSION_SRC
     PyArray.cpp
     PyArray.hpp
-    PyMesh.cpp
-    PyMesh.hpp
     PyDimension.hpp
     PyPipeline.cpp
     PyPipeline.hpp)

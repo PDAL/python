@@ -34,7 +34,6 @@
 
 #include "PyArray.hpp"
 #include <pdal/io/MemoryViewReader.hpp>
-
 #include <numpy/arrayobject.h>
 
 namespace pdal
@@ -90,11 +89,35 @@ std::string toString(PyObject *pname)
 
 } // unnamed namespace
 
-Array::Array() : m_array(nullptr)
+Array::Array(PointViewPtr view)
 {
     if (_import_array() < 0)
         throw pdal_error("Could not import numpy.core.multiarray.");
+
+    PyObject *dtype_dict = (PyObject*)buildNumpyDescription(view);
+    if (!dtype_dict)
+        throw pdal_error("Unable to build numpy dtype "
+                "description dictionary");
+
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    npy_intp size = view->size();
+    m_array = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+
+    // copy the data
+    DimTypeList types = view->dimTypes();
+    for (PointId idx = 0; idx < view->size(); idx++)
+    {
+        char *p = (char *)PyArray_GETPTR1(m_array, idx);
+        view->getPackedPoint(types, idx, p);
+    }
 }
+
 
 Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 {
@@ -163,49 +186,9 @@ Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 
 Array::~Array()
 {
-    if (m_array)
-        Py_XDECREF((PyObject *)m_array);
+    Py_XDECREF(m_array);
 }
 
-
-void Array::update(PointViewPtr view)
-{
-    if (m_array)
-        Py_XDECREF((PyObject *)m_array);
-    m_array = nullptr;  // Just in case of an exception.
-
-    Dimension::IdList dims = view->dims();
-    npy_intp size = view->size();
-
-    PyObject *dtype_dict = (PyObject*)buildNumpyDescription(view);
-    if (!dtype_dict)
-        throw pdal_error("Unable to build numpy dtype "
-                "description dictionary");
-
-    PyArray_Descr *dtype = nullptr;
-    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
-        throw pdal_error("Unable to build numpy dtype");
-    Py_XDECREF(dtype_dict);
-
-    // This is a 1 x size array.
-    m_array = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
-            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
-
-    // copy the data
-    DimTypeList types = view->dimTypes();
-    for (PointId idx = 0; idx < view->size(); idx++)
-    {
-        char *p = (char *)PyArray_GETPTR1(m_array, idx);
-        view->getPackedPoint(types, idx, p);
-    }
-}
-
-
-//ABELL - Who's responsible for incrementing the ref count?
-PyArrayObject *Array::getPythonArray() const
-{
-    return m_array;
-}
 
 PyObject* Array::buildNumpyDescription(PointViewPtr view) const
 {
@@ -263,31 +246,100 @@ PyObject* Array::buildNumpyDescription(PointViewPtr view) const
     return dict;
 }
 
-bool Array::rowMajor() const
-{
-    return m_rowMajor;
-}
-
-Array::Shape Array::shape() const
-{
-    return m_shape;
-}
-
-const Array::Fields& Array::fields() const
-{
-    return m_fields;
-}
 
 ArrayIter& Array::iterator()
 {
-    ArrayIter *it = new ArrayIter(*this);
+    ArrayIter *it = new ArrayIter(m_array);
     m_iterators.push_back(std::unique_ptr<ArrayIter>(it));
     return *it;
 }
 
-ArrayIter::ArrayIter(Array& array)
+
+Mesh::Mesh(PointViewPtr view)
 {
-    m_iter = NpyIter_New(array.getPythonArray(),
+    if (_import_array() < 0)
+        throw pdal_error("Could not import numpy.core.multiarray.");
+
+    PyObject *dtype_dict = (PyObject*)buildNumpyDescription(view);
+    if (!dtype_dict)
+        throw pdal_error("Unable to build numpy dtype "
+                "description dictionary");
+
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    TriangularMesh* mesh = view->mesh();
+    npy_intp size = mesh ? mesh->size() : 0;
+    m_mesh = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+
+    for (PointId idx = 0; idx < size; idx++)
+    {
+        char* p = (char *)PyArray_GETPTR1(m_mesh, idx);
+        const Triangle& t = (*mesh)[idx];
+        uint32_t a = (uint32_t)t.m_a;
+        std::memcpy(p, &a, 4);
+        uint32_t b = (uint32_t)t.m_b;
+        std::memcpy(p + 4, &b, 4);
+        uint32_t c = (uint32_t)t.m_c;
+        std::memcpy(p + 8, &c,  4);
+    }
+}
+
+
+Mesh::~Mesh()
+{
+    if (m_mesh)
+        Py_XDECREF((PyObject *)m_mesh);
+}
+
+
+PyObject* Mesh::buildNumpyDescription(PointViewPtr view) const
+{
+    // Build up a numpy dtype dictionary
+    //
+    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
+    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
+    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
+    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
+    //           'Classification', 'ScanAngleRank', 'UserData',
+    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
+    //
+
+    Dimension::IdList dims = view->dims();
+
+    PyObject* dict = PyDict_New();
+    PyObject* formats = PyList_New(3);
+    PyObject* titles = PyList_New(3);
+
+    PyList_SetItem(titles, 0, PyUnicode_FromString("A"));
+    PyList_SetItem(formats, 0, PyUnicode_FromString("u4"));
+    PyList_SetItem(titles, 1, PyUnicode_FromString("B"));
+    PyList_SetItem(formats, 1, PyUnicode_FromString("u4"));
+    PyList_SetItem(titles, 2, PyUnicode_FromString("C"));
+    PyList_SetItem(formats, 2, PyUnicode_FromString("u4"));
+
+
+    PyDict_SetItemString(dict, "names", titles);
+    PyDict_SetItemString(dict, "formats", formats);
+
+    return dict;
+}
+
+ArrayIter& Mesh::iterator()
+{
+    ArrayIter *it = new ArrayIter(m_mesh);
+    m_iterators.push_back(std::unique_ptr<ArrayIter>(it));
+    return *it;
+}
+
+
+ArrayIter::ArrayIter(PyArrayObject* np_array)
+{
+    m_iter = NpyIter_New(np_array,
         NPY_ITER_EXTERNAL_LOOP | NPY_ITER_READONLY | NPY_ITER_REFS_OK,
         NPY_KEEPORDER, NPY_NO_CASTING, NULL);
     if (!m_iter)
@@ -322,16 +374,6 @@ ArrayIter& ArrayIter::operator++()
     else if (!m_iterNext(m_iter))
         m_done = true;
     return *this;
-}
-
-ArrayIter::operator bool () const
-{
-    return !m_done;
-}
-
-char * ArrayIter::operator * () const
-{
-    return *m_data;
 }
 
 } // namespace python

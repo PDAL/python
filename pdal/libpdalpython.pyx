@@ -61,9 +61,9 @@ cdef extern from "PyArray.hpp" namespace "pdal::python":
         Array(np.ndarray) except +
         void *getPythonArray() except+
 
-cdef extern from "PyMesh.hpp" namespace "pdal::python":
     cdef cppclass Mesh:
         void *getPythonArray() except +
+
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass PyPipelineExecutor:
