@@ -39,7 +39,6 @@
 #endif
 
 #include <Python.h>
-#include <numpy/arrayobject.h>
 
 #include <pdal/Stage.hpp>
 #include <pdal/pdal_features.hpp>
@@ -116,26 +115,145 @@ PyPipelineExecutor::PyPipelineExecutor(std::string const& json) : PipelineExecut
 #endif
 }
 
-std::vector<Array*> PyPipelineExecutor::getArrays() const
+inline PyObject* buildNumpyDescription(PointViewPtr view)
+{
+    // Build up a numpy dtype dictionary
+    //
+    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
+    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
+    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
+    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
+    //           'Classification', 'ScanAngleRank', 'UserData',
+    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
+    //
+    Dimension::IdList dims = view->dims();
+    PyObject* names = PyList_New(dims.size());
+    PyObject* formats = PyList_New(dims.size());
+    for (size_t i = 0; i < dims.size(); ++i)
+    {
+        Dimension::Id id = dims[i];
+        std::string name = view->dimName(id);
+        npy_intp stride = view->dimSize(id);
+
+        std::string kind;
+        Dimension::BaseType b = Dimension::base(view->dimType(id));
+        if (b == Dimension::BaseType::Unsigned)
+            kind = "u";
+        else if (b == Dimension::BaseType::Signed)
+            kind = "i";
+        else if (b == Dimension::BaseType::Floating)
+            kind = "f";
+        else
+            throw pdal_error("Unable to map kind '" + kind  +
+                "' to PDAL dimension type");
+
+        std::stringstream oss;
+        oss << kind << stride;
+        PyList_SetItem(names, i, PyUnicode_FromString(name.c_str()));
+        PyList_SetItem(formats, i, PyUnicode_FromString(oss.str().c_str()));
+    }
+    PyObject* dtype_dict = PyDict_New();
+    PyDict_SetItemString(dtype_dict, "names", names);
+    PyDict_SetItemString(dtype_dict, "formats", formats);
+    return dtype_dict;
+}
+
+
+PyArrayObject* viewToNumpyArray(PointViewPtr view)
+{
+    if (_import_array() < 0)
+        throw pdal_error("Could not import numpy.core.multiarray.");
+
+    PyObject* dtype_dict = buildNumpyDescription(view);
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    npy_intp size = view->size();
+    PyArrayObject* array = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+
+    // copy the data
+    DimTypeList types = view->dimTypes();
+    for (PointId idx = 0; idx < view->size(); idx++)
+        view->getPackedPoint(types, idx, (char *)PyArray_GETPTR1(array, idx));
+    return array;
+}
+
+std::vector<PyArrayObject*> PyPipelineExecutor::getArrays() const
 {
     if (!executed())
         throw python_error("call execute() before fetching arrays");
 
-    std::vector<Array *> output;
+    std::vector<PyArrayObject*> output;
     for (auto view: getManagerConst().views())
-        //ABELL - Leak?
-        output.push_back(new python::Array(view));
+        output.push_back(viewToNumpyArray(view));
     return output;
 }
 
-std::vector<Mesh*> PyPipelineExecutor::getMeshes() const
+
+PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
+{
+    if (_import_array() < 0)
+        throw pdal_error("Could not import numpy.core.multiarray.");
+
+    // Build up a numpy dtype dictionary
+    //
+    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
+    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
+    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
+    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
+    //           'Classification', 'ScanAngleRank', 'UserData',
+    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
+    //
+    PyObject* names = PyList_New(3);
+    PyList_SetItem(names, 0, PyUnicode_FromString("A"));
+    PyList_SetItem(names, 1, PyUnicode_FromString("B"));
+    PyList_SetItem(names, 2, PyUnicode_FromString("C"));
+
+    PyObject* formats = PyList_New(3);
+    PyList_SetItem(formats, 0, PyUnicode_FromString("u4"));
+    PyList_SetItem(formats, 1, PyUnicode_FromString("u4"));
+    PyList_SetItem(formats, 2, PyUnicode_FromString("u4"));
+
+    PyObject* dtype_dict = PyDict_New();
+    PyDict_SetItemString(dtype_dict, "names", names);
+    PyDict_SetItemString(dtype_dict, "formats", formats);
+
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    npy_intp size = mesh ? mesh->size() : 0;
+    PyArrayObject* array = (PyArrayObject*)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+    for (PointId idx = 0; idx < size; idx++)
+    {
+        char* p = (char *)PyArray_GETPTR1(array, idx);
+        const Triangle& t = (*mesh)[idx];
+        uint32_t a = (uint32_t)t.m_a;
+        std::memcpy(p, &a, 4);
+        uint32_t b = (uint32_t)t.m_b;
+        std::memcpy(p + 4, &b, 4);
+        uint32_t c = (uint32_t)t.m_c;
+        std::memcpy(p + 8, &c,  4);
+    }
+    return array;
+}
+
+
+std::vector<PyArrayObject*> PyPipelineExecutor::getMeshes() const
 {
     if (!executed())
         throw python_error("call execute() before fetching the mesh");
 
-    std::vector<Mesh *> output;
+    std::vector<PyArrayObject*> output;
     for (auto view: getManagerConst().views())
-        output.push_back(new python::Mesh(view));
+        output.push_back(meshToNumpyArray(view->mesh()));
     return output;
 }
 

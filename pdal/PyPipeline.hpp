@@ -34,14 +34,9 @@
 
 #pragma once
 
-#include <pdal/PipelineManager.hpp>
-#include <pdal/PipelineWriter.hpp>
-#include <pdal/util/FileUtils.hpp>
 #include <pdal/PipelineExecutor.hpp>
 
-#include <string>
-#include <sstream>
-#include <memory>
+#include <numpy/arrayobject.h>
 
 namespace pdal
 {
@@ -49,7 +44,6 @@ namespace python
 {
 
 class Array;
-class Mesh;
 
 class python_error : public std::runtime_error
 {
@@ -65,8 +59,8 @@ public:
     PyPipelineExecutor(std::string const& json,
         std::vector<pdal::python::Array*> arrays);
 
-    std::vector<pdal::python::Array *> getArrays() const;
-    std::vector<pdal::python::Mesh *> getMeshes() const;
+    std::vector<PyArrayObject*> getArrays() const;
+    std::vector<PyArrayObject*> getMeshes() const;
 };
 
 } // namespace python

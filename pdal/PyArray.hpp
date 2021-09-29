@@ -46,50 +46,21 @@ namespace python
 class ArrayIter;
 
 
-class PDAL_DLL Mesh
-{
-public:
-    using Shape = std::array<size_t, 3>;
-
-    Mesh(PointViewPtr view);
-    ~Mesh();
-
-    PyArrayObject *getPythonArray() const { return m_mesh; }
-    bool rowMajor() const { return m_rowMajor; }
-    Shape shape() const { return m_shape; }
-    ArrayIter& iterator();
-
-private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-    PyArrayObject* m_mesh;
-    bool m_rowMajor;
-    Shape m_shape {};
-    std::vector<std::unique_ptr<ArrayIter>> m_iterators;
-};
-
-
 class PDAL_DLL Array
 {
 public:
     using Shape = std::array<size_t, 3>;
     using Fields = std::vector<MemoryViewReader::Field>;
 
-    // Create an array for reading data from PDAL.
-    Array(PointViewPtr view);
-    // Create an array for writing data to PDAL.
     Array(PyArrayObject* array);
     ~Array();
 
-    PyArrayObject *getPythonArray() const { return m_array; }
     bool rowMajor() const { return m_rowMajor; };
     Shape shape() const { return m_shape; }
     const Fields& fields() const { return m_fields; };
     ArrayIter& iterator();
 
 private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
     PyArrayObject* m_array;
     Fields m_fields;
     bool m_rowMajor;

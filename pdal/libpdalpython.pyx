@@ -12,8 +12,6 @@ import numpy as np
 cimport numpy as np
 np.import_array()
 
-from cython.operator cimport dereference as deref, preincrement as inc
-
 
 cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
     cdef int versionMajor() except +
@@ -59,10 +57,6 @@ def getDimensions():
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
         Array(np.ndarray) except +
-        void *getPythonArray() except+
-
-    cdef cppclass Mesh:
-        void *getPythonArray() except +
 
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
@@ -75,8 +69,8 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        vector[Array*] getArrays() except +
-        vector[Mesh*] getMeshes() except +
+        vector[np.PyArrayObject*] getArrays() except +
+        vector[np.PyArrayObject*] getMeshes() except +
         int getLogLevel()
         void setLogLevel(int)
 
@@ -122,29 +116,11 @@ cdef class Pipeline:
 
     property arrays:
         def __get__(self):
-            output = []
-            v = self._executor.getArrays()
-            cdef vector[Array*].iterator it = v.begin()
-            cdef Array* ptr
-            while it != v.end():
-                ptr = deref(it)
-                output.append(<object>ptr.getPythonArray())
-                del ptr
-                inc(it)
-            return output
+            return [<np.ndarray>a for a in self._executor.getArrays()]
 
     property meshes:
         def __get__(self):
-            output = []
-            v = self._executor.getMeshes()
-            cdef vector[Mesh *].iterator it = v.begin()
-            cdef Mesh* ptr
-            while it != v.end():
-                ptr = deref(it)
-                output.append(<object>ptr.getPythonArray())
-                del ptr
-                inc(it)
-            return output
+            return [<np.ndarray>a for a in self._executor.getMeshes()]
 
     def execute(self):
         return self._executor.execute()
