@@ -45,14 +45,12 @@ namespace python
 
 class Array;
 
-class PyPipelineExecutor : public PipelineExecutor
-{
-public:
-    PyPipelineExecutor(std::string const& json);
-    PyPipelineExecutor(std::string const& json, std::vector<Array*> arrays);
-    std::vector<PyArrayObject*> getArrays() const;
-    std::vector<PyArrayObject*> getMeshes() const;
-};
+void readPipeline(PipelineExecutor* executor, std::string json);
+void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays);
+PyArrayObject* viewToNumpyArray(PointViewPtr view);
+PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);
+std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor);
+std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor);
 
 } // namespace python
 } // namespace pdal

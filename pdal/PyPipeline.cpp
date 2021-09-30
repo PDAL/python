@@ -32,6 +32,7 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
+#include "PyArray.hpp"
 #include "PyPipeline.hpp"
 
 #ifndef _WIN32
@@ -43,25 +44,33 @@
 #include <pdal/Stage.hpp>
 #include <pdal/pdal_features.hpp>
 
-#include "PyArray.hpp"
-
 namespace pdal
 {
 namespace python
 {
 
-// Create a pipeline for writing data to PDAL
-PyPipelineExecutor::PyPipelineExecutor(std::string const& json,
-    std::vector<Array*> arrays) : PipelineExecutor(json)
+
+void readPipeline(PipelineExecutor* executor, std::string json)
 {
+    std::stringstream strm(json);
+    executor->getManager().readPipeline(strm);
+}
+
+
+void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
+{
+    // Make the symbols in pdal_base global so that they're accessible
+    // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
+    // which means that without this, symbols in libpdal_base aren't available
+    // for resolution of symbols on future runtime linking.  This is an issue
+    // on Alpine and other Linux variants that don't use UNIQUE symbols
+    // for C++ template statics only.  Without this, you end up with multiple
+    // copies of template statics.
 #ifndef _WIN32
-    // See comment in alternate constructor below.
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
 
-    PipelineManager& manager = getManager();
-    std::stringstream strm(json);
-    manager.readPipeline(strm);
+    PipelineManager& manager = executor->getManager();
     std::vector<Stage *> roots = manager.roots();
     if (roots.size() != 1)
         throw pdal_error("Filter pipeline must contain a single root stage.");
@@ -100,20 +109,6 @@ PyPipelineExecutor::PyPipelineExecutor(std::string const& json,
     manager.validateStageOptions();
 }
 
-// Create a pipeline for reading data from PDAL
-PyPipelineExecutor::PyPipelineExecutor(std::string const& json) : PipelineExecutor(json)
-{
-    // Make the symbols in pdal_base global so that they're accessible
-    // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
-    // which means that without this, symbols in libpdal_base aren't available
-    // for resolution of symbols on future runtime linking.  This is an issue
-    // on Alpine and other Linux variants that don't use UNIQUE symbols
-    // for C++ template statics only.  Without this, you end up with multiple
-    // copies of template statics.
-#ifndef _WIN32
-    ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
-#endif
-}
 
 inline PyObject* buildNumpyDescription(PointViewPtr view)
 {
@@ -182,10 +177,10 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
     return array;
 }
 
-std::vector<PyArrayObject*> PyPipelineExecutor::getArrays() const
+std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor)
 {
     std::vector<PyArrayObject*> output;
-    for (auto view: getManagerConst().views())
+    for (auto view: executor->getManagerConst().views())
         output.push_back(viewToNumpyArray(view));
     return output;
 }
@@ -243,10 +238,10 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 }
 
 
-std::vector<PyArrayObject*> PyPipelineExecutor::getMeshes() const
+std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor)
 {
     std::vector<PyArrayObject*> output;
-    for (auto view: getManagerConst().views())
+    for (auto view: executor->getManagerConst().views())
         output.push_back(meshToNumpyArray(view->mesh()));
     return output;
 }

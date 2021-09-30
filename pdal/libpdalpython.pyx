@@ -2,12 +2,13 @@
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
 import json
+from types import SimpleNamespace
+
 from cpython.ref cimport Py_DECREF
 from libcpp.vector cimport vector
 from libcpp.string cimport string
 from libc.stdint cimport int64_t
 from libcpp cimport bool
-from types import SimpleNamespace
 
 import numpy as np
 cimport numpy as np
@@ -60,10 +61,9 @@ cdef extern from "PyArray.hpp" namespace "pdal::python":
         Array(np.ndarray) except +
 
 
-cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    cdef cppclass PyPipelineExecutor:
-        PyPipelineExecutor(const char*) except +
-        PyPipelineExecutor(const char*, vector[Array*]&) except +
+cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
+    cdef cppclass PipelineExecutor:
+        PipelineExecutor(const char*) except +
         bool executed() except +
         int64_t execute() except +
         bool validate() except +
@@ -71,23 +71,28 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        vector[np.PyArrayObject*] getArrays() except +
-        vector[np.PyArrayObject*] getMeshes() except +
         int getLogLevel()
         void setLogLevel(int)
 
 
+cdef extern from "PyPipeline.hpp" namespace "pdal::python":
+    void readPipeline(PipelineExecutor*, string) except +
+    void addArrayReaders(PipelineExecutor*, vector[Array *]) except +
+    vector[np.PyArrayObject*] getArrays(const PipelineExecutor* executor) except +
+    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor* executor) except +
+
+
 cdef class Pipeline:
-    cdef PyPipelineExecutor* _executor
+    cdef PipelineExecutor* _executor
     cdef vector[Array *] _arrays;
 
     def __cinit__(self, unicode json, list arrays=None):
+        self._executor = new PipelineExecutor(json.encode('UTF-8'))
+        readPipeline(self._executor, json.encode('UTF-8'))
         if arrays is not None:
             for array in arrays:
                 self._arrays.push_back(new Array(array))
-            self._executor = new PyPipelineExecutor(json.encode('UTF-8'), self._arrays)
-        else:
-            self._executor = new PyPipelineExecutor(json.encode('UTF-8'))
+        addArrayReaders(self._executor, self._arrays)
 
     def __dealloc__(self):
         for array in self._arrays:
@@ -120,13 +125,13 @@ cdef class Pipeline:
         def __get__(self):
             if not self._executor.executed():
                 raise RuntimeError("call execute() before fetching arrays")
-            return self._vector_to_list(self._executor.getArrays())
+            return self._vector_to_list(getArrays(self._executor))
 
     property meshes:
         def __get__(self):
             if not self._executor.executed():
                 raise RuntimeError("call execute() before fetching the mesh")
-            return self._vector_to_list(self._executor.getMeshes())
+            return self._vector_to_list(getMeshes(self._executor))
 
     def execute(self):
         return self._executor.execute()
