@@ -184,9 +184,6 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
 
 std::vector<PyArrayObject*> PyPipelineExecutor::getArrays() const
 {
-    if (!executed())
-        throw python_error("call execute() before fetching arrays");
-
     std::vector<PyArrayObject*> output;
     for (auto view: getManagerConst().views())
         output.push_back(viewToNumpyArray(view));
@@ -248,9 +245,6 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 
 std::vector<PyArrayObject*> PyPipelineExecutor::getMeshes() const
 {
-    if (!executed())
-        throw python_error("call execute() before fetching the mesh");
-
     std::vector<PyArrayObject*> output;
     for (auto view: getManagerConst().views())
         output.push_back(meshToNumpyArray(view->mesh()));

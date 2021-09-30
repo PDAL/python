@@ -64,6 +64,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass PyPipelineExecutor:
         PyPipelineExecutor(const char*) except +
         PyPipelineExecutor(const char*, vector[Array*]&) except +
+        bool executed() except +
         int64_t execute() except +
         bool validate() except +
         string getPipeline() except +
@@ -117,10 +118,14 @@ cdef class Pipeline:
 
     property arrays:
         def __get__(self):
+            if not self._executor.executed():
+                raise RuntimeError("call execute() before fetching arrays")
             return self._vector_to_list(self._executor.getArrays())
 
     property meshes:
         def __get__(self):
+            if not self._executor.executed():
+                raise RuntimeError("call execute() before fetching the mesh")
             return self._vector_to_list(self._executor.getMeshes())
 
     def execute(self):

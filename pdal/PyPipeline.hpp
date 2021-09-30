@@ -45,20 +45,11 @@ namespace python
 
 class Array;
 
-class python_error : public std::runtime_error
-{
-public:
-    inline python_error(std::string const& msg) : std::runtime_error(msg)
-        {}
-};
-
 class PyPipelineExecutor : public PipelineExecutor
 {
 public:
     PyPipelineExecutor(std::string const& json);
-    PyPipelineExecutor(std::string const& json,
-        std::vector<pdal::python::Array*> arrays);
-
+    PyPipelineExecutor(std::string const& json, std::vector<Array*> arrays);
     std::vector<PyArrayObject*> getArrays() const;
     std::vector<PyArrayObject*> getMeshes() const;
 };
