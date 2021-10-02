@@ -4,11 +4,14 @@
 import json
 from types import SimpleNamespace
 
+cimport cython
 from cpython.ref cimport Py_DECREF
-from libcpp.vector cimport vector
-from libcpp.string cimport string
-from libc.stdint cimport int64_t
+from cython.operator cimport dereference as deref
 from libcpp cimport bool
+from libcpp.memory cimport shared_ptr
+from libcpp.set cimport set as stl_set
+from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 import numpy as np
 cimport numpy as np
@@ -56,43 +59,53 @@ def getDimensions():
     return output
 
 
-cdef extern from "PyArray.hpp" namespace "pdal::python":
-    cdef cppclass Array:
-        Array(np.ndarray) except +
+cdef extern from "pdal/Mesh.hpp" namespace "pdal":
+    cdef cppclass TriangularMesh:
+        pass
+
+
+cdef extern from "pdal/PointView.hpp" namespace "pdal":
+    cdef cppclass PointView:
+        bool empty()
+        TriangularMesh* mesh()
+
+    ctypedef shared_ptr[PointView] PointViewPtr
+    ctypedef stl_set[PointViewPtr] PointViewSet
 
 
 cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
     cdef cppclass PipelineExecutor:
         PipelineExecutor(const char*) except +
-        bool executed() except +
-        int64_t execute() except +
+        int execute() except +
         bool validate() except +
+        PointViewSet views() except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        int getLogLevel()
-        void setLogLevel(int)
+        int getLogLevel() except +
+        void setLogLevel(int) except +
+
+    cdef cppclass PipelineStreamableExecutor(PipelineExecutor):
+        PipelineStreamableExecutor(const char*, int) except +
+        PointViewPtr executeNext() except +
+
+
+cdef extern from "PyArray.hpp" namespace "pdal::python":
+    cdef cppclass Array:
+        Array(np.ndarray) except +
 
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    void readPipeline(PipelineExecutor*, string) except +
     void addArrayReaders(PipelineExecutor*, vector[Array *]) except +
-    vector[np.PyArrayObject*] getArrays(const PipelineExecutor* executor) except +
-    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor* executor) except +
+    np.PyArrayObject* viewToNumpyArray(PointViewPtr view) except +;
+    np.PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh) except +;
 
 
-cdef class Pipeline:
+@cython.internal
+cdef class BasePipeline:
     cdef PipelineExecutor* _executor
     cdef vector[Array *] _arrays;
-
-    def __cinit__(self, unicode json, list arrays=None):
-        self._executor = new PipelineExecutor(json.encode('UTF-8'))
-        readPipeline(self._executor, json.encode('UTF-8'))
-        if arrays is not None:
-            for array in arrays:
-                self._arrays.push_back(new Array(array))
-        addArrayReaders(self._executor, self._arrays)
 
     def __dealloc__(self):
         for array in self._arrays:
@@ -121,23 +134,39 @@ cdef class Pipeline:
         def __get__(self):
             return json.loads(self._executor.getSchema())
 
-    property arrays:
-        def __get__(self):
-            if not self._executor.executed():
-                raise RuntimeError("call execute() before fetching arrays")
-            return self._vector_to_list(getArrays(self._executor))
+    def validate(self):
+        return self._executor.validate()
 
-    property meshes:
-        def __get__(self):
-            if not self._executor.executed():
-                raise RuntimeError("call execute() before fetching the mesh")
-            return self._vector_to_list(getMeshes(self._executor))
+    cdef _add_arrays(self, list arrays):
+        if arrays is not None:
+            for array in arrays:
+                self._arrays.push_back(new Array(array))
+        addArrayReaders(self._executor, self._arrays)
+
+
+cdef class Pipeline(BasePipeline):
+    def __cinit__(self, unicode json, list arrays=None):
+        self._executor = new PipelineExecutor(json.encode("UTF-8"))
+        self._add_arrays(arrays)
 
     def execute(self):
         return self._executor.execute()
 
-    def validate(self):
-        return self._executor.validate()
+    property arrays:
+        def __get__(self):
+            output = []
+            for view in self._executor.views():
+                output.append(<object>viewToNumpyArray(view))
+                Py_DECREF(output[-1])
+            return output
+
+    property meshes:
+        def __get__(self):
+            output = []
+            for view in self._executor.views():
+                output.append(<object>meshToNumpyArray(deref(view).mesh()))
+                Py_DECREF(output[-1])
+            return output
 
     def get_meshio(self, idx):
         try:
@@ -155,9 +184,25 @@ cdef class Pipeline:
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
 
-    cdef _vector_to_list(self, vector[np.PyArrayObject*] arrays):
-        output = []
-        for array in arrays:
-            output.append(<object>array)
-            Py_DECREF(output[-1])
-        return output
+
+cdef class PipelineIterator(BasePipeline):
+    cdef int _chunk_size
+
+    def __cinit__(self, unicode json, list arrays=None, int chunk_size=10000):
+        self._chunk_size = chunk_size
+        self._executor = new PipelineStreamableExecutor(json.encode("UTF-8"), chunk_size)
+        self._add_arrays(arrays)
+
+    property chunk_size:
+        def __get__(self):
+            return self._chunk_size
+
+    def __iter__(self):
+        while True:
+            view = (<PipelineStreamableExecutor*>self._executor).executeNext()
+            if not view:
+                break
+            if not deref(view).empty():
+                np_array = <object>viewToNumpyArray(view)
+                Py_DECREF(np_array)
+                yield np_array

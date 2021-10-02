@@ -148,6 +148,34 @@ PDAL and Python:
     print (count)
 
 
+Iterator API
+................................................................................
+For streamable pipelines (pipelines that consist exclusively of streamable PDAL
+stages), an iterator API is available via ``pdal.PipelineIterator``. Iterating
+over a ``PipelineIterator`` executes the pipeline in streaming mode and yields
+Numpy arrays of length up to ``chunk_size`` (default=10000).
+
+.. code-block:: python
+
+
+    json = """
+    [
+      "test/data/autzen-utm.las",
+      {
+        "type": "filters.range",
+        "limits": "Intensity[80:120)"
+      }
+    ]
+    """
+
+    import pdal
+    pipeline = pdal.PipelineIterator(json, chunk_size=500)
+    for array in pipeline:
+        print(len(array))
+    # or to concatenate all arrays into one
+    # full_array = np.concatenate(list(pipeline))
+
+
 Accessing Mesh Data
 ................................................................................
 

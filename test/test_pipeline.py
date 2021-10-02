@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from functools import partial
 
 import numpy as np
 import pytest
@@ -197,3 +198,103 @@ class TestMesh:
         assert str(m.dtype) == "[('A', '<u4'), ('B', '<u4'), ('C', '<u4')]"
         assert len(m) == 134
         assert m[0][0] == 29
+
+
+class TestPipelineIterator:
+    factory = partial(pdal.PipelineIterator, chunk_size=100)
+
+    def test_construction(self):
+        """Can we construct a PDAL pipeline iterator"""
+        assert isinstance(
+            get_pipeline("range.json", pdal.PipelineIterator), pdal.PipelineIterator
+        )
+        assert isinstance(
+            get_pipeline("range.json", self.factory), pdal.PipelineIterator
+        )
+
+    def test_validate(self):
+        """Do we complain with bad pipelines"""
+        bad_json = """
+            [
+              "nofile.las",
+              {
+                "type": "filters.range",
+                "limits": "Intensity[80:120)"
+              }
+            ]
+        """
+        r = pdal.PipelineIterator(bad_json)
+        with pytest.raises(RuntimeError):
+            r.validate()
+
+    def test_array(self):
+        """Can we fetch PDAL data as numpy arrays"""
+        ri = get_pipeline("range.json", self.factory)
+        arrays = list(ri)
+        assert len(arrays) == 11
+        concat_array = np.concatenate(arrays)
+
+        r = get_pipeline("range.json")
+        count = r.execute()
+        arrays = r.arrays
+        assert len(arrays) == 1
+        array = arrays[0]
+        assert count == len(array)
+
+        np.testing.assert_array_equal(array, concat_array)
+
+    def test_metadata(self):
+        """Can we fetch PDAL metadata"""
+        ri = get_pipeline("range.json", self.factory)
+        with pytest.raises(RuntimeError):
+            ri.metadata
+        list(ri)
+        ji = json.loads(ri.metadata)
+
+        r = get_pipeline("range.json")
+        with pytest.raises(RuntimeError):
+            r.metadata
+        r.execute()
+        j = json.loads(r.metadata)
+
+        assert list(j) == list(ji) == ["metadata"]
+        assert j["metadata"].keys() == ji["metadata"].keys()
+        for key in j["metadata"]:
+            assert j["metadata"][key][0] == ji["metadata"][key]
+
+    def test_schema(self):
+        """Fetching a schema works"""
+        ri = get_pipeline("range.json", self.factory)
+        with pytest.raises(RuntimeError):
+            ri.schema
+        list(ri)
+
+        r = get_pipeline("range.json")
+        with pytest.raises(RuntimeError):
+            r.schema
+        r.execute()
+
+        assert ri.schema == r.schema
+
+    def test_merged_arrays(self):
+        """Can we load data from a list of arrays to PDAL"""
+        data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
+        arrays = [data, data, data]
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        pi = pdal.PipelineIterator(filter_intensity, arrays)
+        arrays1 = list(pi)
+
+        p = pdal.Pipeline(filter_intensity, arrays)
+        p.execute()
+        arrays2 = p.arrays
+
+        assert len(arrays1) == len(arrays2)
+        for array1, array2 in zip(arrays1, arrays2):
+            np.testing.assert_array_equal(array1, array2)

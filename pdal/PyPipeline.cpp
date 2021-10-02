@@ -50,13 +50,6 @@ namespace python
 {
 
 
-void readPipeline(PipelineExecutor* executor, std::string json)
-{
-    std::stringstream strm(json);
-    executor->getManager().readPipeline(strm);
-}
-
-
 void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
 {
     // Make the symbols in pdal_base global so that they're accessible
@@ -177,14 +170,6 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
     return array;
 }
 
-std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(viewToNumpyArray(view));
-    return output;
-}
-
 
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 {
@@ -237,14 +222,6 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
     return array;
 }
 
-
-std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(meshToNumpyArray(view->mesh()));
-    return output;
-}
 
 } // namespace python
 } // namespace pdal
