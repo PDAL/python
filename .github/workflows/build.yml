@@ -19,10 +19,17 @@ jobs:
       fail-fast: true
       matrix:
         os: ['ubuntu-latest', 'macos-latest' ]
-        python-version: ['3.7','3.8', '3.9']
+        python-version: ['3.8']
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Download the conda PDAL artifact
+      shell: bash -l {0}
+      run: |
+        wget https://nightly.link/TileDB-Inc/PDAL/suites/3952223638/artifacts/${{ matrix.os == 'ubuntu-latest' && '99212479' || '99212478' }} -O pdal.zip
+        unzip pdal.zip -d local
+
     - uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: ${{ matrix.python-version }}
@@ -38,7 +45,7 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c ./local -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: Install
       shell: bash -l {0}
@@ -65,7 +72,7 @@ jobs:
       fail-fast: true
       matrix:
         os: ['windows-latest']
-        python-version: ['3.7','3.8', '3.9']
+        python-version: ['3.8']
 
     steps:
     - uses: actions/checkout@v2
@@ -74,11 +81,19 @@ jobs:
         channels: conda-forge
         python-version: ${{ matrix.python-version }}
 
+    - uses: suisei-cn/actions-download-file@v1
+      id: download_artifact
+      name: Download the conda PDAL Windows artifact
+      with:
+        url: "https://nightly.link/TileDB-Inc/PDAL/suites/3952223638/artifacts/99212480"
+        target: .
+
     - name: Dependencies
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+        7z x ${{ steps.download_artifact.outputs.filename }} -olocal
+        conda install --yes --quiet -c ./local -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: Install
       shell: cmd /C CALL "{0}"
@@ -113,6 +128,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
+    - name: Download the conda PDAL artifact
+      shell: bash -l {0}
+      run: |
+        wget https://nightly.link/TileDB-Inc/PDAL/suites/3952223638/artifacts/99212479 -O pdal.zip
+        unzip pdal.zip -d local
+
     - uses: conda-incubator/setup-miniconda@v2
       with:
         channels: conda-forge
@@ -121,7 +143,7 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c ./local -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: sdist
       shell: bash -l {0}
