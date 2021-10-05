@@ -1,202 +1,123 @@
-import sys
-import unittest
-import pdal
+import json
 import os
+import sys
+
 import numpy as np
-from packaging.version import Version
+import pytest
 
-DATADIRECTORY = "./test/data"
+import pdal
 
-bad_json = u"""
-{
-  "pipeline": [
-    "nofile.las",
-    {
-        "type": "filters.sort",
-        "dimension": "X"
-    }
-  ]
-}
-"""
+DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
+def get_pipeline(filename, factory=pdal.Pipeline):
+    with open(os.path.join(DATADIRECTORY, filename), "r") as f:
+        pipeline = factory(f.read())
+    assert pipeline.validate()
+    return pipeline
 
-class PDALTest(unittest.TestCase):
 
-    def fetch_json(self, filename):
-        import os
-        fn = DATADIRECTORY + os.path.sep +  filename
-        output = ''
-        with open(fn, 'rb') as f:
-            output = f.read().decode('UTF-8')
-        return output
-
-class TestPipeline(PDALTest):
-
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
+class TestPipeline:
     def test_construction(self):
         """Can we construct a PDAL pipeline"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
+        assert isinstance(get_pipeline("sort.json"), pdal.Pipeline)
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
     def test_execution(self):
         """Can we execute a PDAL pipeline"""
-        x = self.fetch_json('sort.json')
-        r = pdal.Pipeline(x)
-        r.validate()
+        r = get_pipeline("sort.json")
         r.execute()
-        self.assertGreater(len(r.pipeline), 200)
+        assert len(r.pipeline) > 200
 
     def test_validate(self):
         """Do we complain with bad pipelines"""
+        bad_json = """
+            {
+              "pipeline": [
+                "nofile.las",
+                {
+                    "type": "filters.sort",
+                    "dimension": "X"
+                }
+              ]
+            }
+        """
         r = pdal.Pipeline(bad_json)
-        with self.assertRaises(RuntimeError):
+        with pytest.raises(RuntimeError):
             r.validate()
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
     def test_array(self):
         """Can we fetch PDAL data as a numpy array"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
-        r.validate()
+        r = get_pipeline("sort.json")
         r.execute()
         arrays = r.arrays
-        self.assertEqual(len(arrays), 1)
+        assert len(arrays) == 1
 
         a = arrays[0]
-        self.assertAlmostEqual(a[0][0], 635619.85, 7)
-        self.assertAlmostEqual(a[1064][2], 456.92, 7)
+        assert a[0][0] == 635619.85
+        assert a[1064][2] == 456.92
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
     def test_metadata(self):
         """Can we fetch PDAL metadata"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
-        r.validate()
+        r = get_pipeline("sort.json")
+        with pytest.raises(RuntimeError):
+            r.metadata
         r.execute()
-        metadata = r.metadata
-        import json
-        j = json.loads(metadata)
-        self.assertEqual(j["metadata"]["readers.las"][0]["count"], 1065)
+        j = json.loads(r.metadata)
+        assert j["metadata"]["readers.las"][0]["count"] == 1065
 
-
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
-    def test_no_execute(self):
-        """Does fetching arrays without executing throw an exception"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
-        with self.assertRaises(RuntimeError):
-            r.arrays
-#
-#    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'reproject.json')),
-#                         "missing test data")
-#    def test_logging(self):
-#        """Can we fetch log output"""
-#        json = self.fetch_json('reproject.json')
-#        r = pdal.Pipeline(json)
-#        r.loglevel = 8
-#        r.validate()
-#        count = r.execute()
-#        self.assertEqual(count, 789)
-#        self.assertEqual(r.log.split()[0], '(pypipeline')
-#
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
     def test_schema(self):
         """Fetching a schema works"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
-        r.validate()
+        r = get_pipeline("sort.json")
+        with pytest.raises(RuntimeError):
+            r.schema
         r.execute()
-        self.assertEqual(r.schema['schema']['dimensions'][0]['name'], 'X')
+        assert r.schema["schema"]["dimensions"][0]["name"] == "X"
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'chip.json')),
-                         "missing test data")
+    def test_no_execute(self):
+        """Does fetching arrays without executing throw an exception"""
+        r = get_pipeline("sort.json")
+        with pytest.raises(RuntimeError):
+            r.arrays
+
     def test_merged_arrays(self):
-        """Can we fetch multiple point views from merged PDAL data """
-        json = self.fetch_json('chip.json')
-        r = pdal.Pipeline(json)
-        r.validate()
+        """Can we fetch multiple point views from merged PDAL data"""
+        r = get_pipeline("chip.json")
         r.execute()
         arrays = r.arrays
-        self.assertEqual(len(arrays), 43)
+        assert len(arrays) == 43
+
+    # def test_logging(self):
+    #    """Can we fetch log output"""
+    #    r = get_pipeline('reproject.json')
+    #    count = r.execute()
+    #    assert count == 789
+    #    assert r.log.split()[0] == '(pypipeline')
 
 
-class TestArrayLoad(PDALTest):
-
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'perlin.npy')),
-            "missing test data")
+class TestArrayLoad:
     def test_merged_arrays(self):
         """Can we load data from a list of arrays to PDAL"""
-        if Version(pdal.info.version) < Version('1.8'):
-            return True
-        data = np.load(os.path.join(DATADIRECTORY, 'test3d.npy'))
-
+        data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
         arrays = [data, data, data]
-
-        json = self.fetch_json('chip.json')
-        chip =u"""{
-  "pipeline":[
-    {
-      "type":"filters.range",
-      "limits":"Intensity[100:300)"
-    }
-  ]
-}"""
-
-        p = pdal.Pipeline(chip, arrays)
-        p.loglevel = 8
-        count = p.execute()
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        p = pdal.Pipeline(filter_intensity, arrays)
+        p.execute()
         arrays = p.arrays
-        self.assertEqual(len(arrays), 3)
+        assert len(arrays) == 3
 
         for data in arrays:
-            self.assertEqual(len(data), 12)
-            self.assertEqual(data['Intensity'].sum(), 1926)
+            assert len(data) == 12
+            assert data["Intensity"].sum() == 1926
 
     def test_read_arrays(self):
         """Can we read and filter data from a list of arrays to PDAL"""
-        if Version(pdal.info.version) < Version('1.8'):
-            return True
-
-        # just some dummy data
-        x_vals = [1.0, 2.0, 3.0, 4.0, 5.0]
-        y_vals = [6.0, 7.0, 8.0, 9.0, 10.0]
-        z_vals = [1.5, 3.5, 5.5, 7.5, 9.5]
-        test_data = np.array(
-            [(x, y, z) for x, y, z in zip(x_vals, y_vals, z_vals)],
-            dtype=[('X', np.float), ('Y', np.float), ('Z', np.float)]
-        )
-
-        pipeline = """
-        {
-            "pipeline": [
-                {
-                    "type":"filters.range",
-                    "limits":"X[2.5:4.5]"
-                }
-            ]
-        }
-        """
-
-        p = pdal.Pipeline(pipeline, arrays=[test_data,])
-        p.loglevel = 8
-        count = p.execute()
-        arrays = p.arrays
-        self.assertEqual(count, 2)
-        self.assertEqual(len(arrays), 1)
-
-    def test_reference_counting(self):
-        """Can we read and filter data from a list of arrays to PDAL"""
-        if Version(pdal.info.version) < Version("1.8"):
-            return True
-
         # just some dummy data
         x_vals = [1.0, 2.0, 3.0, 4.0, 5.0]
         y_vals = [6.0, 7.0, 8.0, 9.0, 10.0]
@@ -216,51 +137,63 @@ class TestArrayLoad(PDALTest):
             ]
         }
         """
-
         p = pdal.Pipeline(pipeline, arrays=[test_data])
-        p.loglevel = 8
         count = p.execute()
-        self.assertEqual(count, 2)
-        self.assertEqual(1, sys.getrefcount(p.arrays[0]), "Reference count should only be 1 in this case")
+        arrays = p.arrays
+        assert count == 2
+        assert len(arrays) == 1
+
+    def test_reference_counting(self):
+        """Can we read and filter data from a list of arrays to PDAL"""
+        # just some dummy data
+        x_vals = [1.0, 2.0, 3.0, 4.0, 5.0]
+        y_vals = [6.0, 7.0, 8.0, 9.0, 10.0]
+        z_vals = [1.5, 3.5, 5.5, 7.5, 9.5]
+        test_data = np.array(
+            [(x, y, z) for x, y, z in zip(x_vals, y_vals, z_vals)],
+            dtype=[("X", np.float), ("Y", np.float), ("Z", np.float)],
+        )
+
+        pipeline = """
+        {
+            "pipeline": [
+                {
+                    "type":"filters.range",
+                    "limits":"X[2.5:4.5]"
+                }
+            ]
+        }
+        """
+        p = pdal.Pipeline(pipeline, arrays=[test_data])
+        count = p.execute()
+        assert count == 2
+        refcount = sys.getrefcount(p.arrays[0])
+        assert refcount == 1
 
 
-class TestDimensions(PDALTest):
+class TestDimensions:
     def test_fetch_dimensions(self):
         """Ask PDAL for its valid dimensions list"""
         dims = pdal.dimensions
-        self.assertLess(len(dims), 120)
-        self.assertGreater(len(dims), 71)
+        assert 71 < len(dims) < 120
 
-class TestMesh(PDALTest):
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'sort.json')),
-                         "missing test data")
+
+class TestMesh:
     def test_no_execute(self):
         """Does fetching meshes without executing throw an exception"""
-        json = self.fetch_json('sort.json')
-        r = pdal.Pipeline(json)
-        with self.assertRaises(RuntimeError):
+        r = get_pipeline("sort.json")
+        with pytest.raises(RuntimeError):
             r.meshes
 
-    @unittest.skipUnless(os.path.exists(os.path.join(DATADIRECTORY, 'mesh.json')),
-                         "missing test data")
     def test_mesh(self):
         """Can we fetch PDAL face data as a numpy array"""
-        json = self.fetch_json('mesh.json')
-        r = pdal.Pipeline(json)
-        r.validate()
+        r = get_pipeline("mesh.json")
         points = r.execute()
-        self.assertEqual(points, 1065)  
+        assert points == 1065
         meshes = r.meshes
-        self.assertEqual(len(meshes), 24)
+        assert len(meshes) == 24
 
         m = meshes[0]
-        self.assertEqual(str(m.dtype), "[('A', '<u4'), ('B', '<u4'), ('C', '<u4')]")
-        self.assertEqual(len(m),134)
-        self.assertEqual(m[0][0], 29)
-
-def test_suite():
-    return unittest.TestSuite(
-        [TestPipeline()])
-
-if __name__ == '__main__':
-    unittest.main()
+        assert str(m.dtype) == "[('A', '<u4'), ('B', '<u4'), ('C', '<u4')]"
+        assert len(m) == 134
+        assert m[0][0] == 29
