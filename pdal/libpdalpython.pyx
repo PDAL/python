@@ -5,10 +5,9 @@ import json
 from types import SimpleNamespace
 
 from cpython.ref cimport Py_DECREF
-from libcpp.vector cimport vector
-from libcpp.string cimport string
-from libc.stdint cimport int64_t
 from libcpp cimport bool
+from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 import numpy as np
 cimport numpy as np
@@ -56,6 +55,21 @@ def getDimensions():
     return output
 
 
+cdef extern from "pdal/StageFactory.hpp" namespace "pdal":
+    cpdef cppclass StageFactory:
+        @staticmethod
+        string inferReaderDriver(string)
+        @staticmethod
+        string inferWriterDriver(string)
+
+
+def infer_reader_driver(driver):
+    return StageFactory.inferReaderDriver(driver)
+
+def infer_writer_driver(driver):
+    return StageFactory.inferWriterDriver(driver)
+
+
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
         Array(np.ndarray) except +
@@ -65,7 +79,7 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
     cdef cppclass PipelineExecutor:
         PipelineExecutor(const char*) except +
         bool executed() except +
-        int64_t execute() except +
+        int execute() except +
         bool validate() except +
         string getPipeline() except +
         string getMetadata() except +
@@ -78,66 +92,74 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     void readPipeline(PipelineExecutor*, string) except +
     void addArrayReaders(PipelineExecutor*, vector[Array *]) except +
-    vector[np.PyArrayObject*] getArrays(const PipelineExecutor* executor) except +
-    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor* executor) except +
+    vector[np.PyArrayObject*] getArrays(const PipelineExecutor*) except +
+    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor*) except +
 
 
 cdef class Pipeline:
     cdef PipelineExecutor* _executor
-    cdef vector[Array *] _arrays;
-
-    def __cinit__(self, unicode json, list arrays=None):
-        self._executor = new PipelineExecutor(json.encode('UTF-8'))
-        readPipeline(self._executor, json.encode('UTF-8'))
-        if arrays is not None:
-            for array in arrays:
-                self._arrays.push_back(new Array(array))
-        addArrayReaders(self._executor, self._arrays)
+    cdef vector[Array*] _inputs
 
     def __dealloc__(self):
-        for array in self._arrays:
-            del array
-        del self._executor
+        self.inputs = []
 
-    property pipeline:
-        def __get__(self):
-            return self._executor.getPipeline()
+    def __copy__(self):
+        cdef Pipeline clone = self.__class__()
+        clone._inputs = self._inputs
+        return clone
 
-    property metadata:
-        def __get__(self):
-            return self._executor.getMetadata()
+    @property
+    def inputs(self):
+        raise AttributeError("unreadable attribute")
 
-    property loglevel:
-        def __get__(self):
-            return self._executor.getLogLevel()
-        def __set__(self, v):
-            self._executor.setLogLevel(v)
+    @inputs.setter
+    def inputs(self, ndarrays):
+        self._inputs.clear()
+        for ndarray in ndarrays:
+            self._inputs.push_back(new Array(ndarray))
+        self._delete_executor()
 
-    property log:
-        def __get__(self):
-            return self._executor.getLog()
+    @property
+    def pipeline(self):
+        return self._get_executor().getPipeline()
 
-    property schema:
-        def __get__(self):
-            return json.loads(self._executor.getSchema())
+    @property
+    def metadata(self):
+        return self._get_executor().getMetadata()
 
-    property arrays:
-        def __get__(self):
-            if not self._executor.executed():
-                raise RuntimeError("call execute() before fetching arrays")
-            return self._vector_to_list(getArrays(self._executor))
+    @property
+    def loglevel(self):
+        return self._get_executor().getLogLevel()
 
-    property meshes:
-        def __get__(self):
-            if not self._executor.executed():
-                raise RuntimeError("call execute() before fetching the mesh")
-            return self._vector_to_list(getMeshes(self._executor))
+    @loglevel.setter
+    def loglevel(self, level):
+        self._get_executor().setLogLevel(level)
+
+    @property
+    def log(self):
+        return self._get_executor().getLog()
+
+    @property
+    def schema(self):
+        return json.loads(self._get_executor().getSchema())
+
+    @property
+    def arrays(self):
+        if not self._get_executor().executed():
+            raise RuntimeError("call execute() before fetching arrays")
+        return _vector_to_list(getArrays(self._executor))
+
+    @property
+    def meshes(self):
+        if not self._get_executor().executed():
+            raise RuntimeError("call execute() before fetching the mesh")
+        return _vector_to_list(getMeshes(self._executor))
 
     def execute(self):
-        return self._executor.execute()
+        return self._get_executor().execute()
 
     def validate(self):
-        return self._executor.validate()
+        return self._get_executor().validate()
 
     def get_meshio(self, idx):
         try:
@@ -155,9 +177,31 @@ cdef class Pipeline:
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
 
-    cdef _vector_to_list(self, vector[np.PyArrayObject*] arrays):
-        output = []
-        for array in arrays:
-            output.append(<object>array)
-            Py_DECREF(output[-1])
-        return output
+    @property
+    def _json(self):
+        raise NotImplementedError("Abstract property")
+
+    @property
+    def _num_inputs(self):
+        return self._inputs.size()
+
+    def _delete_executor(self):
+        if self._executor:
+            del self._executor
+            self._executor = NULL
+
+    cdef PipelineExecutor* _get_executor(self) except NULL:
+        if not self._executor:
+            json_bytes = self._json.encode("UTF-8")
+            self._executor = new PipelineExecutor(json_bytes)
+            readPipeline(self._executor, json_bytes)
+            addArrayReaders(self._executor, self._inputs)
+        return self._executor
+
+
+cdef _vector_to_list(vector[np.PyArrayObject*] arrays):
+    output = []
+    for array in arrays:
+        output.append(<object>array)
+        Py_DECREF(output[-1])
+    return output

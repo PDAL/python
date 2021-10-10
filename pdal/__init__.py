@@ -1,7 +1,8 @@
-from .libpdalpython import Pipeline
-from .libpdalpython import getDimensions, getInfo
-
 __version__ = "2.4.2"
+__all__ = ["Pipeline",  "Reader", "Filter", "Writer", "dimensions", "info"]
+
+from .libpdalpython import getDimensions, getInfo
+from .pipeline import Pipeline, Reader, Filter, Writer
 
 dimensions = getDimensions()
 info = getInfo()
