@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 from cpython.ref cimport Py_DECREF
 from libcpp cimport bool
+from libcpp.memory cimport make_shared, shared_ptr
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
@@ -72,7 +73,7 @@ def infer_writer_driver(driver):
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
-        Array(np.ndarray) except +
+        Array(np.PyArrayObject*) except +
 
 
 cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
@@ -91,14 +92,14 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     void readPipeline(PipelineExecutor*, string) except +
-    void addArrayReaders(PipelineExecutor*, vector[Array *]) except +
+    void addArrayReaders(PipelineExecutor*, vector[shared_ptr[Array]]) except +
     vector[np.PyArrayObject*] getArrays(const PipelineExecutor*) except +
     vector[np.PyArrayObject*] getMeshes(const PipelineExecutor*) except +
 
 
 cdef class Pipeline:
     cdef PipelineExecutor* _executor
-    cdef vector[Array*] _inputs
+    cdef vector[shared_ptr[Array]] _inputs
 
     def __dealloc__(self):
         self.inputs = []
@@ -116,7 +117,7 @@ cdef class Pipeline:
     def inputs(self, ndarrays):
         self._inputs.clear()
         for ndarray in ndarrays:
-            self._inputs.push_back(new Array(ndarray))
+            self._inputs.push_back(make_shared[Array](<np.PyArrayObject*>ndarray))
         self._delete_executor()
 
     @property

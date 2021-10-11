@@ -57,7 +57,7 @@ void readPipeline(PipelineExecutor* executor, std::string json)
 }
 
 
-void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
+void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays)
 {
     // Make the symbols in pdal_base global so that they're accessible
     // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
