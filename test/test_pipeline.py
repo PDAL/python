@@ -21,11 +21,40 @@ def get_pipeline(filename, validate=True):
     return pipeline
 
 
+def test_dimensions():
+    """Ask PDAL for its valid dimensions list"""
+    dims = pdal.dimensions
+    assert 71 < len(dims) < 120
+
+
 class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_construction(self, filename):
         """Can we construct a PDAL pipeline"""
         assert isinstance(get_pipeline(filename), pdal.Pipeline)
+
+        # construct Pipeline from a sequence of stages
+        r = pdal.Reader("r")
+        f = pdal.Filter("f")
+        for spec in (r, f), [r, f]:
+            p = pdal.Pipeline(spec)
+            assert isinstance(p, pdal.Pipeline)
+            assert len(p.stages) == 2
+
+    @pytest.mark.parametrize(
+        "pipeline",
+        [
+            "{}",
+            '{"foo": []}',
+            "[1, 2]",
+            '{"pipeline": [["a.las", "b.las"], "c.las"]}',
+        ],
+    )
+    def test_invalid_json(self, pipeline):
+        """Do we complain with bad pipelines"""
+        json.loads(pipeline)
+        with pytest.raises(ValueError):
+            pdal.Pipeline(pipeline)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_execution(self, filename):
@@ -86,6 +115,78 @@ class TestPipeline:
         r.execute()
         arrays = r.arrays
         assert len(arrays) == 43
+
+    @pytest.mark.parametrize("filename", ["chip.json", "chip.py"])
+    def test_stages(self, filename):
+        """Can we break up a pipeline as a sequence of stages"""
+        stages = pdal.Reader("test/data/autzen-utm.las").pipeline().stages
+        assert len(stages) == 1
+
+        stages = get_pipeline(filename).stages
+        assert len(stages) == 3
+
+        assert isinstance(stages[0], pdal.Reader)
+        assert stages[0].type == "readers.las"
+
+        assert isinstance(stages[1], pdal.Filter)
+        assert stages[1].type == "filters.chipper"
+
+        assert isinstance(stages[2], pdal.Writer)
+        assert stages[2].type == "writers.las"
+
+    def test_pipe_stages(self):
+        """Can we build a pipeline by piping stages together"""
+        read = pdal.Reader("test/data/autzen-utm.las")
+        frange = pdal.Filter.range(limits="Intensity[50:200)")
+        fsplitter = pdal.Filter.splitter(length=1000)
+        fdelaunay = pdal.Filter.delaunay(inputs=[frange, fsplitter])
+
+        # pipe stages together
+        pipeline = read | frange | fsplitter | fdelaunay
+        assert pipeline.validate()
+
+        # pipe a pipeline to a stage
+        pipeline = read | (frange | fsplitter | fdelaunay)
+        assert pipeline.validate()
+
+        # pipe a pipeline to a pipeline
+        pipeline = (read | frange) | (fsplitter | fdelaunay)
+        assert pipeline.validate()
+
+    def test_pipe_stage_errors(self):
+        """Do we complain with piping invalid objects"""
+        r = pdal.Reader("r", tag="r")
+        f = pdal.Filter("f")
+        w = pdal.Writer("w", inputs=["r", f])
+
+        with pytest.raises(TypeError):
+            r | (f, w)
+        with pytest.raises(TypeError):
+            (r, f) | w
+        with pytest.raises(TypeError):
+            (r, f) | (f, w)
+
+        pipeline = r | w
+        with pytest.raises(RuntimeError) as ctx:
+            pipeline.validate()
+        assert "Undefined stage 'f'" in str(ctx.value)
+
+    def test_inputs(self):
+        """Can we combine pipelines with inputs"""
+        data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
+        f = pdal.Filter.splitter(length=1000)
+        pipeline = f.pipeline(data)
+        assert pipeline.validate()
+
+        # a pipeline with inputs can be followed by stage/pipeline
+        assert (pipeline | pdal.Writer.null()).validate()
+        assert (pipeline | (f | pdal.Writer.null())).validate()
+
+        # a pipeline with inputs cannot follow another stage/pipeline
+        with pytest.raises(ValueError):
+            pdal.Reader("r") | pipeline
+        with pytest.raises(ValueError):
+            (pdal.Reader("r") | f) | pipeline
 
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
@@ -171,13 +272,6 @@ class TestArrayLoad:
         assert count == 2
         refcount = sys.getrefcount(p.arrays[0])
         assert refcount == 1
-
-
-class TestDimensions:
-    def test_fetch_dimensions(self):
-        """Ask PDAL for its valid dimensions list"""
-        dims = pdal.dimensions
-        assert 71 < len(dims) < 120
 
 
 class TestMesh:
