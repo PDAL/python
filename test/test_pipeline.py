@@ -10,44 +10,41 @@ import pdal
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
-def get_pipeline(filename, factory=pdal.Pipeline):
+def get_pipeline(filename, validate=True):
     with open(os.path.join(DATADIRECTORY, filename), "r") as f:
-        pipeline = factory(f.read())
-    assert pipeline.validate()
+        if filename.endswith(".json"):
+            pipeline = pdal.Pipeline(f.read())
+        elif filename.endswith(".py"):
+            pipeline = eval(f.read(), vars(pdal))
+    if validate:
+        assert pipeline.validate()
     return pipeline
 
 
 class TestPipeline:
-    def test_construction(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_construction(self, filename):
         """Can we construct a PDAL pipeline"""
-        assert isinstance(get_pipeline("sort.json"), pdal.Pipeline)
+        assert isinstance(get_pipeline(filename), pdal.Pipeline)
 
-    def test_execution(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_execution(self, filename):
         """Can we execute a PDAL pipeline"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         r.execute()
         assert len(r.pipeline) > 200
 
-    def test_validate(self):
+    @pytest.mark.parametrize("filename", ["bad.json", "bad.py"])
+    def test_validate(self, filename):
         """Do we complain with bad pipelines"""
-        bad_json = """
-            {
-              "pipeline": [
-                "nofile.las",
-                {
-                    "type": "filters.sort",
-                    "dimension": "X"
-                }
-              ]
-            }
-        """
-        r = pdal.Pipeline(bad_json)
+        r = get_pipeline(filename, validate=False)
         with pytest.raises(RuntimeError):
             r.validate()
 
-    def test_array(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_array(self, filename):
         """Can we fetch PDAL data as a numpy array"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         r.execute()
         arrays = r.arrays
         assert len(arrays) == 1
@@ -56,42 +53,47 @@ class TestPipeline:
         assert a[0][0] == 635619.85
         assert a[1064][2] == 456.92
 
-    def test_metadata(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.metadata
         r.execute()
         j = json.loads(r.metadata)
         assert j["metadata"]["readers.las"][0]["count"] == 1065
 
-    def test_schema(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_schema(self, filename):
         """Fetching a schema works"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.schema
         r.execute()
         assert r.schema["schema"]["dimensions"][0]["name"] == "X"
 
-    def test_no_execute(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_no_execute(self, filename):
         """Does fetching arrays without executing throw an exception"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.arrays
 
-    def test_merged_arrays(self):
+    @pytest.mark.parametrize("filename", ["chip.json", "chip.py"])
+    def test_merged_arrays(self, filename):
         """Can we fetch multiple point views from merged PDAL data"""
-        r = get_pipeline("chip.json")
+        r = get_pipeline(filename)
         r.execute()
         arrays = r.arrays
         assert len(arrays) == 43
 
-    # def test_logging(self):
-    #    """Can we fetch log output"""
-    #    r = get_pipeline('reproject.json')
-    #    count = r.execute()
-    #    assert count == 789
-    #    assert r.log.split()[0] == '(pypipeline')
+    @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
+    def test_logging(self, filename):
+        """Can we fetch log output"""
+        r = get_pipeline(filename)
+        count = r.execute()
+        assert count == 789
+        # assert r.log.split()[0] == "(pypipeline"
 
 
 class TestArrayLoad:
@@ -179,15 +181,17 @@ class TestDimensions:
 
 
 class TestMesh:
-    def test_no_execute(self):
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_no_execute(self, filename):
         """Does fetching meshes without executing throw an exception"""
-        r = get_pipeline("sort.json")
+        r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.meshes
 
-    def test_mesh(self):
+    @pytest.mark.parametrize("filename", ["mesh.json", "mesh.py"])
+    def test_mesh(self, filename):
         """Can we fetch PDAL face data as a numpy array"""
-        r = get_pipeline("mesh.json")
+        r = get_pipeline(filename)
         points = r.execute()
         assert points == 1065
         meshes = r.meshes
