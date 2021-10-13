@@ -3,6 +3,7 @@ from __future__ import annotations
 import glob
 import json
 import subprocess
+from abc import ABC, abstractmethod
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
@@ -72,7 +73,7 @@ class Pipeline(libpdalpython.Pipeline):
 
 
 class Stage:
-    def __init_subclass__(cls, type_prefix: str) -> None:
+    def __init_subclass__(cls, type_prefix: Optional[str] = None) -> None:
         for driver in _PDAL_DRIVERS:
             name = driver["name"]
             prefix, _, suffix = name.partition(".")
@@ -114,17 +115,25 @@ class Stage:
         setattr(cls, name, classmethod(constructor))
 
 
-class Reader(Stage, type_prefix="readers"):
-    def __init__(self, filename: str, **options: Any):
-        super().__init__(filename=filename, **options)
+class InferableTypeStage(ABC, Stage):
+    @staticmethod
+    @abstractmethod
+    def infer_type(filename: str) -> str:
+        """Infer the driver type from the filename"""
 
     @property
     def type(self) -> str:
         try:
             return super().type
         except KeyError:
-            filename = self._options["filename"]
-            return cast(str, libpdalpython.infer_reader_driver(filename))
+            return self.infer_type(self._options["filename"])
+
+
+class Reader(InferableTypeStage, type_prefix="readers"):
+    infer_type = staticmethod(libpdalpython.infer_reader_driver)
+
+    def __init__(self, filename: str, **options: Any):
+        super().__init__(filename=filename, **options)
 
 
 class Filter(Stage, type_prefix="filters"):
@@ -132,17 +141,11 @@ class Filter(Stage, type_prefix="filters"):
         super().__init__(type=type, **options)
 
 
-class Writer(Stage, type_prefix="writers"):
+class Writer(InferableTypeStage, type_prefix="writers"):
+    infer_type = staticmethod(libpdalpython.infer_writer_driver)
+
     def __init__(self, filename: Optional[str] = None, **options: Any):
         super().__init__(filename=filename, **options)
-
-    @property
-    def type(self) -> str:
-        try:
-            return super().type
-        except KeyError:
-            filename = self._options["filename"]
-            return cast(str, libpdalpython.infer_writer_driver(filename))
 
 
 def _parse_stages(text: str) -> Iterator[Stage]:
