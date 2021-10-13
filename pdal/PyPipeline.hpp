@@ -34,14 +34,9 @@
 
 #pragma once
 
-#include <pdal/PipelineManager.hpp>
-#include <pdal/PipelineWriter.hpp>
-#include <pdal/util/FileUtils.hpp>
 #include <pdal/PipelineExecutor.hpp>
 
-#include <string>
-#include <sstream>
-#include <memory>
+#include <numpy/arrayobject.h>
 
 namespace pdal
 {
@@ -49,49 +44,13 @@ namespace python
 {
 
 class Array;
-class Mesh;
 
-class python_error : public std::runtime_error
-{
-public:
-    inline python_error(std::string const& msg) : std::runtime_error(msg)
-        {}
-};
-
-class Pipeline
-{
-public:
-    Pipeline(std::string const& json);
-    Pipeline(std::string const& json,
-        std::vector<pdal::python::Array*> arrays);
-    ~Pipeline();
-
-    int64_t execute();
-    bool validate();
-    inline std::string getPipeline() const
-    {
-        return m_executor->getPipeline();
-    }
-    inline std::string getMetadata() const
-    {
-        return m_executor->getMetadata();
-    }
-    inline std::string getSchema() const
-    {
-        return m_executor->getSchema();
-    }
-    inline std::string getLog() const
-    {
-        return m_executor->getLog();
-    }
-    std::vector<pdal::python::Array *> getArrays() const;
-    std::vector<pdal::python::Mesh *> getMeshes() const;
-    void setLogLevel(int level);
-    int getLogLevel() const;
-
-private:
-    std::shared_ptr<pdal::PipelineExecutor> m_executor;
-};
+void readPipeline(PipelineExecutor* executor, std::string json);
+void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays);
+PyArrayObject* viewToNumpyArray(PointViewPtr view);
+PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);
+std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor);
+std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor);
 
 } // namespace python
 } // namespace pdal

@@ -34,12 +34,9 @@
 
 #pragma once
 
-#include <numpy/ndarraytypes.h>
-
 #include <pdal/PointView.hpp>
 #include <pdal/io/MemoryViewReader.hpp>
-
-#include <utility>
+#include <numpy/ndarraytypes.h>
 
 namespace pdal
 {
@@ -48,38 +45,29 @@ namespace python
 
 class ArrayIter;
 
+
 class PDAL_DLL Array
 {
 public:
     using Shape = std::array<size_t, 3>;
     using Fields = std::vector<MemoryViewReader::Field>;
 
-    // Create an array for reading data from PDAL.
-    Array();
-
-    // Create an array for writing data to PDAL.
     Array(PyArrayObject* array);
-
     ~Array();
-    void update(PointViewPtr view);
-    PyArrayObject *getPythonArray() const;
-    bool rowMajor() const;
-    Shape shape() const;
-    const Fields& fields() const;
+
+    bool rowMajor() const { return m_rowMajor; };
+    Shape shape() const { return m_shape; }
+    const Fields& fields() const { return m_fields; };
     ArrayIter& iterator();
 
-
 private:
-    inline PyObject* buildNumpyDescription(PointViewPtr view) const;
-
-
     PyArrayObject* m_array;
-    Array& operator=(Array const& rhs);
     Fields m_fields;
     bool m_rowMajor;
     Shape m_shape {};
     std::vector<std::unique_ptr<ArrayIter>> m_iterators;
 };
+
 
 class ArrayIter
 {
@@ -87,12 +75,12 @@ public:
     ArrayIter(const ArrayIter&) = delete;
     ArrayIter() = delete;
 
-    ArrayIter(Array& array);
+    ArrayIter(PyArrayObject*);
     ~ArrayIter();
 
     ArrayIter& operator++();
-    operator bool () const;
-    char *operator * () const;
+    operator bool () const { return !m_done; }
+    char* operator*() const { return *m_data; }
 
 private:
     NpyIter *m_iter;

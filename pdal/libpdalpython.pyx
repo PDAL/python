@@ -1,16 +1,19 @@
 # distutils: language = c++
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
+import json
+from types import SimpleNamespace
+
+from cpython.ref cimport Py_DECREF
 from libcpp.vector cimport vector
 from libcpp.string cimport string
-from libc.stdint cimport uint32_t, int64_t
+from libc.stdint cimport int64_t
 from libcpp cimport bool
-from cpython.version cimport PY_MAJOR_VERSION
+
+import numpy as np
 cimport numpy as np
 np.import_array()
 
-from cpython cimport PyObject, Py_INCREF
-from cython.operator cimport dereference as deref, preincrement as inc
 
 cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
     cdef int versionMajor() except +
@@ -21,52 +24,17 @@ cdef extern from "pdal/pdal_config.hpp" namespace "pdal::Config":
     cdef string pluginInstallPath() except+
     cdef string versionString() except+
 
-def getVersionString():
-    return versionString()
-def getVersionMajor():
-    return versionMajor()
-def getVersionMinor():
-    return versionMinor()
-def getVersionPatch():
-    return versionPatch()
-def getSha1():
-    return sha1()
-def getDebugInformation():
-    return debugInformation()
-def getPluginInstallPath():
-    return pluginInstallPath()
+def getInfo():
+    return SimpleNamespace(
+        version=versionString(),
+        major=versionMajor(),
+        minor=versionMinor(),
+        patch=versionPatch(),
+        debug=debugInformation(),
+        sha1=sha1(),
+        plugin=pluginInstallPath(),
+    )
 
-cdef extern from "PyArray.hpp" namespace "pdal::python":
-    cdef cppclass Array:
-        Array(np.ndarray) except +
-        void *getPythonArray() except+
-
-cdef extern from "PyMesh.hpp" namespace "pdal::python":
-    cdef cppclass Mesh:
-        Mesh(np.ndarray) except +
-        void *getPythonArray() except +
-
-cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    cdef cppclass Pipeline:
-        Pipeline(const char* ) except +
-        Pipeline(const char*, vector[Array*]& ) except +
-        int64_t execute() except +
-        bool validate() except +
-        string getPipeline() except +
-        string getMetadata() except +
-        string getSchema() except +
-        string getLog() except +
-        vector[Array*] getArrays() except +
-        vector[Mesh*] getMeshes() except +
-        int getLogLevel()
-        void setLogLevel(int)
-
-cdef class PyArray:
-    cdef Array *thisptr
-    def __cinit__(self, np.ndarray array):
-        self.thisptr = new Array(array)
-    def __dealloc__(self):
-        del self.thisptr
 
 cdef extern from "PyDimension.hpp":
     ctypedef struct Dimension:
@@ -75,111 +43,121 @@ cdef extern from "PyDimension.hpp":
         int size;
         string type;
 ##         string units; // Not defined by PDAL yet
-
     cdef vector[Dimension] getValidDimensions() except +
 
-
 def getDimensions():
-        cdef vector[Dimension] c_dims;
-        c_dims = getValidDimensions()
-        output = []
-        cdef vector[Dimension].iterator it = c_dims.begin()
-        while it != c_dims.end():
-            ptr = deref(it)
-            d = {}
-            d['name'] = ptr.name
-            d['description'] = ptr.description
-            kind = ptr.type + str(ptr.size)
-            d['dtype'] = np.dtype(kind)
-            ptr = deref(it)
-            output.append(d)
-            inc(it)
-        return output
+    output = []
+    for dim in getValidDimensions():
+        output.append({
+            'name': dim.name,
+            'description': dim.description,
+            'dtype': np.dtype(dim.type + str(dim.size))
+        })
+    return output
 
 
-cdef class PyPipeline:
-    cdef Pipeline *thisptr      # hold a c++ instance which we're wrapping
-    cdef vector[Array *] c_arrays;
+cdef extern from "PyArray.hpp" namespace "pdal::python":
+    cdef cppclass Array:
+        Array(np.ndarray) except +
+
+
+cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
+    cdef cppclass PipelineExecutor:
+        PipelineExecutor(const char*) except +
+        bool executed() except +
+        int64_t execute() except +
+        bool validate() except +
+        string getPipeline() except +
+        string getMetadata() except +
+        string getSchema() except +
+        string getLog() except +
+        int getLogLevel()
+        void setLogLevel(int)
+
+
+cdef extern from "PyPipeline.hpp" namespace "pdal::python":
+    void readPipeline(PipelineExecutor*, string) except +
+    void addArrayReaders(PipelineExecutor*, vector[Array *]) except +
+    vector[np.PyArrayObject*] getArrays(const PipelineExecutor* executor) except +
+    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor* executor) except +
+
+
+cdef class Pipeline:
+    cdef PipelineExecutor* _executor
+    cdef vector[Array *] _arrays;
 
     def __cinit__(self, unicode json, list arrays=None):
-        cdef char* x = NULL
-
+        self._executor = new PipelineExecutor(json.encode('UTF-8'))
+        readPipeline(self._executor, json.encode('UTF-8'))
         if arrays is not None:
             for array in arrays:
-                self.c_arrays.push_back(new Array(array))
-            self.thisptr = new Pipeline(json.encode('UTF-8'), self.c_arrays)
-        else:
-            self.thisptr = new Pipeline(json.encode('UTF-8'))
+                self._arrays.push_back(new Array(array))
+        addArrayReaders(self._executor, self._arrays)
 
     def __dealloc__(self):
-        for array in self.c_arrays:
+        for array in self._arrays:
             del array
-        del self.thisptr
+        del self._executor
 
     property pipeline:
         def __get__(self):
-            return self.thisptr.getPipeline()
+            return self._executor.getPipeline()
 
     property metadata:
         def __get__(self):
-            return self.thisptr.getMetadata()
+            return self._executor.getMetadata()
 
     property loglevel:
         def __get__(self):
-            return self.thisptr.getLogLevel()
+            return self._executor.getLogLevel()
         def __set__(self, v):
-            self.thisptr.setLogLevel(v)
+            self._executor.setLogLevel(v)
 
     property log:
         def __get__(self):
-
-            return self.thisptr.getLog()
+            return self._executor.getLog()
 
     property schema:
         def __get__(self):
-            import json
-
-            j = self.thisptr.getSchema()
-            return json.loads(j)
+            return json.loads(self._executor.getSchema())
 
     property arrays:
-
         def __get__(self):
-            v = self.thisptr.getArrays()
-            output = []
-            cdef vector[Array*].iterator it = v.begin()
-            cdef Array* a
-            while it != v.end():
-                ptr = deref(it)
-                a = ptr#.get()
-                o = a.getPythonArray()
-                output.append(<object>o)
-                del ptr
-                inc(it)
-            return output
+            if not self._executor.executed():
+                raise RuntimeError("call execute() before fetching arrays")
+            return self._vector_to_list(getArrays(self._executor))
 
     property meshes:
-
         def __get__(self):
-            v = self.thisptr.getMeshes()
-            output = []
-            cdef vector[Mesh *].iterator it = v.begin()
-            cdef Mesh* m
-            while it != v.end():
-                ptr = deref(it)
-                m = ptr#.get()
-                o = m.getPythonArray()
-                output.append(<object>o)
-                del ptr
-                inc(it)
-            return output
+            if not self._executor.executed():
+                raise RuntimeError("call execute() before fetching the mesh")
+            return self._vector_to_list(getMeshes(self._executor))
 
     def execute(self):
-        if not self.thisptr:
-            raise Exception("C++ Pipeline object not constructed!")
-        return self.thisptr.execute()
+        return self._executor.execute()
 
     def validate(self):
-        if not self.thisptr:
-            raise Exception("C++ Pipeline object not constructed!")
-        return self.thisptr.validate()
+        return self._executor.validate()
+
+    def get_meshio(self, idx):
+        try:
+            from meshio import Mesh
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "The get_meshio function can only be used if you have installed meshio. Try pip install meshio"
+            )
+        array = self.arrays[idx]
+        mesh = self.meshes[idx]
+        if len(mesh) == 0:
+            return None
+        return Mesh(
+            np.stack((array["X"], array["Y"], array["Z"]), 1),
+            [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
+        )
+
+    cdef _vector_to_list(self, vector[np.PyArrayObject*] arrays):
+        output = []
+        for array in arrays:
+            output.append(<object>array)
+            Py_DECREF(output[-1])
+        return output

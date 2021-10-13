@@ -34,7 +34,6 @@
 
 #include "PyArray.hpp"
 #include <pdal/io/MemoryViewReader.hpp>
-
 #include <numpy/arrayobject.h>
 
 namespace pdal
@@ -90,11 +89,6 @@ std::string toString(PyObject *pname)
 
 } // unnamed namespace
 
-Array::Array() : m_array(nullptr)
-{
-    if (_import_array() < 0)
-        throw pdal_error("Could not import numpy.core.multiarray.");
-}
 
 Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 {
@@ -163,131 +157,21 @@ Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 
 Array::~Array()
 {
-    if (m_array)
-        Py_XDECREF((PyObject *)m_array);
+    Py_XDECREF(m_array);
 }
 
-
-void Array::update(PointViewPtr view)
-{
-    if (m_array)
-        Py_XDECREF((PyObject *)m_array);
-    m_array = nullptr;  // Just in case of an exception.
-
-    Dimension::IdList dims = view->dims();
-    npy_intp size = view->size();
-
-    PyObject *dtype_dict = (PyObject*)buildNumpyDescription(view);
-    if (!dtype_dict)
-        throw pdal_error("Unable to build numpy dtype "
-                "description dictionary");
-
-    PyArray_Descr *dtype = nullptr;
-    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
-        throw pdal_error("Unable to build numpy dtype");
-    Py_XDECREF(dtype_dict);
-
-    // This is a 1 x size array.
-    m_array = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
-            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
-
-    // copy the data
-    DimTypeList types = view->dimTypes();
-    for (PointId idx = 0; idx < view->size(); idx++)
-    {
-        char *p = (char *)PyArray_GETPTR1(m_array, idx);
-        view->getPackedPoint(types, idx, p);
-    }
-}
-
-
-//ABELL - Who's responsible for incrementing the ref count?
-PyArrayObject *Array::getPythonArray() const
-{
-    return m_array;
-}
-
-PyObject* Array::buildNumpyDescription(PointViewPtr view) const
-{
-    // Build up a numpy dtype dictionary
-    //
-    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
-    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
-    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
-    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
-    //           'Classification', 'ScanAngleRank', 'UserData',
-    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
-    //
-
-    Dimension::IdList dims = view->dims();
-
-    PyObject* dict = PyDict_New();
-    PyObject* sizes = PyList_New(dims.size());
-    PyObject* formats = PyList_New(dims.size());
-    PyObject* titles = PyList_New(dims.size());
-
-    for (size_t i = 0; i < dims.size(); ++i)
-    {
-        Dimension::Id id = dims[i];
-        Dimension::Type t = view->dimType(id);
-        npy_intp stride = view->dimSize(id);
-
-        std::string name = view->dimName(id);
-
-        std::string kind("i");
-        Dimension::BaseType b = Dimension::base(t);
-        if (b == Dimension::BaseType::Unsigned)
-            kind = "u";
-        else if (b == Dimension::BaseType::Signed)
-            kind = "i";
-        else if (b == Dimension::BaseType::Floating)
-            kind = "f";
-        else
-            throw pdal_error("Unable to map kind '" + kind  +
-                "' to PDAL dimension type");
-
-        std::stringstream oss;
-        oss << kind << stride;
-        PyObject* pySize = PyLong_FromLong(stride);
-        PyObject* pyTitle = PyUnicode_FromString(name.c_str());
-        PyObject* pyFormat = PyUnicode_FromString(oss.str().c_str());
-
-        PyList_SetItem(sizes, i, pySize);
-        PyList_SetItem(titles, i, pyTitle);
-        PyList_SetItem(formats, i, pyFormat);
-    }
-
-    PyDict_SetItemString(dict, "names", titles);
-    PyDict_SetItemString(dict, "formats", formats);
-
-    return dict;
-}
-
-bool Array::rowMajor() const
-{
-    return m_rowMajor;
-}
-
-Array::Shape Array::shape() const
-{
-    return m_shape;
-}
-
-const Array::Fields& Array::fields() const
-{
-    return m_fields;
-}
 
 ArrayIter& Array::iterator()
 {
-    ArrayIter *it = new ArrayIter(*this);
+    ArrayIter *it = new ArrayIter(m_array);
     m_iterators.push_back(std::unique_ptr<ArrayIter>(it));
     return *it;
 }
 
-ArrayIter::ArrayIter(Array& array)
+
+ArrayIter::ArrayIter(PyArrayObject* np_array)
 {
-    m_iter = NpyIter_New(array.getPythonArray(),
+    m_iter = NpyIter_New(np_array,
         NPY_ITER_EXTERNAL_LOOP | NPY_ITER_READONLY | NPY_ITER_REFS_OK,
         NPY_KEEPORDER, NPY_NO_CASTING, NULL);
     if (!m_iter)
@@ -322,16 +206,6 @@ ArrayIter& ArrayIter::operator++()
     else if (!m_iterNext(m_iter))
         m_done = true;
     return *this;
-}
-
-ArrayIter::operator bool () const
-{
-    return !m_done;
-}
-
-char * ArrayIter::operator * () const
-{
-    return *m_data;
 }
 
 } // namespace python

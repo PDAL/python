@@ -1,18 +1,8 @@
-__version__='2.4.2'
+from .libpdalpython import Pipeline
+from .libpdalpython import getDimensions, getInfo
 
-from .pipeline import Pipeline
-from .array import Array
-from .dimension import dimensions
+__version__ = "2.4.2"
 
-from pdal.libpdalpython import getVersionString, getVersionMajor, getVersionMinor, getVersionPatch, getSha1, getDebugInformation, getPluginInstallPath
-
-class Info(object):
-    version = getVersionString()
-    major = getVersionMajor()
-    minor = getVersionMinor()
-    patch = getVersionPatch()
-    debug = getDebugInformation()
-    sha1 = getSha1()
-    plugin = getPluginInstallPath()
-
-info = Info()
+dimensions = getDimensions()
+info = getInfo()
+del getDimensions, getInfo

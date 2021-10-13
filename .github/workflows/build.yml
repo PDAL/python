@@ -25,8 +25,8 @@ jobs:
     - uses: actions/checkout@v2
     - uses: conda-incubator/setup-miniconda@v2
       with:
-        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
         activate-environment: test
         channels: conda-forge
         auto-activate-base: false
@@ -34,23 +34,17 @@ jobs:
     - name: Linux dependencies
       if: matrix.os == 'ubuntu-latest'
       shell: bash -l {0}
-      run: |
-          sudo apt-get install gcc-multilib -y
+      run: sudo apt-get install gcc-multilib -y
 
     - name: Dependencies
       shell: bash -l {0}
-      run: |
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: Install
       shell: bash -l {0}
       run: |
         python setup.py install -- -G "Ninja" -DWITH_TESTS=ON
-
         pdal --drivers
-
-
-#        pip install  . --build-option="-DWITH_TESTS=ON"
 
     - name: Test
       shell: bash -l {0}
@@ -62,7 +56,6 @@ jobs:
         $SKPATH/pdal_filters_python_test
         $SKPATH/pdal_io_numpy_test
         py.test
-
 
   windows:
     name: ${{ matrix.os }} - ${{ matrix.python-version }}
@@ -79,21 +72,17 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:
         channels: conda-forge
-        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-
 
     - name: Dependencies
       shell: cmd /C CALL "{0}"
       run: |
-
         call conda activate test
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: Install
       shell: cmd /C CALL "{0}"
       run: |
-
         call conda activate test
         where python
         python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
@@ -127,13 +116,12 @@ jobs:
     - uses: conda-incubator/setup-miniconda@v2
       with:
         channels: conda-forge
-        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
 
     - name: Dependencies
       shell: bash -l {0}
-      run: |
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} compilers cython ninja pdal pytest conda-build -y
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
 
     - name: sdist
       shell: bash -l {0}

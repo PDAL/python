@@ -32,6 +32,7 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
+#include "PyArray.hpp"
 #include "PyPipeline.hpp"
 
 #ifndef _WIN32
@@ -39,35 +40,37 @@
 #endif
 
 #include <Python.h>
-#include <numpy/arrayobject.h>
 
 #include <pdal/Stage.hpp>
 #include <pdal/pdal_features.hpp>
-
-#include "PyArray.hpp"
-#include "PyMesh.hpp"
 
 namespace pdal
 {
 namespace python
 {
 
-// Create a pipeline for writing data to PDAL
-Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
-    m_executor(new PipelineExecutor(json))
+
+void readPipeline(PipelineExecutor* executor, std::string json)
 {
+    std::stringstream strm(json);
+    executor->getManager().readPipeline(strm);
+}
+
+
+void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
+{
+    // Make the symbols in pdal_base global so that they're accessible
+    // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
+    // which means that without this, symbols in libpdal_base aren't available
+    // for resolution of symbols on future runtime linking.  This is an issue
+    // on Alpine and other Linux variants that don't use UNIQUE symbols
+    // for C++ template statics only.  Without this, you end up with multiple
+    // copies of template statics.
 #ifndef _WIN32
-    // See comment in alternate constructor below.
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
 
-    if (_import_array() < 0)
-        throw pdal_error("Could not impory numpy.core.multiarray.");
-
-    PipelineManager& manager = m_executor->getManager();
-
-    std::stringstream strm(json);
-    manager.readPipeline(strm);
+    PipelineManager& manager = executor->getManager();
     std::vector<Stage *> roots = manager.roots();
     if (roots.size() != 1)
         throw pdal_error("Filter pipeline must contain a single root stage.");
@@ -106,88 +109,142 @@ Pipeline::Pipeline(std::string const& json, std::vector<Array*> arrays) :
     manager.validateStageOptions();
 }
 
-// Create a pipeline for reading data from PDAL
-Pipeline::Pipeline(std::string const& json) :
-    m_executor(new PipelineExecutor(json))
+
+inline PyObject* buildNumpyDescription(PointViewPtr view)
 {
-    // Make the symbols in pdal_base global so that they're accessible
-    // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
-    // which means that without this, symbols in libpdal_base aren't available
-    // for resolution of symbols on future runtime linking.  This is an issue
-    // on Alpine and other Linux variants that don't use UNIQUE symbols
-    // for C++ template statics only.  Without this, you end up with multiple
-    // copies of template statics.
-#ifndef _WIN32
-    ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
-#endif
-    if (_import_array() < 0)
-        throw pdal_error("Could not impory numpy.core.multiarray.");
-}
-
-Pipeline::~Pipeline()
-{}
-
-
-void Pipeline::setLogLevel(int level)
-{
-    m_executor->setLogLevel(level);
-}
-
-
-int Pipeline::getLogLevel() const
-{
-    return static_cast<int>(m_executor->getLogLevel());
-}
-
-
-int64_t Pipeline::execute()
-{
-    return m_executor->execute();
-}
-
-bool Pipeline::validate()
-{
-    auto res =  m_executor->validate();
-    return res;
-}
-
-std::vector<Array *> Pipeline::getArrays() const
-{
-    std::vector<Array *> output;
-
-    if (!m_executor->executed())
-        throw python_error("call execute() before fetching arrays");
-
-    const PointViewSet& pvset = m_executor->getManagerConst().views();
-
-    for (auto i: pvset)
+    // Build up a numpy dtype dictionary
+    //
+    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
+    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
+    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
+    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
+    //           'Classification', 'ScanAngleRank', 'UserData',
+    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
+    //
+    Dimension::IdList dims = view->dims();
+    PyObject* names = PyList_New(dims.size());
+    PyObject* formats = PyList_New(dims.size());
+    for (size_t i = 0; i < dims.size(); ++i)
     {
-        //ABELL - Leak?
-        Array *array = new python::Array;
-        array->update(i);
-        output.push_back(array);
+        Dimension::Id id = dims[i];
+        std::string name = view->dimName(id);
+        npy_intp stride = view->dimSize(id);
+
+        std::string kind;
+        Dimension::BaseType b = Dimension::base(view->dimType(id));
+        if (b == Dimension::BaseType::Unsigned)
+            kind = "u";
+        else if (b == Dimension::BaseType::Signed)
+            kind = "i";
+        else if (b == Dimension::BaseType::Floating)
+            kind = "f";
+        else
+            throw pdal_error("Unable to map kind '" + kind  +
+                "' to PDAL dimension type");
+
+        std::stringstream oss;
+        oss << kind << stride;
+        PyList_SetItem(names, i, PyUnicode_FromString(name.c_str()));
+        PyList_SetItem(formats, i, PyUnicode_FromString(oss.str().c_str()));
     }
+    PyObject* dtype_dict = PyDict_New();
+    PyDict_SetItemString(dtype_dict, "names", names);
+    PyDict_SetItemString(dtype_dict, "formats", formats);
+    return dtype_dict;
+}
+
+
+PyArrayObject* viewToNumpyArray(PointViewPtr view)
+{
+    if (_import_array() < 0)
+        throw pdal_error("Could not import numpy.core.multiarray.");
+
+    PyObject* dtype_dict = buildNumpyDescription(view);
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    npy_intp size = view->size();
+    PyArrayObject* array = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+
+    // copy the data
+    DimTypeList types = view->dimTypes();
+    for (PointId idx = 0; idx < view->size(); idx++)
+        view->getPackedPoint(types, idx, (char *)PyArray_GETPTR1(array, idx));
+    return array;
+}
+
+std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor)
+{
+    std::vector<PyArrayObject*> output;
+    for (auto view: executor->getManagerConst().views())
+        output.push_back(viewToNumpyArray(view));
     return output;
 }
 
-std::vector<Mesh *> Pipeline::getMeshes() const
+
+PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 {
-    std::vector<Mesh *> output;
+    if (_import_array() < 0)
+        throw pdal_error("Could not import numpy.core.multiarray.");
 
-    if (!m_executor->executed())
-        throw python_error("call execute() before fetching the mesh");
+    // Build up a numpy dtype dictionary
+    //
+    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
+    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
+    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
+    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
+    //           'Classification', 'ScanAngleRank', 'UserData',
+    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
+    //
+    PyObject* names = PyList_New(3);
+    PyList_SetItem(names, 0, PyUnicode_FromString("A"));
+    PyList_SetItem(names, 1, PyUnicode_FromString("B"));
+    PyList_SetItem(names, 2, PyUnicode_FromString("C"));
 
-    const PointViewSet& pvset = m_executor->getManagerConst().views();
+    PyObject* formats = PyList_New(3);
+    PyList_SetItem(formats, 0, PyUnicode_FromString("u4"));
+    PyList_SetItem(formats, 1, PyUnicode_FromString("u4"));
+    PyList_SetItem(formats, 2, PyUnicode_FromString("u4"));
 
-    for (auto i: pvset)
+    PyObject* dtype_dict = PyDict_New();
+    PyDict_SetItemString(dtype_dict, "names", names);
+    PyDict_SetItemString(dtype_dict, "formats", formats);
+
+    PyArray_Descr *dtype = nullptr;
+    if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
+        throw pdal_error("Unable to build numpy dtype");
+    Py_XDECREF(dtype_dict);
+
+    // This is a 1 x size array.
+    npy_intp size = mesh ? mesh->size() : 0;
+    PyArrayObject* array = (PyArrayObject*)PyArray_NewFromDescr(&PyArray_Type, dtype,
+            1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
+    for (PointId idx = 0; idx < size; idx++)
     {
-        Mesh *mesh = new python::Mesh;
-        mesh->update(i);
-        output.push_back(mesh);
+        char* p = (char *)PyArray_GETPTR1(array, idx);
+        const Triangle& t = (*mesh)[idx];
+        uint32_t a = (uint32_t)t.m_a;
+        std::memcpy(p, &a, 4);
+        uint32_t b = (uint32_t)t.m_b;
+        std::memcpy(p + 4, &b, 4);
+        uint32_t c = (uint32_t)t.m_c;
+        std::memcpy(p + 8, &c,  4);
     }
+    return array;
+}
+
+
+std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor)
+{
+    std::vector<PyArrayObject*> output;
+    for (auto view: executor->getManagerConst().views())
+        output.push_back(meshToNumpyArray(view->mesh()));
     return output;
 }
 
 } // namespace python
 } // namespace pdal
-
