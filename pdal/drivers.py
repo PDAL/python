@@ -42,6 +42,7 @@ class Driver:
             factory = lambda **kwargs: self.type(type=self.name, **kwargs)
         factory.__name__ = self.short_name
         factory.__qualname__ = f"{self.type.__name__}.{self.short_name}"
+        factory.__module__ = self.type.__module__
         factory.__doc__ = self.description
         if self.options:
             factory.__doc__ += "\n\n"
