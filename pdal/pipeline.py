@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import glob
 import json
-import subprocess
 from abc import ABC, abstractmethod
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
 
 from . import libpdalpython
-
-_PDAL_DRIVERS = json.loads(
-    subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
-)
 
 
 class Pipeline(libpdalpython.Pipeline):
@@ -73,13 +68,6 @@ class Pipeline(libpdalpython.Pipeline):
 
 
 class Stage:
-    def __init_subclass__(cls, type_prefix: Optional[str] = None) -> None:
-        for driver in _PDAL_DRIVERS:
-            name = driver["name"]
-            prefix, _, suffix = name.partition(".")
-            if prefix == type_prefix:
-                cls._add_constructor(name, suffix, driver["description"])
-
     def __init__(self, **options: Any):
         self._options = options
 
@@ -106,14 +94,6 @@ class Stage:
     def __or__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         return Pipeline((self, other))
 
-    @classmethod
-    def _add_constructor(cls, type: str, name: str, description: str) -> None:
-        constructor = lambda cls, *args, **kwargs: cls(*args, **kwargs, type=type)
-        constructor.__name__ = name
-        constructor.__qualname__ = f"{cls.__name__}.{name}"
-        constructor.__doc__ = description
-        setattr(cls, name, classmethod(constructor))
-
 
 class InferableTypeStage(ABC, Stage):
     @staticmethod
@@ -129,19 +109,19 @@ class InferableTypeStage(ABC, Stage):
             return self.infer_type(self._options["filename"])
 
 
-class Reader(InferableTypeStage, type_prefix="readers"):
+class Reader(InferableTypeStage):
     infer_type = staticmethod(libpdalpython.infer_reader_driver)
 
     def __init__(self, filename: str, **options: Any):
         super().__init__(filename=filename, **options)
 
 
-class Filter(Stage, type_prefix="filters"):
+class Filter(Stage):
     def __init__(self, type: str, **options: Any):
         super().__init__(type=type, **options)
 
 
-class Writer(InferableTypeStage, type_prefix="writers"):
+class Writer(InferableTypeStage):
     infer_type = staticmethod(libpdalpython.infer_writer_driver)
 
     def __init__(self, filename: Optional[str] = None, **options: Any):
