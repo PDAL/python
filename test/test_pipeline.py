@@ -188,6 +188,15 @@ class TestPipeline:
         with pytest.raises(ValueError):
             (pdal.Reader("r") | f) | pipeline
 
+    def test_infer_stage_type(self):
+        """Can we infer stage type from the filename"""
+        assert pdal.Reader("foo.las").type == "readers.las"
+        assert pdal.Writer("foo.las").type == "writers.las"
+        assert pdal.Reader("foo.xxx").type == ""
+        assert pdal.Writer("foo.xxx").type == ""
+        assert pdal.Reader().type == ""
+        assert pdal.Writer().type == ""
+
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""

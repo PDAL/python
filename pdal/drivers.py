@@ -34,17 +34,12 @@ class Driver:
 
     @property
     def factory(self) -> Callable[..., Stage]:
-        factory: Callable[..., Stage]
-        if self.type is Reader:
-            factory = lambda filename, **kwargs: Reader(
-                filename, type=self.name, **kwargs
-            )
-        elif self.type is Writer:
-            factory = lambda filename=None, **kwargs: Writer(
-                filename, type=self.name, **kwargs
+        if self.options and self.options[0].name == "filename":
+            factory = lambda filename, **kwargs: self.type(
+                filename=filename, type=self.name, **kwargs
             )
         else:
-            factory = lambda **kwargs: Filter(type=self.name, **kwargs)
+            factory = lambda **kwargs: self.type(type=self.name, **kwargs)
         factory.__name__ = self.short_name
         factory.__qualname__ = f"{self.type.__name__}.{self.short_name}"
         factory.__doc__ = self.description

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import glob
 import json
-from abc import ABC, abstractmethod
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
@@ -89,31 +88,31 @@ class Stage:
         return dict(self._options)
 
     def pipeline(self, *arrays: np.ndarray) -> Pipeline:
-        return Pipeline((self,), arrays=arrays)
+        return Pipeline((self,), arrays)
 
     def __or__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         return Pipeline((self, other))
 
 
-class InferableTypeStage(ABC, Stage):
-    @staticmethod
-    @abstractmethod
-    def infer_type(filename: str) -> str:
-        """Infer the driver type from the filename"""
+class InferableTypeStage(Stage):
+    def __init__(self, filename: Optional[str] = None, **options: Any):
+        if filename:
+            options["filename"] = filename
+        super().__init__(**options)
 
     @property
     def type(self) -> str:
         try:
             return super().type
         except KeyError:
-            return self.infer_type(self._options["filename"])
+            filename = self._options.get("filename")
+            return str(self._infer_type(filename) if filename else "")
+
+    _infer_type = staticmethod(lambda filename: "")
 
 
 class Reader(InferableTypeStage):
-    infer_type = staticmethod(libpdalpython.infer_reader_driver)
-
-    def __init__(self, filename: str, **options: Any):
-        super().__init__(filename=filename, **options)
+    _infer_type = staticmethod(libpdalpython.infer_reader_driver)
 
 
 class Filter(Stage):
@@ -122,10 +121,7 @@ class Filter(Stage):
 
 
 class Writer(InferableTypeStage):
-    infer_type = staticmethod(libpdalpython.infer_writer_driver)
-
-    def __init__(self, filename: Optional[str] = None, **options: Any):
-        super().__init__(filename=filename, **options)
+    _infer_type = staticmethod(libpdalpython.infer_writer_driver)
 
 
 def _parse_stages(text: str) -> Iterator[Stage]:
