@@ -10,7 +10,7 @@ from .pipeline import Filter, Reader, Stage, Writer
 class Option:
     name: str
     description: str
-    default: Optional[str]
+    default: Optional[str] = None
 
     def __repr__(self) -> str:
         if self.default is not None:
@@ -25,7 +25,7 @@ class Driver:
     short_name: str = field(init=False)
     type: Type[Stage] = field(init=False)
     description: str
-    options: Optional[Sequence[Option]]
+    options: Sequence[Option]
 
     def __post_init__(self) -> None:
         prefix, _, suffix = self.name.partition(".")
@@ -69,16 +69,12 @@ def inject_pdal_drivers() -> None:
     )
     for d in drivers:
         name = d["name"]
-        d_options = options.get(name)
-        if d_options is not None:
-            d_options = [
-                Option(o["name"], o["description"], o.get("default")) for o in d_options
-            ]
-            # move filename option first
-            try:
-                i = next(i for i, opt in enumerate(d_options) if opt.name == "filename")
-                d_options.insert(0, d_options.pop(i))
-            except StopIteration:
-                pass
+        d_options = [Option(**option_dict) for option_dict in (options.get(name) or ())]
+        # move filename option first
+        try:
+            i = next(i for i, opt in enumerate(d_options) if opt.name == "filename")
+            d_options.insert(0, d_options.pop(i))
+        except StopIteration:
+            pass
         driver = Driver(name, d["description"], d_options)
         setattr(driver.type, driver.short_name, staticmethod(driver.factory))
