@@ -4,9 +4,11 @@
 import json
 from types import SimpleNamespace
 
+from cython.operator cimport dereference as deref
 from cpython.ref cimport Py_DECREF
 from libcpp cimport bool
 from libcpp.memory cimport make_shared, shared_ptr
+from libcpp.set cimport set as cpp_set
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 
@@ -71,14 +73,28 @@ def infer_writer_driver(driver):
     return StageFactory.inferWriterDriver(driver)
 
 
-cdef extern from "PyArray.hpp" namespace "pdal::python":
-    cdef cppclass Array:
-        Array(np.PyArrayObject*) except +
+cdef extern from "pdal/Mesh.hpp" namespace "pdal":
+    cdef cppclass TriangularMesh:
+        pass
+
+
+cdef extern from "pdal/PointView.hpp" namespace "pdal":
+    cdef cppclass PointView:
+        TriangularMesh* mesh()
+
+    ctypedef shared_ptr[PointView] PointViewPtr
+    ctypedef cpp_set[PointViewPtr] PointViewSet
+
+
+cdef extern from "pdal/PipelineManager.hpp" namespace "pdal":
+    cdef cppclass PipelineManager:
+        const PointViewSet& views() const
 
 
 cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
     cdef cppclass PipelineExecutor:
         PipelineExecutor(const char*) except +
+        const PipelineManager& getManagerConst() except +
         bool executed() except +
         int execute() except +
         bool validate() except +
@@ -90,11 +106,16 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         void setLogLevel(int)
 
 
+cdef extern from "PyArray.hpp" namespace "pdal::python":
+    cdef cppclass Array:
+        Array(np.PyArrayObject*) except +
+
+
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     void readPipeline(PipelineExecutor*, string) except +
     void addArrayReaders(PipelineExecutor*, vector[shared_ptr[Array]]) except +
-    vector[np.PyArrayObject*] getArrays(const PipelineExecutor*) except +
-    vector[np.PyArrayObject*] getMeshes(const PipelineExecutor*) except +
+    np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
+    np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
 
 
 cdef class Pipeline:
@@ -146,15 +167,25 @@ cdef class Pipeline:
 
     @property
     def arrays(self):
-        if not self._get_executor().executed():
+        cdef PipelineExecutor* executor = self._get_executor()
+        if not executor.executed():
             raise RuntimeError("call execute() before fetching arrays")
-        return _vector_to_list(getArrays(self._executor))
+        output = []
+        for view in executor.getManagerConst().views():
+            output.append(<object>viewToNumpyArray(view))
+            Py_DECREF(output[-1])
+        return output
 
     @property
     def meshes(self):
-        if not self._get_executor().executed():
+        cdef PipelineExecutor* executor = self._get_executor()
+        if not executor.executed():
             raise RuntimeError("call execute() before fetching the mesh")
-        return _vector_to_list(getMeshes(self._executor))
+        output = []
+        for view in executor.getManagerConst().views():
+            output.append(<object>meshToNumpyArray(deref(view).mesh()))
+            Py_DECREF(output[-1])
+        return output
 
     def execute(self):
         return self._get_executor().execute()
@@ -198,11 +229,3 @@ cdef class Pipeline:
             readPipeline(self._executor, json_bytes)
             addArrayReaders(self._executor, self._inputs)
         return self._executor
-
-
-cdef _vector_to_list(vector[np.PyArrayObject*] arrays):
-    output = []
-    for array in arrays:
-        output.append(<object>array)
-        Py_DECREF(output[-1])
-    return output

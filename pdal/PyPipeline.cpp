@@ -177,14 +177,6 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
     return array;
 }
 
-std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(viewToNumpyArray(view));
-    return output;
-}
-
 
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 {
@@ -235,15 +227,6 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
         std::memcpy(p + 8, &c,  4);
     }
     return array;
-}
-
-
-std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(meshToNumpyArray(view->mesh()));
-    return output;
 }
 
 } // namespace python
