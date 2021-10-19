@@ -1,4 +1,4 @@
-set(EXTENSION_SRC PyArray.cpp PyPipeline.cpp)
+set(EXTENSION_SRC PyArray.cpp PyPipeline.cpp StreamableExecutor.cpp)
 
 set(extension "libpdalpython")
 add_cython_target(${extension} "libpdalpython.pyx" CXX PY3)

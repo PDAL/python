@@ -113,6 +113,44 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
     np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
 
+cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
+    cdef cppclass StreamableExecutor:
+        StreamableExecutor(const char *, int, int) except +
+        np.PyArrayObject *executeNext() except +
+        bool validate() except +
+        string getMetadata() except +
+        string getPipeline() except +
+        string getSchema() except +
+        string getLog() except +
+        int getLogLevel() except +
+        int setLogLevel(int level) except +
+
+
+cdef class PipelineIterator:
+    cdef int _chunk_size
+    cdef StreamableExecutor *_executor;
+
+    def __cinit__(self, unicode json, list arrays=None, int chunk_size=10000, int prefetch=0):
+        self._chunk_size
+        self._executor = new StreamableExecutor(json.encode("UTF-8"), chunk_size, prefetch)
+#        self._add_arrays(arrays)
+
+    property chunk_size:
+        def __get__(self):
+            return self._chunk_size
+
+    def validate(self):
+        return self._executor.validate()
+
+    def __iter__(self):
+        while True:
+            arrPtr = self._executor.executeNext()
+            if arrPtr is NULL:
+                break
+            arr = <object>arrPtr
+            Py_DECREF(arr)
+            yield arr
+
 
 cdef class Pipeline:
     cdef unique_ptr[PipelineExecutor] _executor

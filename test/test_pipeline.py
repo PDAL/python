@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import sys
+from functools import partial
 
 import numpy as np
 import pytest
@@ -17,6 +18,12 @@ def get_pipeline(filename):
             pipeline = pdal.Pipeline(f.read())
         elif filename.endswith(".py"):
             pipeline = eval(f.read(), vars(pdal))
+    return pipeline
+
+def get_pipeline_iter(filename, chunk_size=10000):
+    with open(os.path.join(DATADIRECTORY, filename), "r") as f:
+        pipeline = pdal.PipelineIterator(f.read(), chunk_size=chunk_size, prefetch=3)
+    assert pipeline.validate()
     return pipeline
 
 
@@ -407,3 +414,36 @@ class TestMesh:
         triangles = mesh.cells_dict["triangle"]
         assert len(triangles) == 134
         assert triangles[0][0] == 29
+
+
+class TestPipelineIterator:
+
+    def test_construction(self):
+        """Can we construct a PDAL pipeline iterator"""
+        assert isinstance(
+            get_pipeline_iter("range.json"), pdal.PipelineIterator
+        )
+        assert isinstance(
+            get_pipeline_iter("range.json", chunk_size=100), pdal.PipelineIterator
+        )
+
+    def test_validate(self):
+        """Do we complain with bad pipelines"""
+        bad_json = """
+            [
+              "nofile.las",
+              {
+                "type": "filters.range",
+                "limits": "Intensity[80:120)"
+              }
+            ]
+        """
+        r = pdal.PipelineIterator(bad_json)
+        with pytest.raises(RuntimeError):
+            r.validate()
+
+    def test_iterate(self):
+        pipeline = get_pipeline_iter("range.json")
+        print("Got into iterate!")
+        for arr in pipeline:
+            print(arr.shape)
