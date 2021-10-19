@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import glob
 import json
+import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
@@ -14,6 +15,7 @@ class Pipeline(libpdalpython.Pipeline):
         self,
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
+        loglevel: int = logging.ERROR,
     ):
         self._stages: List[Stage] = []
         if spec:
@@ -22,6 +24,7 @@ class Pipeline(libpdalpython.Pipeline):
                 self |= stage
         if arrays:
             self.inputs = arrays
+        self.loglevel = loglevel
 
     @property
     def stages(self) -> List[Stage]:

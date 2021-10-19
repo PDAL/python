@@ -45,7 +45,6 @@ namespace python
 
 class Array;
 
-void readPipeline(PipelineExecutor* executor, std::string json);
 void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays);
 PyArrayObject* viewToNumpyArray(PointViewPtr view);
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);

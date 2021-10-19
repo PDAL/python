@@ -2,6 +2,7 @@
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
 import json
+import logging
 from types import SimpleNamespace
 
 from cython.operator cimport dereference as deref
@@ -73,6 +74,15 @@ def infer_writer_driver(driver):
     return StageFactory.inferWriterDriver(driver)
 
 
+LogLevelToPDAL = {
+    logging.ERROR: 0,
+    logging.WARNING: 1,
+    logging.INFO: 2,
+    logging.DEBUG: 8,  # pdal::LogLevel::Debug5
+}
+LogLevelFromPDAL = {v: k for k, v in LogLevelToPDAL.items()}
+
+
 cdef extern from "pdal/Mesh.hpp" namespace "pdal":
     cdef cppclass TriangularMesh:
         pass
@@ -96,13 +106,13 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         PipelineExecutor(const char*) except +
         const PipelineManager& getManagerConst() except +
         bool executed() except +
+        void read() except +
         int execute() except +
         bool validate() except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        int getLogLevel()
         void setLogLevel(int)
 
 
@@ -112,7 +122,6 @@ cdef extern from "PyArray.hpp" namespace "pdal::python":
 
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    void readPipeline(PipelineExecutor*, string) except +
     void addArrayReaders(PipelineExecutor*, vector[shared_ptr[Array]]) except +
     np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
     np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
@@ -121,6 +130,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
 cdef class Pipeline:
     cdef PipelineExecutor* _executor
     cdef vector[shared_ptr[Array]] _inputs
+    cdef int _level
 
     def __dealloc__(self):
         self.inputs = []
@@ -151,11 +161,15 @@ cdef class Pipeline:
 
     @property
     def loglevel(self):
-        return self._get_executor().getLogLevel()
+        return LogLevelFromPDAL[self._level]
 
     @loglevel.setter
     def loglevel(self, level):
-        self._get_executor().setLogLevel(level)
+        try:
+            self._level = LogLevelToPDAL[level]
+        except KeyError:
+            raise ValueError(f"Invalid level {level!r}")
+        self._delete_executor()
 
     @property
     def log(self):
@@ -224,8 +238,8 @@ cdef class Pipeline:
 
     cdef PipelineExecutor* _get_executor(self) except NULL:
         if not self._executor:
-            json_bytes = self._json.encode("UTF-8")
-            self._executor = new PipelineExecutor(json_bytes)
-            readPipeline(self._executor, json_bytes)
+            self._executor = new PipelineExecutor(self._json.encode("UTF-8"))
+            self._executor.setLogLevel(self._level)
+            self._executor.read()
             addArrayReaders(self._executor, self._inputs)
         return self._executor

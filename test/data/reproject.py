@@ -6,6 +6,7 @@ import numpy as np
 
 
 def filter(ins, outs):
+    print("entered filter()")
     cls = ins["Classification"]
     keep_classes = [1]
 
@@ -19,6 +20,7 @@ def filter(ins, outs):
         keep = keep + t
 
     outs["Mask"] = keep
+    print("exiting filter()")
     return True
 """)
     |
