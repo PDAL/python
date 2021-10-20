@@ -28,6 +28,8 @@ class Pipeline(libpdalpython.Pipeline):
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
         loglevel: int = logging.ERROR,
+        chunk_size: int = 10000,
+        prefetch: int = 0,
     ):
         super().__init__()
         self._stages: List[Stage] = []
@@ -37,6 +39,8 @@ class Pipeline(libpdalpython.Pipeline):
                 self |= stage
         self.inputs = arrays
         self.loglevel = loglevel
+        self.chunk_size = chunk_size
+        self.prefetch = prefetch
 
     @property
     def stages(self) -> List[Stage]:

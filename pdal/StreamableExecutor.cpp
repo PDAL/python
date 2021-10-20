@@ -226,12 +226,9 @@ char *PythonPointTable::getPoint(PointId idx)
 
 // StreamableExecutor
 
-StreamableExecutor::StreamableExecutor(const char *json, int chunkSize, int prefetch) :
-    m_json(json), m_table(chunkSize, prefetch), m_manager(chunkSize),
-    m_log(Log::makeLog("pdal_python", &m_logStream))
-{
-    m_manager.setLog(m_log);
-}
+StreamableExecutor::StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch) :
+    PipelineExecutor(json), m_table(chunkSize, prefetch)
+{}
     
 StreamableExecutor::~StreamableExecutor()
 {
@@ -258,50 +255,9 @@ PyArrayObject *StreamableExecutor::executeNext()
         m_thread->join();
         Py_END_ALLOW_THREADS
         m_thread.reset();
+        m_executed = true;
     }
     return arr;
-}
-
-std::string StreamableExecutor::getMetadata() const
-{
-    return pdal::Utils::toJSON(m_manager.getMetadata().clone("metadata"));
-}
-
-std::string StreamableExecutor::getPipeline() const
-{
-    std::stringstream strm;
-    pdal::PipelineWriter::writePipeline(m_manager.getStage(), strm);
-    return strm.str();
-}
-
-int StreamableExecutor::getLogLevel() const
-{
-    return static_cast<int>(m_log->getLevel());
-}
-
-std::string StreamableExecutor::getLog() const
-{
-    return m_logStream.str();
-}
-
-// Returns the active log level.
-int StreamableExecutor::setLogLevel(int level)
-{
-    if (level < 0 || level > 8)
-        return getLogLevel();
-
-    m_log->setLevel(static_cast<pdal::LogLevel>(level));
-    return level;
-}
-
-bool StreamableExecutor::validate()
-{
-    std::stringstream strm;
-    strm << m_json;
-    m_manager.readPipeline(strm);
-    m_manager.prepare();
-
-    return true;
 }
 
 } // namespace python

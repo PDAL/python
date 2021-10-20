@@ -50,13 +50,6 @@ namespace python
 {
 
 
-void readPipeline(PipelineExecutor* executor, std::string json)
-{
-    std::stringstream strm(json);
-    executor->getManager().readPipeline(strm);
-}
-
-
 void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays)
 {
     // Make the symbols in pdal_base global so that they're accessible

@@ -12,18 +12,16 @@ import pdal
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
-def get_pipeline(filename):
+def get_pipeline(filename, *, chunk_size=None, prefetch=None):
     with open(os.path.join(DATADIRECTORY, filename), "r") as f:
         if filename.endswith(".json"):
             pipeline = pdal.Pipeline(f.read())
         elif filename.endswith(".py"):
             pipeline = eval(f.read(), vars(pdal))
-    return pipeline
-
-def get_pipeline_iter(filename, chunk_size=10000):
-    with open(os.path.join(DATADIRECTORY, filename), "r") as f:
-        pipeline = pdal.PipelineIterator(f.read(), chunk_size=chunk_size, prefetch=3)
-    assert pipeline.validate()
+    if chunk_size is not None:
+        pipeline.chunk_size = chunk_size
+    if prefetch is not None:
+        pipeline.prefetch = prefetch
     return pipeline
 
 
@@ -38,6 +36,11 @@ class TestPipeline:
     def test_construction(self, filename):
         """Can we construct a PDAL pipeline"""
         assert isinstance(get_pipeline(filename), pdal.Pipeline)
+        assert isinstance(get_pipeline(filename, chunk_size=100), pdal.Pipeline)
+        assert isinstance(get_pipeline(filename, prefetch=3), pdal.Pipeline)
+        assert isinstance(
+            get_pipeline(filename, chunk_size=100, prefetch=3), pdal.Pipeline
+        )
 
         # construct Pipeline from a sequence of stages
         r = pdal.Reader("r")
@@ -265,8 +268,6 @@ class TestPipeline:
         assert (rs | fn | ws).streamable is False
         assert (rs | fs | wn).streamable is False
 
-    # fails against PDAL master; see https://github.com/PDAL/PDAL/issues/3566
-    @pytest.mark.xfail
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
@@ -418,32 +419,71 @@ class TestMesh:
 
 class TestPipelineIterator:
 
-    def test_construction(self):
-        """Can we construct a PDAL pipeline iterator"""
-        assert isinstance(
-            get_pipeline_iter("range.json"), pdal.PipelineIterator
-        )
-        assert isinstance(
-            get_pipeline_iter("range.json", chunk_size=100), pdal.PipelineIterator
-        )
+    @pytest.mark.xfail
+    def test_array(self):
+        """Can we fetch PDAL data as numpy arrays"""
+        ri = get_pipeline("range.json", chunk_size=100)
+        arrays = list(ri)
+        assert len(arrays) == 11
+        concat_array = np.concatenate(arrays)
 
-    def test_validate(self):
-        """Do we complain with bad pipelines"""
-        bad_json = """
-            [
-              "nofile.las",
-              {
-                "type": "filters.range",
-                "limits": "Intensity[80:120)"
-              }
-            ]
-        """
-        r = pdal.PipelineIterator(bad_json)
+        r = get_pipeline("range.json")
+        count = r.execute()
+        arrays = r.arrays
+        assert len(arrays) == 1
+        array = arrays[0]
+        assert count == len(array)
+
+        np.testing.assert_array_equal(array, concat_array)
+
+    def test_metadata(self):
+        """Can we fetch PDAL metadata"""
+        ri = get_pipeline("range.json", chunk_size=100)
         with pytest.raises(RuntimeError):
-            r.validate()
+            ri.metadata
+        list(ri)
 
-    def test_iterate(self):
-        pipeline = get_pipeline_iter("range.json")
-        print("Got into iterate!")
-        for arr in pipeline:
-            print(arr.shape)
+        r = get_pipeline("range.json")
+        with pytest.raises(RuntimeError):
+            r.metadata
+        r.execute()
+
+        assert ri.metadata == r.metadata
+
+    @pytest.mark.xfail
+    def test_schema(self):
+        """Fetching a schema works"""
+        ri = get_pipeline("range.json", chunk_size=100)
+        with pytest.raises(RuntimeError):
+            ri.schema
+        list(ri)
+
+        r = get_pipeline("range.json")
+        with pytest.raises(RuntimeError):
+            r.schema
+        r.execute()
+
+        assert ri.schema == r.schema
+
+    @pytest.mark.skip("segfaults")
+    def test_merged_arrays(self):
+        """Can we load data from a list of arrays to PDAL"""
+        data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
+        arrays = [data, data, data]
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        arrays1 = list(pdal.Pipeline(filter_intensity, arrays, chunk_size=100))
+
+        p = pdal.Pipeline(filter_intensity, arrays)
+        p.execute()
+        arrays2 = p.arrays
+
+        assert len(arrays1) == len(arrays2)
+        for array1, array2 in zip(arrays1, arrays2):
+            np.testing.assert_array_equal(array1, array2)

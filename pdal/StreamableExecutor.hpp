@@ -43,6 +43,7 @@
 
 #include <numpy/arrayobject.h>
 
+#include <pdal/PipelineExecutor.hpp>
 #include <pdal/PipelineManager.hpp>
 #include <pdal/PointTable.hpp>
 
@@ -83,28 +84,17 @@ private:
     std::queue<PyArrayObject *> m_arrays;
 };
 
-class StreamableExecutor
+class StreamableExecutor : public PipelineExecutor
 {
 public:
-    StreamableExecutor(const char *json, int chunkSize, int prefetch);
+    StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch);
     ~StreamableExecutor();
 
-    PyArrayObject *executeNext();
-    std::string getMetadata() const;
-    std::string getPipeline() const;
-    std::string getSchema() const;
-    std::string getLog() const;
-    int getLogLevel() const;
-    int setLogLevel(int level);
-    bool validate();
+    PyArrayObject* executeNext();
 
 private:
-    std::string m_json;
     int m_prefetch;
     PythonPointTable m_table;
-    PipelineManager m_manager;
-    std::stringstream m_logStream;
-    LogPtr m_log;
     std::unique_ptr<std::thread> m_thread;
 };
 

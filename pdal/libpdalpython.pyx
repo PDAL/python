@@ -94,6 +94,7 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         PipelineExecutor(string) except +
         const PipelineManager& getManagerConst() except +
         bool executed() except +
+        void read() except +
         int execute() except +
         string getPipeline() except +
         string getMetadata() except +
@@ -102,63 +103,29 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         void setLogLevel(int) except +
 
 
+cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
+    cdef cppclass StreamableExecutor(PipelineExecutor):
+        StreamableExecutor(string, int, int) except +
+        np.PyArrayObject* executeNext() except +
+
+
 cdef extern from "PyArray.hpp" namespace "pdal::python":
     cdef cppclass Array:
         Array(np.PyArrayObject*) except +
 
 
 cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    void readPipeline(PipelineExecutor*, string) except +
     void addArrayReaders(PipelineExecutor*, vector[shared_ptr[Array]]) except +
     np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
     np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
 
-cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
-    cdef cppclass StreamableExecutor:
-        StreamableExecutor(const char *, int, int) except +
-        np.PyArrayObject *executeNext() except +
-        bool validate() except +
-        string getMetadata() except +
-        string getPipeline() except +
-        string getSchema() except +
-        string getLog() except +
-        int getLogLevel() except +
-        int setLogLevel(int level) except +
-
-
-cdef class PipelineIterator:
-    cdef int _chunk_size
-    cdef StreamableExecutor *_executor;
-
-    def __cinit__(self, unicode json, list arrays=None, int chunk_size=10000, int prefetch=0):
-        self._chunk_size
-        self._executor = new StreamableExecutor(json.encode("UTF-8"), chunk_size, prefetch)
-#        self._add_arrays(arrays)
-
-    property chunk_size:
-        def __get__(self):
-            return self._chunk_size
-
-    def validate(self):
-        return self._executor.validate()
-
-    def __iter__(self):
-        while True:
-            arrPtr = self._executor.executeNext()
-            if arrPtr is NULL:
-                break
-            arr = <object>arrPtr
-            Py_DECREF(arr)
-            yield arr
-
 
 cdef class Pipeline:
-    cdef unique_ptr[PipelineExecutor] _executor
+    cdef unique_ptr[StreamableExecutor] _executor
     cdef vector[shared_ptr[Array]] _inputs
     cdef int _loglevel
-
-    def execute(self):
-        return self._get_executor().execute()
+    cdef int _chunk_size
+    cdef int _prefetch
 
     #========= writeable properties to be set before execution ===========================
 
@@ -180,6 +147,26 @@ cdef class Pipeline:
     @loglevel.setter
     def loglevel(self, value):
         self._loglevel = value
+        self._del_executor()
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size
+
+    @chunk_size.setter
+    def chunk_size(self, value):
+        assert value > 0
+        self._chunk_size = value
+        self._del_executor()
+
+    @property
+    def prefetch(self):
+        return self._prefetch
+
+    @prefetch.setter
+    def prefetch(self, value):
+        assert value >= 0
+        self._prefetch = value
         self._del_executor()
 
     #========= readable properties to be read after execution ============================
@@ -222,6 +209,21 @@ cdef class Pipeline:
             Py_DECREF(output[-1])
         return output
 
+    #========= execution methods =========================================================
+
+    def execute(self):
+        return self._get_executor().execute()
+
+    def __iter__(self):
+        cdef StreamableExecutor* executor = self._get_executor()
+        while True:
+            arr_ptr = executor.executeNext()
+            if arr_ptr is NULL:
+                break
+            arr = <object>arr_ptr
+            Py_DECREF(arr)
+            yield arr
+
     #========= non-public properties & methods ===========================================
 
     def _get_json(self):
@@ -237,12 +239,12 @@ cdef class Pipeline:
     def _del_executor(self):
         self._executor.reset()
 
-    cdef PipelineExecutor* _get_executor(self) except NULL:
+    cdef StreamableExecutor* _get_executor(self) except NULL:
         if not self._executor:
-            json = self._get_json()
-            executor = new PipelineExecutor(json)
+            executor = new StreamableExecutor(self._get_json(),
+                                              self._chunk_size, self._prefetch)
             executor.setLogLevel(self._loglevel)
-            readPipeline(executor, json)
+            executor.read()
             addArrayReaders(executor, self._inputs)
             self._executor.reset(executor)
         return self._executor.get()
