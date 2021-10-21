@@ -108,6 +108,18 @@ void PythonPointTable::py_resizeArray(int np)
     PyArray_Dims dims{ sizes, 1 };
 
     auto gil = PyGILState_Ensure();
+    // copy the non-skipped elements to the beginning
+    npy_intp dest_idx = 0;
+    for (PointId src_idx = 0; src_idx < numPoints(); src_idx++)
+        if (!skip(src_idx))
+        {
+            if (src_idx != dest_idx)
+            {
+                PyObject* src_item = PyArray_GETITEM(m_curArray, PyArray_GETPTR1(m_curArray, src_idx));
+                PyArray_SETITEM(m_curArray, PyArray_GETPTR1(m_curArray, dest_idx), src_item);
+            }
+            dest_idx++;
+        }
     PyArray_Resize(m_curArray, &dims, true, NPY_CORDER);
     PyGILState_Release(gil);
 }
@@ -124,30 +136,42 @@ PyObject *PythonPointTable::py_buildNumpyDescriptor() const
     //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
     //
 
-    DimTypeList dims = layout()->dimTypes();
+    auto dims = m_layout.dims();
+
+    // Need to sort the dimensions by offset
+    // Is there a better way? Can they be sorted by offset already?
+    auto sorter = [this](Dimension::Id id1, Dimension::Id id2) -> bool
+    {
+        return m_layout.dimOffset(id1) < m_layout.dimOffset(id2);
+    };
+    std::sort(dims.begin(), dims.end(), sorter);
+
     PyObject* names = PyList_New(dims.size());
     PyObject* formats = PyList_New(dims.size());
     for (size_t i = 0; i < dims.size(); ++i)
     {
-        DimType& dt = dims[i];
-        std::string name = m_layout.dimName(dt.m_id);
-        npy_intp stride = Dimension::size(dt.m_type);
-
+        auto id = dims[i];
         std::string kind;
-        Dimension::BaseType b = Dimension::base(dt.m_type);
-        if (b == Dimension::BaseType::Unsigned)
-            kind = "u";
-        else if (b == Dimension::BaseType::Signed)
-            kind = "i";
-        else if (b == Dimension::BaseType::Floating)
-            kind = "f";
-        else
-            throw pdal_error("Unable to map kind '" + kind  +
-                "' to PDAL dimension type");
+        switch (Dimension::base(m_layout.dimType(id)))
+        {
+            case Dimension::BaseType::Unsigned:
+                kind = 'u';
+                break;
+            case Dimension::BaseType::Signed:
+                kind = 'i';
+                break;
+            case Dimension::BaseType::Floating:
+                kind = 'f';
+                break;
+            default:
+                throw pdal_error("Unable to map kind '" + kind  + "' to PDAL dimension type");
+        }
 
-        std::string type = kind + std::to_string(stride);
+        auto name = m_layout.dimName(id);
         PyList_SetItem(names, i, PyUnicode_FromString(name.c_str()));
-        PyList_SetItem(formats, i, PyUnicode_FromString(type.c_str()));
+
+        auto format = kind + std::to_string(m_layout.dimSize(id));
+        PyList_SetItem(formats, i, PyUnicode_FromString(format.c_str()));
     }
 
     PyObject* dict = PyDict_New();
@@ -158,12 +182,11 @@ PyObject *PythonPointTable::py_buildNumpyDescriptor() const
 
 void PythonPointTable::reset()
 {
-    point_count_t np = numPoints();
+    point_count_t np = 0;
+    for (PointId idx = 0; idx < numPoints(); idx++)
+        if (!skip(idx))
+            np++;
 
-    // If this is the last chunk, the size might be less than what's expected, so
-    // resize the array to match its true size.
-    // ABELL - This isn't quite right. We want to know if there are any skips and deal with those
-    // but I'm leaving that for the moment.
     if (np && np != m_limit)
         py_resizeArray(np);
 
@@ -179,7 +202,7 @@ void PythonPointTable::reset()
             m_curArray = nullptr;
         }
 
-        bool done = np < m_limit;
+        bool done = numPoints() < m_limit;
 
         // If we just pushed the last chunk, push a nullptr so that a reader knows.
         if (done)

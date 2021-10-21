@@ -419,7 +419,6 @@ class TestMesh:
 
 class TestPipelineIterator:
 
-    @pytest.mark.xfail
     def test_array(self):
         """Can we fetch PDAL data as numpy arrays"""
         ri = get_pipeline("range.json", chunk_size=100)
