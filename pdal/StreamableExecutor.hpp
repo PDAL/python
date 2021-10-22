@@ -68,13 +68,10 @@ protected:
 
 private:
     // All functions starting with py_ call Python things that need the GIL locked.
-    void py_destroy();
-    PyArrayObject *py_createArray() const;
-    void py_createDescriptor();
-    void py_resizeArray(int np);
+    void py_createArray();
+    void py_resizeArray(point_count_t np);
     PyObject *py_buildNumpyDescriptor() const;
 
-    point_count_t m_limit;
     int m_prefetch;
     PointLayout m_layout;
     PyArrayObject *m_curArray;
@@ -94,7 +91,6 @@ public:
     PyArrayObject* executeNext();
 
 private:
-    int m_prefetch;
     PythonPointTable m_table;
     std::unique_ptr<std::thread> m_thread;
 };

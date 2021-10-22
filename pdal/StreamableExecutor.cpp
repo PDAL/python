@@ -48,60 +48,46 @@ namespace python
 // PythonPointTable
 
 PythonPointTable::PythonPointTable(point_count_t limit, int prefetch) :
-    StreamPointTable(m_layout, limit), m_limit(limit), m_prefetch(prefetch),
+    StreamPointTable(m_layout, limit), m_prefetch(prefetch),
     m_curArray(nullptr), m_dtype(nullptr)
 {}
 
 PythonPointTable::~PythonPointTable()
 {
-    py_destroy();
+    auto gil = PyGILState_Ensure();
+    Py_XDECREF(m_dtype);
+    Py_XDECREF(m_curArray);
+    PyGILState_Release(gil);
 }
 
 void PythonPointTable::finalize()
 {
     BasePointTable::finalize();
-    py_createDescriptor();
-    m_curArray = py_createArray();
-}
 
-void PythonPointTable::py_destroy()
-{
+    // create dtype
     auto gil = PyGILState_Ensure();
-
-    Py_XDECREF(m_dtype);
-    Py_XDECREF(m_curArray);
-
-    PyGILState_Release(gil);
-}
-
-PyArrayObject *PythonPointTable::py_createArray() const
-{
-    auto gil = PyGILState_Ensure();
-
-    npy_intp size = (npy_intp)m_limit;
-    Py_INCREF(m_dtype);
-    PyArrayObject *arr = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, m_dtype,
-        1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
-
-    PyGILState_Release(gil);
-    return arr;
-}
-
-void PythonPointTable::py_createDescriptor()
-{
-    auto gil = PyGILState_Ensure();
-
     if (_import_array() < 0)
         std::cerr << "Could not import array!\n";
     PyObject *dtype_dict = py_buildNumpyDescriptor();
     if (PyArray_DescrConverter(dtype_dict, &m_dtype) == NPY_FAIL)
-        m_dtype = nullptr;
+        throw pdal_error("Unable to create numpy dtype");
     Py_XDECREF(dtype_dict);
+    PyGILState_Release(gil);
 
+    py_createArray();
+}
+
+void PythonPointTable::py_createArray()
+{
+    auto gil = PyGILState_Ensure();
+    npy_intp size = capacity();
+    Py_INCREF(m_dtype);
+    m_curArray = (PyArrayObject *)PyArray_NewFromDescr(&PyArray_Type, m_dtype,
+        1, &size, 0, nullptr, NPY_ARRAY_CARRAY, nullptr);
     PyGILState_Release(gil);
 }
 
-void PythonPointTable::py_resizeArray(int np)
+void PythonPointTable::py_resizeArray(point_count_t np)
 {
     npy_intp sizes[1];
     sizes[0] = np;
@@ -187,7 +173,7 @@ void PythonPointTable::reset()
         if (!skip(idx))
             np++;
 
-    if (np && np != m_limit)
+    if (np && np != capacity())
         py_resizeArray(np);
 
     // This will keep putting arrays on the list until done, whether or not the consumer
@@ -199,7 +185,7 @@ void PythonPointTable::reset()
         if (np)
         {
             m_arrays.push(m_curArray);
-            m_curArray = py_createArray();
+            py_createArray();
             m_producedCv.notify_one();
         }
         while (m_arrays.size() > m_prefetch)
@@ -236,7 +222,7 @@ PyArrayObject *PythonPointTable::fetchArray()
 
 char *PythonPointTable::getPoint(PointId idx)
 {
-    return (char *)PyArray_GETPTR1(m_curArray, (npy_intp)idx);
+    return (char *)PyArray_GETPTR1(m_curArray, idx);
 }
 
 
