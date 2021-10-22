@@ -464,7 +464,6 @@ class TestPipelineIterator:
 
         assert ri.schema == r.schema
 
-    @pytest.mark.skip("segfaults")
     def test_merged_arrays(self):
         """Can we load data from a list of arrays to PDAL"""
         data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
@@ -477,12 +476,11 @@ class TestPipelineIterator:
             }
           ]
         }"""
-        arrays1 = list(pdal.Pipeline(filter_intensity, arrays, chunk_size=100))
-
         p = pdal.Pipeline(filter_intensity, arrays)
         p.execute()
-        arrays2 = p.arrays
-
-        assert len(arrays1) == len(arrays2)
-        for array1, array2 in zip(arrays1, arrays2):
-            np.testing.assert_array_equal(array1, array2)
+        non_streaming_array = np.concatenate(p.arrays)
+        for chunk_size in range(5, 100, 5):
+            streaming_arrays = list(pdal.Pipeline(filter_intensity, arrays,
+                                                  chunk_size=chunk_size))
+            np.testing.assert_array_equal(np.concatenate(streaming_arrays),
+                                          non_streaming_array)

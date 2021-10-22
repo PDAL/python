@@ -199,25 +199,18 @@ void PythonPointTable::reset()
         if (np)
         {
             m_arrays.push(m_curArray);
-            m_curArray = nullptr;
+            m_curArray = py_createArray();
+            m_producedCv.notify_one();
         }
-
-        bool done = numPoints() < m_limit;
-
-        // If we just pushed the last chunk, push a nullptr so that a reader knows.
-        if (done)
-            m_arrays.push(nullptr);
-        m_producedCv.notify_one();
-
-        if (done)
-            return;
-
         while (m_arrays.size() > m_prefetch)
             m_consumedCv.wait(l);
     }
+}
 
-    // Make a new array for data.
-    m_curArray = py_createArray();
+void PythonPointTable::done()
+{
+    m_arrays.push(nullptr);
+    m_producedCv.notify_one();
 }
 
 PyArrayObject *PythonPointTable::fetchArray()
@@ -267,6 +260,7 @@ PyArrayObject *StreamableExecutor::executeNext()
         m_thread.reset(new std::thread([this]()
         {
             m_manager.executeStream(m_table);
+            m_table.done();
         }));
     }
 

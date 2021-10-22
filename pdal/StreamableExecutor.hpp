@@ -59,6 +59,7 @@ public:
     ~PythonPointTable();
 
     virtual void finalize();
+    void done();
     PyArrayObject *fetchArray();
 
 protected:
