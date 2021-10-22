@@ -32,6 +32,7 @@
 * OF SUCH DAMAGE.
 ****************************************************************************/
 
+#include "PyPipeline.hpp"
 #include "StreamableExecutor.hpp"
 
 #include <Python.h>
@@ -68,7 +69,7 @@ void PythonPointTable::finalize()
     auto gil = PyGILState_Ensure();
     if (_import_array() < 0)
         std::cerr << "Could not import array!\n";
-    PyObject *dtype_dict = py_buildNumpyDescriptor();
+    PyObject *dtype_dict = buildNumpyDescriptor(&m_layout);
     if (PyArray_DescrConverter(dtype_dict, &m_dtype) == NPY_FAIL)
         throw pdal_error("Unable to create numpy dtype");
     Py_XDECREF(dtype_dict);
@@ -108,62 +109,6 @@ void PythonPointTable::py_resizeArray(point_count_t np)
         }
     PyArray_Resize(m_curArray, &dims, true, NPY_CORDER);
     PyGILState_Release(gil);
-}
-
-PyObject *PythonPointTable::py_buildNumpyDescriptor() const
-{
-    // Build up a numpy dtype dictionary
-    //
-    // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',
-    //              'f4', 'u1', 'u2', 'f8', 'u2', 'u2', 'u2'],
-    // 'names': ['X', 'Y', 'Z', 'Intensity', 'ReturnNumber',
-    //           'NumberOfReturns', 'ScanDirectionFlag', 'EdgeOfFlightLine',
-    //           'Classification', 'ScanAngleRank', 'UserData',
-    //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
-    //
-
-    auto dims = m_layout.dims();
-
-    // Need to sort the dimensions by offset
-    // Is there a better way? Can they be sorted by offset already?
-    auto sorter = [this](Dimension::Id id1, Dimension::Id id2) -> bool
-    {
-        return m_layout.dimOffset(id1) < m_layout.dimOffset(id2);
-    };
-    std::sort(dims.begin(), dims.end(), sorter);
-
-    PyObject* names = PyList_New(dims.size());
-    PyObject* formats = PyList_New(dims.size());
-    for (size_t i = 0; i < dims.size(); ++i)
-    {
-        auto id = dims[i];
-        std::string kind;
-        switch (Dimension::base(m_layout.dimType(id)))
-        {
-            case Dimension::BaseType::Unsigned:
-                kind = 'u';
-                break;
-            case Dimension::BaseType::Signed:
-                kind = 'i';
-                break;
-            case Dimension::BaseType::Floating:
-                kind = 'f';
-                break;
-            default:
-                throw pdal_error("Unable to map kind '" + kind  + "' to PDAL dimension type");
-        }
-
-        auto name = m_layout.dimName(id);
-        PyList_SetItem(names, i, PyUnicode_FromString(name.c_str()));
-
-        auto format = kind + std::to_string(m_layout.dimSize(id));
-        PyList_SetItem(formats, i, PyUnicode_FromString(format.c_str()));
-    }
-
-    PyObject* dict = PyDict_New();
-    PyDict_SetItemString(dict, "names", names);
-    PyDict_SetItemString(dict, "formats", formats);
-    return dict;
 }
 
 void PythonPointTable::reset()
@@ -231,7 +176,7 @@ char *PythonPointTable::getPoint(PointId idx)
 StreamableExecutor::StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch) :
     PipelineExecutor(json), m_table(chunkSize, prefetch)
 {}
-    
+
 StreamableExecutor::~StreamableExecutor()
 {
     //ABELL - Hmmm.

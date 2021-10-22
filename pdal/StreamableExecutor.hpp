@@ -70,7 +70,6 @@ private:
     // All functions starting with py_ call Python things that need the GIL locked.
     void py_createArray();
     void py_resizeArray(point_count_t np);
-    PyObject *py_buildNumpyDescriptor() const;
 
     int m_prefetch;
     PointLayout m_layout;

@@ -45,6 +45,7 @@ namespace python
 
 class Array;
 
+PyObject* buildNumpyDescriptor(PointLayoutPtr layout);
 void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays);
 PyArrayObject* viewToNumpyArray(PointViewPtr view);
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);

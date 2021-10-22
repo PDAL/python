@@ -105,7 +105,7 @@ void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Arr
 }
 
 
-inline PyObject* buildNumpyDescription(PointViewPtr view)
+PyObject* buildNumpyDescriptor(PointLayoutPtr layout)
 {
     // Build up a numpy dtype dictionary
     //
@@ -116,31 +116,42 @@ inline PyObject* buildNumpyDescription(PointViewPtr view)
     //           'Classification', 'ScanAngleRank', 'UserData',
     //           'PointSourceId', 'GpsTime', 'Red', 'Green', 'Blue']}
     //
-    Dimension::IdList dims = view->dims();
+
+    // Ensure that the dimensions are sorted by offset
+    // Is there a better way? Can they be sorted by offset already?
+    auto sortByOffset = [layout](Dimension::Id id1, Dimension::Id id2) -> bool
+    {
+        return layout->dimOffset(id1) < layout->dimOffset(id2);
+    };
+    auto dims = layout->dims();
+    std::sort(dims.begin(), dims.end(), sortByOffset);
+
     PyObject* names = PyList_New(dims.size());
     PyObject* formats = PyList_New(dims.size());
     for (size_t i = 0; i < dims.size(); ++i)
     {
         Dimension::Id id = dims[i];
-        std::string name = view->dimName(id);
-        npy_intp stride = view->dimSize(id);
-
-        std::string kind;
-        Dimension::BaseType b = Dimension::base(view->dimType(id));
-        if (b == Dimension::BaseType::Unsigned)
-            kind = "u";
-        else if (b == Dimension::BaseType::Signed)
-            kind = "i";
-        else if (b == Dimension::BaseType::Floating)
-            kind = "f";
-        else
-            throw pdal_error("Unable to map kind '" + kind  +
-                "' to PDAL dimension type");
-
-        std::stringstream oss;
-        oss << kind << stride;
+        auto name = layout->dimName(id);
         PyList_SetItem(names, i, PyUnicode_FromString(name.c_str()));
-        PyList_SetItem(formats, i, PyUnicode_FromString(oss.str().c_str()));
+
+        std::stringstream format;
+        switch (Dimension::base(layout->dimType(id)))
+        {
+            case Dimension::BaseType::Unsigned:
+                format << 'u';
+                break;
+            case Dimension::BaseType::Signed:
+                format << 'i';
+                break;
+            case Dimension::BaseType::Floating:
+                format << 'f';
+                break;
+            default:
+                throw pdal_error("Unable to map dimension '" + name  + "' to Numpy");
+        }
+        format << layout->dimSize(id);
+        PyList_SetItem(formats, i, PyUnicode_FromString(format.str().c_str()));
+
     }
     PyObject* dtype_dict = PyDict_New();
     PyDict_SetItemString(dtype_dict, "names", names);
@@ -154,7 +165,7 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
     if (_import_array() < 0)
         throw pdal_error("Could not import numpy.core.multiarray.");
 
-    PyObject* dtype_dict = buildNumpyDescription(view);
+    PyObject* dtype_dict = buildNumpyDescriptor(view->layout());
     PyArray_Descr *dtype = nullptr;
     if (PyArray_DescrConverter(dtype_dict, &dtype) == NPY_FAIL)
         throw pdal_error("Unable to build numpy dtype");
