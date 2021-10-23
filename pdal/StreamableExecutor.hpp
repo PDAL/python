@@ -59,6 +59,7 @@ public:
     ~PythonPointTable();
 
     virtual void finalize();
+    void disable();
     void done();
     PyArrayObject *fetchArray();
 
@@ -88,8 +89,11 @@ public:
     ~StreamableExecutor();
 
     PyArrayObject* executeNext();
+    void stop();
 
 private:
+    void done();
+
     PythonPointTable m_table;
     std::unique_ptr<std::thread> m_thread;
 };

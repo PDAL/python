@@ -107,6 +107,7 @@ cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
     cdef cppclass StreamableExecutor(PipelineExecutor):
         StreamableExecutor(string, int, int) except +
         np.PyArrayObject* executeNext() except +
+        void stop() except +
 
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
@@ -216,13 +217,16 @@ cdef class Pipeline:
 
     def __iter__(self):
         cdef StreamableExecutor* executor = self._get_executor()
-        while True:
-            arr_ptr = executor.executeNext()
-            if arr_ptr is NULL:
-                break
-            arr = <object>arr_ptr
-            Py_DECREF(arr)
-            yield arr
+        try:
+            while True:
+                arr_ptr = executor.executeNext()
+                if arr_ptr is NULL:
+                    break
+                arr = <object>arr_ptr
+                Py_DECREF(arr)
+                yield arr
+        finally:
+            executor.stop()
 
     #========= non-public properties & methods ===========================================
 

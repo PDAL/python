@@ -484,3 +484,15 @@ class TestPipelineIterator:
                                                   chunk_size=chunk_size))
             np.testing.assert_array_equal(np.concatenate(streaming_arrays),
                                           non_streaming_array)
+
+    def test_premature_exit(self):
+        """Can we stop iterating before all arrays are fetched"""
+        r = get_pipeline("range.json")
+        r.execute()
+        assert len(r.arrays) == 1
+        array = r.arrays[0]
+
+        ri = get_pipeline("range.json", chunk_size=100)
+        for array2 in ri:
+            np.testing.assert_array_equal(array2, array[:len(array2)])
+            break

@@ -138,6 +138,13 @@ void PythonPointTable::reset()
     }
 }
 
+void PythonPointTable::disable()
+{
+    // TODO: uncomment the next line when/if StreamPointTable.m_capacity
+    // changes from private to protected
+    // m_capacity = 0;
+}
+
 void PythonPointTable::done()
 {
     m_arrays.push(nullptr);
@@ -198,14 +205,28 @@ PyArrayObject *StreamableExecutor::executeNext()
     // Blocks until something is ready.
     PyArrayObject *arr = m_table.fetchArray();
     if (arr == nullptr)
-    {
-        Py_BEGIN_ALLOW_THREADS
-        m_thread->join();
-        Py_END_ALLOW_THREADS
-        m_thread.reset();
-        m_executed = true;
-    }
+        done();
     return arr;
+}
+
+void StreamableExecutor::stop()
+{
+    if (m_thread)
+    {
+        m_table.disable();
+        while (PyArrayObject* arr = m_table.fetchArray())
+            Py_XDECREF(arr);
+        done();
+    }
+}
+
+void StreamableExecutor::done()
+{
+    Py_BEGIN_ALLOW_THREADS
+    m_thread->join();
+    Py_END_ALLOW_THREADS
+    m_thread.reset();
+    m_executed = true;
 }
 
 } // namespace python
