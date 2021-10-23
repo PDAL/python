@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 
@@ -197,13 +198,32 @@ class TestPipeline:
         assert pdal.Reader().type == ""
         assert pdal.Writer().type == ""
 
+    # fails against PDAL master; see https://github.com/PDAL/PDAL/issues/3566
+    @pytest.mark.xfail
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
         r = get_pipeline(filename)
+        assert r.loglevel == logging.ERROR
+        assert r.log == ""
+
+        for loglevel in logging.CRITICAL, -1:
+            with pytest.raises(ValueError):
+                r.loglevel = loglevel
+
         count = r.execute()
         assert count == 789
-        # assert r.log.split()[0] == "(pypipeline"
+        assert r.log == "entered filter()\n" + "exiting filter()\n"
+
+        r.loglevel = logging.DEBUG
+        assert r.loglevel == logging.DEBUG
+        count = r.execute()
+        assert count == 789
+        assert "(pypipeline readers.las Debug)" in r.log
+        assert "(pypipeline filters.python Debug)" in r.log
+        assert "\nentered filter()\n" in r.log
+        assert "\nexiting filter()\n" in r.log
+        assert "(pypipeline writers.las Debug)" in r.log
 
 
 class TestArrayLoad:

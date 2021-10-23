@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import glob
 import json
+import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
@@ -9,11 +10,21 @@ import numpy as np
 from . import libpdalpython
 
 
+LogLevelToPDAL = {
+    logging.ERROR: 0,
+    logging.WARNING: 1,
+    logging.INFO: 2,
+    logging.DEBUG: 8,  # pdal::LogLevel::Debug5
+}
+LogLevelFromPDAL = {v: k for k, v in LogLevelToPDAL.items()}
+
+
 class Pipeline(libpdalpython.Pipeline):
     def __init__(
         self,
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
+        loglevel: int = logging.ERROR,
     ):
         self._stages: List[Stage] = []
         if spec:
@@ -22,10 +33,24 @@ class Pipeline(libpdalpython.Pipeline):
                 self |= stage
         if arrays:
             self.inputs = arrays
+        self.loglevel = loglevel
 
     @property
     def stages(self) -> List[Stage]:
         return list(self._stages)
+
+    @property
+    def loglevel(self) -> int:
+        return LogLevelFromPDAL[super().loglevel]
+
+    @loglevel.setter
+    def loglevel(self, value: int) -> None:
+        try:
+            loglevel = LogLevelToPDAL[value]
+        except KeyError:
+            raise ValueError(f"Invalid level {value!r}")
+        # super() property setter is not supported
+        libpdalpython.Pipeline.loglevel.__set__(self, loglevel)
 
     def __ior__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         if isinstance(other, Stage):

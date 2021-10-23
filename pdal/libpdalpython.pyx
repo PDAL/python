@@ -102,8 +102,7 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        int getLogLevel()
-        void setLogLevel(int)
+        void setLogLevel(int) except +
 
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
@@ -121,6 +120,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
 cdef class Pipeline:
     cdef PipelineExecutor* _executor
     cdef vector[shared_ptr[Array]] _inputs
+    cdef int _loglevel
 
     def __dealloc__(self):
         self.inputs = []
@@ -151,11 +151,12 @@ cdef class Pipeline:
 
     @property
     def loglevel(self):
-        return self._get_executor().getLogLevel()
+        return self._loglevel
 
     @loglevel.setter
-    def loglevel(self, level):
-        self._get_executor().setLogLevel(level)
+    def loglevel(self, value):
+        self._loglevel = value
+        self._delete_executor()
 
     @property
     def log(self):
@@ -226,6 +227,7 @@ cdef class Pipeline:
         if not self._executor:
             json_bytes = self._json.encode("UTF-8")
             self._executor = new PipelineExecutor(json_bytes)
+            self._executor.setLogLevel(self._loglevel)
             readPipeline(self._executor, json_bytes)
             addArrayReaders(self._executor, self._inputs)
         return self._executor
