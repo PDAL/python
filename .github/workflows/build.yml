@@ -38,7 +38,7 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest meshio
 
     - name: Install
       shell: bash -l {0}
@@ -78,7 +78,7 @@ jobs:
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest meshio
 
     - name: Install
       shell: cmd /C CALL "{0}"
@@ -121,7 +121,7 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal
 
     - name: sdist
       shell: bash -l {0}

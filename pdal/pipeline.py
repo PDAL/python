@@ -6,6 +6,10 @@ import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
+try:
+    from meshio import Mesh
+except ModuleNotFoundError:
+    Mesh = None
 
 from . import libpdalpython
 
@@ -74,6 +78,21 @@ class Pipeline(libpdalpython.Pipeline):
         clone = cast(Pipeline, super().__copy__())
         clone |= self
         return clone
+
+    def get_meshio(self, idx: int) -> Mesh:
+        if Mesh is None:
+            raise RuntimeError(
+                "The get_meshio function can only be used if you have installed meshio. "
+                "Try pip install meshio"
+            )
+        array = self.arrays[idx]
+        mesh = self.meshes[idx]
+        if len(mesh) == 0:
+            return None
+        return Mesh(
+            np.stack((array["X"], array["Y"], array["Z"]), 1),
+            [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
+        )
 
     @property
     def _json(self) -> str:

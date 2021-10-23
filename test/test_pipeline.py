@@ -324,3 +324,12 @@ class TestMesh:
         assert str(m.dtype) == "[('A', '<u4'), ('B', '<u4'), ('C', '<u4')]"
         assert len(m) == 134
         assert m[0][0] == 29
+
+    @pytest.mark.parametrize("filename", ["mesh.json", "mesh.py"])
+    def test_meshio(self, filename):
+        r = get_pipeline(filename)
+        r.execute()
+        mesh = r.get_meshio(0)
+        triangles = mesh.cells_dict["triangle"]
+        assert len(triangles) == 134
+        assert triangles[0][0] == 29
