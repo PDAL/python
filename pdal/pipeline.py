@@ -31,8 +31,7 @@ class Pipeline(libpdalpython.Pipeline):
             stages = _parse_stages(spec) if isinstance(spec, str) else spec
             for stage in stages:
                 self |= stage
-        if arrays:
-            self.inputs = arrays
+        self.inputs = arrays
         self.loglevel = loglevel
 
     @property
@@ -56,14 +55,14 @@ class Pipeline(libpdalpython.Pipeline):
         if isinstance(other, Stage):
             self._stages.append(other)
         elif isinstance(other, Pipeline):
-            if self._stages and other._num_inputs:
+            if self._stages and other._has_inputs:
                 raise ValueError(
                     "A pipeline with inputs cannot follow another pipeline"
                 )
             self._stages.extend(other._stages)
         else:
             raise TypeError(f"Expected Stage or Pipeline, not {other}")
-        self._delete_executor()
+        self._del_executor()
         return self
 
     def __or__(self, other: Union[Stage, Pipeline]) -> Pipeline:

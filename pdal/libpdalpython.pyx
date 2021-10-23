@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from cython.operator cimport dereference as deref
 from cpython.ref cimport Py_DECREF
 from libcpp cimport bool
-from libcpp.memory cimport make_shared, shared_ptr
+from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.set cimport set as cpp_set
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -93,7 +93,7 @@ cdef extern from "pdal/PipelineManager.hpp" namespace "pdal":
 
 cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
     cdef cppclass PipelineExecutor:
-        PipelineExecutor(const char*) except +
+        PipelineExecutor(string) except +
         const PipelineManager& getManagerConst() except +
         bool executed() except +
         int execute() except +
@@ -118,7 +118,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
 
 
 cdef class Pipeline:
-    cdef PipelineExecutor* _executor
+    cdef unique_ptr[PipelineExecutor] _executor
     cdef vector[shared_ptr[Array]] _inputs
     cdef int _loglevel
 
@@ -130,6 +130,8 @@ cdef class Pipeline:
         clone._inputs = self._inputs
         return clone
 
+    #========= writeable properties to be set before execution ===========================
+
     @property
     def inputs(self):
         raise AttributeError("unreadable attribute")
@@ -139,15 +141,7 @@ cdef class Pipeline:
         self._inputs.clear()
         for ndarray in ndarrays:
             self._inputs.push_back(make_shared[Array](<np.PyArrayObject*>ndarray))
-        self._delete_executor()
-
-    @property
-    def pipeline(self):
-        return self._get_executor().getPipeline()
-
-    @property
-    def metadata(self):
-        return self._get_executor().getMetadata()
+        self._del_executor()
 
     @property
     def loglevel(self):
@@ -156,7 +150,9 @@ cdef class Pipeline:
     @loglevel.setter
     def loglevel(self, value):
         self._loglevel = value
-        self._delete_executor()
+        self._del_executor()
+
+    #========= readable properties to be read after execution ============================
 
     @property
     def log(self):
@@ -165,6 +161,14 @@ cdef class Pipeline:
     @property
     def schema(self):
         return json.loads(self._get_executor().getSchema())
+
+    @property
+    def pipeline(self):
+        return self._get_executor().getPipeline()
+
+    @property
+    def metadata(self):
+        return self._get_executor().getMetadata()
 
     @property
     def arrays(self):
@@ -188,18 +192,13 @@ cdef class Pipeline:
             Py_DECREF(output[-1])
         return output
 
-    def execute(self):
-        return self._get_executor().execute()
-
-    def validate(self):
-        return self._get_executor().validate()
-
     def get_meshio(self, idx):
         try:
             from meshio import Mesh
         except ModuleNotFoundError:
             raise RuntimeError(
-                "The get_meshio function can only be used if you have installed meshio. Try pip install meshio"
+                "The get_meshio function can only be used if you have installed meshio. "
+                "Try pip install meshio"
             )
         array = self.arrays[idx]
         mesh = self.meshes[idx]
@@ -210,24 +209,33 @@ cdef class Pipeline:
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
 
+    #========= validation & execution methods ============================================
+
+    def validate(self):
+        return self._get_executor(set_if_unset=True).validate()
+
+    def execute(self):
+        return self._get_executor(set_if_unset=True).execute()
+
+    #========= non-public properties & methods ===========================================
+
     @property
     def _json(self):
         raise NotImplementedError("Abstract property")
 
     @property
-    def _num_inputs(self):
-        return self._inputs.size()
+    def _has_inputs(self):
+        return not self._inputs.empty()
 
-    def _delete_executor(self):
-        if self._executor:
-            del self._executor
-            self._executor = NULL
+    def _del_executor(self):
+        self._executor.reset()
 
-    cdef PipelineExecutor* _get_executor(self) except NULL:
-        if not self._executor:
+    cdef PipelineExecutor* _get_executor(self, bool set_if_unset=False) except NULL:
+        if not self._executor and set_if_unset:
             json_bytes = self._json.encode("UTF-8")
-            self._executor = new PipelineExecutor(json_bytes)
-            self._executor.setLogLevel(self._loglevel)
-            readPipeline(self._executor, json_bytes)
-            addArrayReaders(self._executor, self._inputs)
-        return self._executor
+            executor = new PipelineExecutor(json_bytes)
+            executor.setLogLevel(self._loglevel)
+            readPipeline(executor, json_bytes)
+            addArrayReaders(executor, self._inputs)
+            self._executor.reset(executor)
+        return self._executor.get()
