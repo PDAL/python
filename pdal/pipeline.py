@@ -43,6 +43,10 @@ class Pipeline(libpdalpython.Pipeline):
         return list(self._stages)
 
     @property
+    def schema(self) -> Any:
+        return json.loads(super().schema)
+
+    @property
     def loglevel(self) -> int:
         return LogLevelFromPDAL[super().loglevel]
 

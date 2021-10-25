@@ -1,7 +1,6 @@
 # distutils: language = c++
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
-import json
 from types import SimpleNamespace
 
 from cython.operator cimport dereference as deref
@@ -159,7 +158,7 @@ cdef class Pipeline:
 
     @property
     def schema(self):
-        return json.loads(self._get_executor().getSchema())
+        return self._get_executor().getSchema()
 
     @property
     def pipeline(self):
