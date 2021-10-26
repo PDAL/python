@@ -180,7 +180,7 @@ cdef class Pipeline(PipelineResultsMixin):
     def arrays(self):
         cdef PipelineExecutor* executor = self._get_executor()
         if not executor.executed():
-            raise RuntimeError("call execute() before fetching arrays")
+            raise RuntimeError("Pipeline has not been executed!")
         output = []
         for view in executor.getManagerConst().views():
             output.append(<object>viewToNumpyArray(view))
@@ -191,7 +191,7 @@ cdef class Pipeline(PipelineResultsMixin):
     def meshes(self):
         cdef PipelineExecutor* executor = self._get_executor()
         if not executor.executed():
-            raise RuntimeError("call execute() before fetching the mesh")
+            raise RuntimeError("Pipeline has not been executed!")
         output = []
         for view in executor.getManagerConst().views():
             output.append(<object>meshToNumpyArray(deref(view).mesh()))

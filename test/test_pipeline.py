@@ -66,8 +66,9 @@ class TestPipeline:
     def test_validate(self, filename):
         """Do we complain with bad pipelines"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.execute()
+        assert "No such file or directory" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_array(self, filename):
@@ -85,8 +86,9 @@ class TestPipeline:
     def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.metadata
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         j = json.loads(r.metadata)
@@ -96,8 +98,9 @@ class TestPipeline:
     def test_schema(self, filename):
         """Fetching a schema works"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.schema
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         assert r.schema["schema"]["dimensions"][0]["name"] == "X"
@@ -106,8 +109,9 @@ class TestPipeline:
     def test_pipeline(self, filename):
         """Can we fetch PDAL pipeline string"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.pipeline
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         assert json.loads(r.pipeline) == {
@@ -131,8 +135,9 @@ class TestPipeline:
     def test_no_execute(self, filename):
         """Does fetching arrays without executing throw an exception"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.arrays
+        assert "Pipeline has not been executed" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["chip.json", "chip.py"])
     def test_merged_arrays(self, filename):
@@ -193,9 +198,9 @@ class TestPipeline:
             (r, f) | (f, w)
 
         pipeline = r | w
-        with pytest.raises(RuntimeError) as ctx:
+        with pytest.raises(RuntimeError) as info:
             pipeline.execute()
-        assert "Undefined stage 'f'" in str(ctx.value)
+        assert "Undefined stage 'f'" in str(info.value)
 
     def test_inputs(self):
         """Can we combine pipelines with inputs"""
@@ -380,8 +385,9 @@ class TestMesh:
     def test_no_execute(self, filename):
         """Does fetching meshes without executing throw an exception"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.meshes
+        assert "Pipeline has not been executed" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["mesh.json", "mesh.py"])
     def test_mesh(self, filename):
@@ -413,7 +419,7 @@ class TestPipelineIterator:
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError) as info:
             r.iterator()
-        assert str(info.value) == "Pipeline is not streamable"
+        assert "Pipeline is not streamable" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_array(self, filename):
@@ -483,8 +489,9 @@ class TestPipelineIterator:
         non_streaming_array = np.concatenate(p.arrays)
         for chunk_size in range(5, 100, 5):
             streaming_arrays = list(p.iterator(chunk_size=chunk_size))
-            np.testing.assert_array_equal(np.concatenate(streaming_arrays),
-                                          non_streaming_array)
+            np.testing.assert_array_equal(
+                np.concatenate(streaming_arrays), non_streaming_array
+            )
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_premature_exit(self, filename):
@@ -496,7 +503,7 @@ class TestPipelineIterator:
 
         for _ in range(10):
             for array2 in r.iterator(chunk_size=100):
-                np.testing.assert_array_equal(array2, array[:len(array2)])
+                np.testing.assert_array_equal(array2, array[: len(array2)])
                 break
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
