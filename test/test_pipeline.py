@@ -86,9 +86,14 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
+        r = get_pipeline(filename, validate=False)
+        with pytest.raises(RuntimeError):
+            r.metadata
+
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.metadata
+
         r.execute()
         j = json.loads(r.metadata)
         assert j["metadata"]["readers.las"][0]["count"] == 1065
@@ -96,15 +101,52 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_schema(self, filename):
         """Fetching a schema works"""
+        r = get_pipeline(filename, validate=False)
+        with pytest.raises(RuntimeError):
+            r.schema
+
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.schema
+
         r.execute()
         assert r.schema["schema"]["dimensions"][0]["name"] == "X"
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_pipeline(self, filename):
+        """Can we fetch PDAL pipeline string"""
+        r = get_pipeline(filename, validate=False)
+        with pytest.raises(RuntimeError):
+            r.pipeline
+
+        r = get_pipeline(filename)
+        with pytest.raises(RuntimeError):
+            r.pipeline
+
+        r.execute()
+        assert json.loads(r.pipeline) == {
+            "pipeline": [
+                {
+                    "filename": "test/data/1.2-with-color.las",
+                    "tag": "readers_las1",
+                    "type": "readers.las",
+                },
+                {
+                    "dimension": "X",
+                    "inputs": ["readers_las1"],
+                    "tag": "filters_sort1",
+                    "type": "filters.sort",
+                },
+            ]
+        }
+
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_no_execute(self, filename):
         """Does fetching arrays without executing throw an exception"""
+        r = get_pipeline(filename, validate=False)
+        with pytest.raises(RuntimeError):
+            r.arrays
+
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.arrays
@@ -203,6 +245,10 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
+        r = get_pipeline(filename, validate=False)
+        assert r.loglevel == logging.ERROR
+        assert r.log == ""
+
         r = get_pipeline(filename)
         assert r.loglevel == logging.ERROR
         assert r.log == ""
@@ -307,6 +353,10 @@ class TestMesh:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_no_execute(self, filename):
         """Does fetching meshes without executing throw an exception"""
+        r = get_pipeline(filename, validate=False)
+        with pytest.raises(RuntimeError):
+            r.meshes
+
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.meshes

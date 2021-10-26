@@ -193,10 +193,10 @@ cdef class Pipeline:
     #========= validation & execution methods ============================================
 
     def validate(self):
-        return self._get_executor(set_if_unset=True).validate()
+        return self._get_executor().validate()
 
     def execute(self):
-        return self._get_executor(set_if_unset=True).execute()
+        return self._get_executor().execute()
 
     #========= non-public properties & methods ===========================================
 
@@ -211,8 +211,8 @@ cdef class Pipeline:
     def _del_executor(self):
         self._executor.reset()
 
-    cdef PipelineExecutor* _get_executor(self, bool set_if_unset=False) except NULL:
-        if not self._executor and set_if_unset:
+    cdef PipelineExecutor* _get_executor(self) except NULL:
+        if not self._executor:
             json_bytes = self._json.encode("UTF-8")
             executor = new PipelineExecutor(json_bytes)
             executor.setLogLevel(self._loglevel)
