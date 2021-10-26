@@ -408,6 +408,12 @@ class TestMesh:
 
 
 class TestPipelineIterator:
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_non_streamable(self, filename):
+        r = get_pipeline(filename)
+        with pytest.raises(RuntimeError) as info:
+            r.iterator()
+        assert str(info.value) == "Pipeline is not streamable"
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_array(self, filename):

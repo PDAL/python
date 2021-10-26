@@ -89,6 +89,7 @@ cdef extern from "pdal/PointView.hpp" namespace "pdal":
 cdef extern from "pdal/PipelineManager.hpp" namespace "pdal":
     cdef cppclass PipelineManager:
         const PointViewSet& views() const
+        bool pipelineStreamable() const
 
 
 cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
@@ -207,6 +208,9 @@ cdef class Pipeline(PipelineResultsMixin):
             self._get_json(), chunk_size, prefetch
         )
         self._configure_executor(executor)
+        if not executor.getManagerConst().pipelineStreamable():
+            raise RuntimeError("Pipeline is not streamable")
+
         it = PipelineIterator()
         it.set_executor(executor)
         return it
