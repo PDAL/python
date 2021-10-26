@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import sys
-from functools import partial
 
 import numpy as np
 import pytest
@@ -12,16 +11,12 @@ import pdal
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
-def get_pipeline(filename, *, chunk_size=None, prefetch=None):
+def get_pipeline(filename):
     with open(os.path.join(DATADIRECTORY, filename), "r") as f:
         if filename.endswith(".json"):
             pipeline = pdal.Pipeline(f.read())
         elif filename.endswith(".py"):
             pipeline = eval(f.read(), vars(pdal))
-    if chunk_size is not None:
-        pipeline.chunk_size = chunk_size
-    if prefetch is not None:
-        pipeline.prefetch = prefetch
     return pipeline
 
 
@@ -36,11 +31,6 @@ class TestPipeline:
     def test_construction(self, filename):
         """Can we construct a PDAL pipeline"""
         assert isinstance(get_pipeline(filename), pdal.Pipeline)
-        assert isinstance(get_pipeline(filename, chunk_size=100), pdal.Pipeline)
-        assert isinstance(get_pipeline(filename, prefetch=3), pdal.Pipeline)
-        assert isinstance(
-            get_pipeline(filename, chunk_size=100, prefetch=3), pdal.Pipeline
-        )
 
         # construct Pipeline from a sequence of stages
         r = pdal.Reader("r")
@@ -421,11 +411,6 @@ class TestPipelineIterator:
 
     def test_array(self):
         """Can we fetch PDAL data as numpy arrays"""
-        ri = get_pipeline("range.json", chunk_size=100)
-        arrays = list(ri)
-        assert len(arrays) == 11
-        concat_array = np.concatenate(arrays)
-
         r = get_pipeline("range.json")
         count = r.execute()
         arrays = r.arrays
@@ -433,36 +418,44 @@ class TestPipelineIterator:
         array = arrays[0]
         assert count == len(array)
 
-        np.testing.assert_array_equal(array, concat_array)
+        for _ in range(10):
+            arrays = list(r.iterator(chunk_size=100))
+            assert len(arrays) == 11
+            concat_array = np.concatenate(arrays)
+            np.testing.assert_array_equal(array, concat_array)
+
+    def test_StopIteration(self):
+        """Is StopIteration raised when the iterator is exhausted"""
+        r = get_pipeline("range.json")
+        it = r.iterator(chunk_size=100)
+        for array in it:
+            assert isinstance(array, np.ndarray)
+        with pytest.raises(StopIteration):
+            next(it)
+        assert next(it, None) is None
 
     def test_metadata(self):
         """Can we fetch PDAL metadata"""
-        ri = get_pipeline("range.json", chunk_size=100)
-        with pytest.raises(RuntimeError):
-            ri.metadata
-        list(ri)
-
         r = get_pipeline("range.json")
-        with pytest.raises(RuntimeError):
-            r.metadata
         r.execute()
 
-        assert ri.metadata == r.metadata
+        it = r.iterator(chunk_size=100)
+        for _ in it:
+            pass
+
+        assert r.metadata == it.metadata
 
     @pytest.mark.xfail
     def test_schema(self):
         """Fetching a schema works"""
-        ri = get_pipeline("range.json", chunk_size=100)
-        with pytest.raises(RuntimeError):
-            ri.schema
-        list(ri)
-
         r = get_pipeline("range.json")
-        with pytest.raises(RuntimeError):
-            r.schema
         r.execute()
 
-        assert ri.schema == r.schema
+        it = r.iterator(chunk_size=100)
+        for _ in it:
+            pass
+
+        assert r.schema == it.schema
 
     def test_merged_arrays(self):
         """Can we load data from a list of arrays to PDAL"""
@@ -480,8 +473,7 @@ class TestPipelineIterator:
         p.execute()
         non_streaming_array = np.concatenate(p.arrays)
         for chunk_size in range(5, 100, 5):
-            streaming_arrays = list(pdal.Pipeline(filter_intensity, arrays,
-                                                  chunk_size=chunk_size))
+            streaming_arrays = list(p.iterator(chunk_size=chunk_size))
             np.testing.assert_array_equal(np.concatenate(streaming_arrays),
                                           non_streaming_array)
 
@@ -492,7 +484,17 @@ class TestPipelineIterator:
         assert len(r.arrays) == 1
         array = r.arrays[0]
 
-        ri = get_pipeline("range.json", chunk_size=100)
-        for array2 in ri:
-            np.testing.assert_array_equal(array2, array[:len(array2)])
-            break
+        for _ in range(10):
+            for array2 in r.iterator(chunk_size=100):
+                np.testing.assert_array_equal(array2, array[:len(array2)])
+                break
+
+    def test_multiple_iterators(self):
+        """Can we create multiple independent iterators"""
+        r = get_pipeline("range.json")
+        it1 = r.iterator(chunk_size=100)
+        it2 = r.iterator(chunk_size=100)
+        for a1, a2 in zip(it1, it2):
+            np.testing.assert_array_equal(a1, a2)
+        assert next(it1, None) is None
+        assert next(it2, None) is None
