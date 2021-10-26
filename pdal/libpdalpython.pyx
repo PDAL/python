@@ -95,7 +95,6 @@ cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
         const PipelineManager& getManagerConst() except +
         bool executed() except +
         int execute() except +
-        bool validate() except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
@@ -127,6 +126,9 @@ cdef class Pipeline:
         cdef Pipeline clone = self.__class__()
         clone._inputs = self._inputs
         return clone
+
+    def execute(self):
+        return self._get_executor().execute()
 
     #========= writeable properties to be set before execution ===========================
 
@@ -189,14 +191,6 @@ cdef class Pipeline:
             output.append(<object>meshToNumpyArray(deref(view).mesh()))
             Py_DECREF(output[-1])
         return output
-
-    #========= validation & execution methods ============================================
-
-    def validate(self):
-        return self._get_executor().validate()
-
-    def execute(self):
-        return self._get_executor().execute()
 
     #========= non-public properties & methods ===========================================
 

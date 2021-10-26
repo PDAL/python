@@ -11,14 +11,12 @@ import pdal
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
-def get_pipeline(filename, validate=True):
+def get_pipeline(filename):
     with open(os.path.join(DATADIRECTORY, filename), "r") as f:
         if filename.endswith(".json"):
             pipeline = pdal.Pipeline(f.read())
         elif filename.endswith(".py"):
             pipeline = eval(f.read(), vars(pdal))
-    if validate:
-        assert pipeline.validate()
     return pipeline
 
 
@@ -67,9 +65,9 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["bad.json", "bad.py"])
     def test_validate(self, filename):
         """Do we complain with bad pipelines"""
-        r = get_pipeline(filename, validate=False)
+        r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
-            r.validate()
+            r.execute()
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_array(self, filename):
@@ -86,25 +84,17 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
-        r = get_pipeline(filename, validate=False)
-        with pytest.raises(RuntimeError):
-            r.metadata
-
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.metadata
 
         r.execute()
         j = json.loads(r.metadata)
-        assert j["metadata"]["readers.las"][0]["count"] == 1065
+        assert j["metadata"]["readers.las"]["count"] == 1065
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_schema(self, filename):
         """Fetching a schema works"""
-        r = get_pipeline(filename, validate=False)
-        with pytest.raises(RuntimeError):
-            r.schema
-
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.schema
@@ -115,10 +105,6 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_pipeline(self, filename):
         """Can we fetch PDAL pipeline string"""
-        r = get_pipeline(filename, validate=False)
-        with pytest.raises(RuntimeError):
-            r.pipeline
-
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.pipeline
@@ -143,10 +129,6 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_no_execute(self, filename):
         """Does fetching arrays without executing throw an exception"""
-        r = get_pipeline(filename, validate=False)
-        with pytest.raises(RuntimeError):
-            r.arrays
-
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.arrays
@@ -186,15 +168,15 @@ class TestPipeline:
 
         # pipe stages together
         pipeline = read | frange | fsplitter | fdelaunay
-        assert pipeline.validate()
+        pipeline.execute()
 
         # pipe a pipeline to a stage
         pipeline = read | (frange | fsplitter | fdelaunay)
-        assert pipeline.validate()
+        pipeline.execute()
 
         # pipe a pipeline to a pipeline
         pipeline = (read | frange) | (fsplitter | fdelaunay)
-        assert pipeline.validate()
+        pipeline.execute()
 
     def test_pipe_stage_errors(self):
         """Do we complain with piping invalid objects"""
@@ -211,7 +193,7 @@ class TestPipeline:
 
         pipeline = r | w
         with pytest.raises(RuntimeError) as ctx:
-            pipeline.validate()
+            pipeline.execute()
         assert "Undefined stage 'f'" in str(ctx.value)
 
     def test_inputs(self):
@@ -219,11 +201,11 @@ class TestPipeline:
         data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
         f = pdal.Filter.splitter(length=1000)
         pipeline = f.pipeline(data)
-        assert pipeline.validate()
+        pipeline.execute()
 
         # a pipeline with inputs can be followed by stage/pipeline
-        assert (pipeline | pdal.Writer.null()).validate()
-        assert (pipeline | (f | pdal.Writer.null())).validate()
+        (pipeline | pdal.Writer.null()).execute()
+        (pipeline | (f | pdal.Writer.null())).execute()
 
         # a pipeline with inputs cannot follow another stage/pipeline
         with pytest.raises(ValueError):
@@ -245,10 +227,6 @@ class TestPipeline:
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
-        r = get_pipeline(filename, validate=False)
-        assert r.loglevel == logging.ERROR
-        assert r.log == ""
-
         r = get_pipeline(filename)
         assert r.loglevel == logging.ERROR
         assert r.log == ""
@@ -353,10 +331,6 @@ class TestMesh:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_no_execute(self, filename):
         """Does fetching meshes without executing throw an exception"""
-        r = get_pipeline(filename, validate=False)
-        with pytest.raises(RuntimeError):
-            r.meshes
-
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError):
             r.meshes
