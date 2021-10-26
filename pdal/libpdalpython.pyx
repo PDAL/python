@@ -239,6 +239,7 @@ cdef class Pipeline(PipelineResultsMixin):
         addArrayReaders(executor, self._inputs)
 
 
+@cython.internal
 cdef class PipelineIterator(PipelineResultsMixin):
     cdef unique_ptr[StreamableExecutor] _executor
 

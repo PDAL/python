@@ -409,9 +409,10 @@ class TestMesh:
 
 class TestPipelineIterator:
 
-    def test_array(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_array(self, filename):
         """Can we fetch PDAL data as numpy arrays"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         count = r.execute()
         arrays = r.arrays
         assert len(arrays) == 1
@@ -424,9 +425,10 @@ class TestPipelineIterator:
             concat_array = np.concatenate(arrays)
             np.testing.assert_array_equal(array, concat_array)
 
-    def test_StopIteration(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_StopIteration(self, filename):
         """Is StopIteration raised when the iterator is exhausted"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         it = r.iterator(chunk_size=100)
         for array in it:
             assert isinstance(array, np.ndarray)
@@ -434,9 +436,10 @@ class TestPipelineIterator:
             next(it)
         assert next(it, None) is None
 
-    def test_metadata(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         r.execute()
 
         it = r.iterator(chunk_size=100)
@@ -445,9 +448,10 @@ class TestPipelineIterator:
 
         assert r.metadata == it.metadata
 
-    def test_schema(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_schema(self, filename):
         """Fetching a schema works"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         r.execute()
 
         it = r.iterator(chunk_size=100)
@@ -476,9 +480,10 @@ class TestPipelineIterator:
             np.testing.assert_array_equal(np.concatenate(streaming_arrays),
                                           non_streaming_array)
 
-    def test_premature_exit(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_premature_exit(self, filename):
         """Can we stop iterating before all arrays are fetched"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         r.execute()
         assert len(r.arrays) == 1
         array = r.arrays[0]
@@ -488,9 +493,10 @@ class TestPipelineIterator:
                 np.testing.assert_array_equal(array2, array[:len(array2)])
                 break
 
-    def test_multiple_iterators(self):
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_multiple_iterators(self, filename):
         """Can we create multiple independent iterators"""
-        r = get_pipeline("range.json")
+        r = get_pipeline(filename)
         it1 = r.iterator(chunk_size=100)
         it2 = r.iterator(chunk_size=100)
         for a1, a2 in zip(it1, it2):
