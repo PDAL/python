@@ -250,9 +250,6 @@ cdef class PipelineIterator(PipelineResultsMixin):
     cdef set_executor(self, StreamableExecutor* executor):
         self._executor.reset(executor)
 
-    def __dealloc__(self):
-        self._executor.get().stop()
-
     @property
     def schema(self):
         return json.loads(self._executor.get().getSchema())

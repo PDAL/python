@@ -186,9 +186,7 @@ StreamableExecutor::StreamableExecutor(std::string const& json, point_count_t ch
 
 StreamableExecutor::~StreamableExecutor()
 {
-    //ABELL - Hmmm.
-    if (m_thread)
-        m_thread->join();
+    stop();
 }
 
 PyArrayObject *StreamableExecutor::executeNext()
