@@ -229,5 +229,16 @@ void StreamableExecutor::done()
     m_executed = true;
 }
 
+std::string StreamableExecutor::getSchema() const
+{
+    if (!m_executed)
+        throw pdal_error("Pipeline has not been executed!");
+
+    std::stringstream strm;
+    MetadataNode root = m_table.layout()->toMetadata().clone("schema");
+    pdal::Utils::toJSON(root, strm);
+    return strm.str();
+}
+
 } // namespace python
 } // namespace pdal

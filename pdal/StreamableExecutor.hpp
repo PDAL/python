@@ -88,6 +88,7 @@ public:
     StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch);
     ~StreamableExecutor();
 
+    std::string getSchema() const;
     PyArrayObject* executeNext();
     void stop();
 

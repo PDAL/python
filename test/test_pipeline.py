@@ -445,7 +445,6 @@ class TestPipelineIterator:
 
         assert r.metadata == it.metadata
 
-    @pytest.mark.xfail
     def test_schema(self):
         """Fetching a schema works"""
         r = get_pipeline("range.json")

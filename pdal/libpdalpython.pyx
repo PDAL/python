@@ -248,6 +248,10 @@ cdef class PipelineIterator(PipelineResultsMixin):
     def __dealloc__(self):
         self._executor.get().stop()
 
+    @property
+    def schema(self):
+        return json.loads(self._executor.get().getSchema())
+
     def __iter__(self):
         return self
 
