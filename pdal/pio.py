@@ -131,14 +131,14 @@ class PipelineSpec(object):
                 output.add_stage(stage)
         return output
 
-    def execute(self):
+    def execute(self, arrays=None):
         """
         Shortcut to execute and return the results of the pipeline.
         """
         # TODO: do some validation before calling execute
 
         # TODO: some exception/error handling around pdal
-        pipeline = pdal.Pipeline(json.dumps(self.spec))
+        pipeline = pdal.Pipeline(json.dumps(self.spec), arrays=None)
         # pipeline.validate() # NOTE: disabling this because it causes segfaults in certain cases
         pipeline.execute()
 
