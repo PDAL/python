@@ -138,7 +138,7 @@ class PipelineSpec(object):
         # TODO: do some validation before calling execute
 
         # TODO: some exception/error handling around pdal
-        pipeline = pdal.Pipeline(json.dumps(self.spec), arrays=None)
+        pipeline = pdal.Pipeline(json.dumps(self.spec), arrays=arrays)
         # pipeline.validate() # NOTE: disabling this because it causes segfaults in certain cases
         pipeline.execute()
 
