@@ -93,9 +93,8 @@ writers = StageSpec("writers")
 
 
 class PipelineSpec(object):
-    stages = []
-
     def __init__(self, other=None):
+        self.stages = []
         if other is not None:
             self.stages = copy.copy(other.stages)
 
