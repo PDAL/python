@@ -119,14 +119,6 @@ cdef class Pipeline:
     cdef vector[shared_ptr[Array]] _inputs
     cdef int _loglevel
 
-    def __dealloc__(self):
-        self.inputs = []
-
-    def __copy__(self):
-        cdef Pipeline clone = self.__class__()
-        clone._inputs = self._inputs
-        return clone
-
     def execute(self):
         return self._get_executor().execute()
 
@@ -194,23 +186,25 @@ cdef class Pipeline:
 
     #========= non-public properties & methods ===========================================
 
-    @property
-    def _json(self):
-        raise NotImplementedError("Abstract property")
+    def _get_json(self):
+        raise NotImplementedError("Abstract method")
 
     @property
     def _has_inputs(self):
         return not self._inputs.empty()
+
+    def _copy_inputs(self, Pipeline other):
+        self._inputs = other._inputs
 
     def _del_executor(self):
         self._executor.reset()
 
     cdef PipelineExecutor* _get_executor(self) except NULL:
         if not self._executor:
-            json_bytes = self._json.encode("UTF-8")
-            executor = new PipelineExecutor(json_bytes)
+            json = self._get_json()
+            executor = new PipelineExecutor(json)
             executor.setLogLevel(self._loglevel)
-            readPipeline(executor, json_bytes)
+            readPipeline(executor, json)
             addArrayReaders(executor, self._inputs)
             self._executor.reset(executor)
         return self._executor.get()

@@ -6,13 +6,13 @@ import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
+
 try:
     from meshio import Mesh
-except ModuleNotFoundError:
+except ModuleNotFoundError:  # pragma: no cover
     Mesh = None
 
 from . import libpdalpython
-
 
 LogLevelToPDAL = {
     logging.ERROR: 0,
@@ -30,6 +30,7 @@ class Pipeline(libpdalpython.Pipeline):
         arrays: Sequence[np.ndarray] = (),
         loglevel: int = logging.ERROR,
     ):
+        super().__init__()
         self._stages: List[Stage] = []
         if spec:
             stages = _parse_stages(spec) if isinstance(spec, str) else spec
@@ -79,12 +80,13 @@ class Pipeline(libpdalpython.Pipeline):
         return new
 
     def __copy__(self) -> Pipeline:
-        clone = cast(Pipeline, super().__copy__())
+        clone = self.__class__(loglevel=self.loglevel)
+        clone._copy_inputs(self)
         clone |= self
         return clone
 
-    def get_meshio(self, idx: int) -> Mesh:
-        if Mesh is None:
+    def get_meshio(self, idx: int) -> Optional[Mesh]:
+        if Mesh is None:  # pragma: no cover
             raise RuntimeError(
                 "The get_meshio function can only be used if you have installed meshio. "
                 "Try pip install meshio"
@@ -98,8 +100,7 @@ class Pipeline(libpdalpython.Pipeline):
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
 
-    @property
-    def _json(self) -> str:
+    def _get_json(self) -> str:
         options_list = []
         stage2tag: Dict[Stage, str] = {}
         for stage in self._stages:
@@ -134,8 +135,8 @@ class Stage:
     def options(self) -> Dict[str, Any]:
         return dict(self._options)
 
-    def pipeline(self, *arrays: np.ndarray) -> Pipeline:
-        return Pipeline((self,), arrays)
+    def pipeline(self, *arrays: np.ndarray, loglevel: int = logging.ERROR) -> Pipeline:
+        return Pipeline((self,), arrays, loglevel)
 
     def __or__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         return Pipeline((self, other))
