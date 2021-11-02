@@ -34,8 +34,7 @@
 
 #pragma once
 
-#include <pdal/PipelineExecutor.hpp>
-
+#include <pdal/PipelineManager.hpp>
 #include <numpy/arrayobject.h>
 
 namespace pdal
@@ -43,12 +42,37 @@ namespace pdal
 namespace python
 {
 
-class Array;
-
 PyObject* buildNumpyDescriptor(PointLayoutPtr layout);
-void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays);
 PyArrayObject* viewToNumpyArray(PointViewPtr view);
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);
+
+class Array;
+
+class PDAL_DLL PipelineExecutor {
+public:
+    PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level);
+    virtual ~PipelineExecutor() = default;
+
+    point_count_t execute();
+
+    bool executed() const { return m_executed; }
+    const PointViewSet& views() const;
+    std::string getPipeline() const;
+    std::string getMetadata() const;
+    std::string getSchema() const;
+    std::string getLog() const { return m_logStream.str(); }
+
+protected:
+    virtual ConstPointTableRef pointTable() const { return m_manager.pointTable(); }
+
+    pdal::PipelineManager m_manager;
+    bool m_executed = false;
+
+private:
+    void addArrayReaders(std::vector<std::shared_ptr<Array>> arrays);
+
+    std::stringstream m_logStream;
+};
 
 } // namespace python
 } // namespace pdal

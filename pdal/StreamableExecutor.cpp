@@ -180,9 +180,17 @@ char *PythonPointTable::getPoint(PointId idx)
 
 // StreamableExecutor
 
-StreamableExecutor::StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch) :
-    PipelineExecutor(json), m_table(chunkSize, prefetch)
-{}
+StreamableExecutor::StreamableExecutor(std::string const& json,
+                                       std::vector<std::shared_ptr<Array>> arrays,
+                                       int level,
+                                       point_count_t chunkSize,
+                                       int prefetch)
+    : PipelineExecutor(json, arrays, level)
+    , m_table(chunkSize, prefetch)
+{
+    if (!m_manager.pipelineStreamable())
+        throw pdal_error("Pipeline is not streamable");
+}
 
 StreamableExecutor::~StreamableExecutor()
 {
@@ -225,17 +233,6 @@ void StreamableExecutor::done()
     Py_END_ALLOW_THREADS
     m_thread.reset();
     m_executed = true;
-}
-
-std::string StreamableExecutor::getSchema() const
-{
-    if (!m_executed)
-        throw pdal_error("Pipeline has not been executed!");
-
-    std::stringstream strm;
-    MetadataNode root = m_table.layout()->toMetadata().clone("schema");
-    pdal::Utils::toJSON(root, strm);
-    return strm.str();
 }
 
 } // namespace python

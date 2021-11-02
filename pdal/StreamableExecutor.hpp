@@ -34,18 +34,10 @@
 
 #pragma once
 
-#include <mutex>
 #include <condition_variable>
-#include <queue>
-#include <memory>
 #include <thread>
-#include <sstream>
 
-#include <numpy/arrayobject.h>
-
-#include <pdal/PipelineExecutor.hpp>
-#include <pdal/PipelineManager.hpp>
-#include <pdal/PointTable.hpp>
+#include "PyPipeline.hpp"
 
 namespace pdal
 {
@@ -85,7 +77,11 @@ private:
 class StreamableExecutor : public PipelineExecutor
 {
 public:
-    StreamableExecutor(std::string const& json, point_count_t chunkSize, int prefetch);
+    StreamableExecutor(std::string const& json,
+                       std::vector<std::shared_ptr<Array>> arrays,
+                       int level,
+                       point_count_t chunkSize,
+                       int prefetch);
     ~StreamableExecutor();
 
     std::string getSchema() const;
@@ -94,6 +90,7 @@ public:
 
 private:
     void done();
+    ConstPointTableRef pointTable() const { return m_table; }
 
     PythonPointTable m_table;
     std::unique_ptr<std::thread> m_thread;
