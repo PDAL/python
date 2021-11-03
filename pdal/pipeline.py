@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
@@ -11,7 +12,11 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     Mesh = None
 
-from . import drivers, libpdalpython
+from . import drivers
+if os.getenv("PDAL_PYTHON_PYBIND11"):
+    from . import libpybind11 as libpdalpython
+else:
+    from . import libpdalpython
 
 LogLevelToPDAL = {
     logging.ERROR: 0,

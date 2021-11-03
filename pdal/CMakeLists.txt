@@ -7,4 +7,9 @@ target_include_directories(${extension} PRIVATE . ${Python3_NumPy_INCLUDE_DIRS})
 target_link_libraries(${extension} ${PDAL_LIBRARIES})
 python_extension_module(${extension})
 
-install(TARGETS ${extension} LIBRARY DESTINATION "pdal")
+set(pb11ext "libpybind11")
+pybind11_add_module(${pb11ext} MODULE ${EXTENSION_SRC} libpybind11.cpp)
+target_include_directories(${pb11ext} PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
+target_link_libraries(${pb11ext} PRIVATE ${PDAL_LIBRARIES})
+
+install(TARGETS ${extension} ${pb11ext} LIBRARY DESTINATION "pdal")

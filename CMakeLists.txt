@@ -19,6 +19,7 @@ find_package(PDAL 2.1 REQUIRED)
 if(SKBUILD)
   find_package(PythonExtensions REQUIRED)
   find_package(Cython REQUIRED)
+  find_package(pybind11 CONFIG REQUIRED)
   message(STATUS "The project is built using scikit-build")
 endif()
 
