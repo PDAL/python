@@ -7,7 +7,6 @@ from types import SimpleNamespace
 cimport cython
 from cython.operator cimport dereference as deref
 from cpython.ref cimport Py_DECREF
-from libcpp cimport bool
 from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.set cimport set as cpp_set
 from libcpp.string cimport string
@@ -93,7 +92,6 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass PipelineExecutor:
         PipelineExecutor(string, vector[shared_ptr[Array]], int) except +
         int execute() except +
-        bool executed() except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
@@ -105,7 +103,6 @@ cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
     cdef cppclass StreamableExecutor(PipelineExecutor):
         StreamableExecutor(string, vector[shared_ptr[Array]], int, int, int) except +
         np.PyArrayObject* executeNext() except +
-        void stop() except +
 
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
@@ -222,25 +219,20 @@ cdef class Pipeline(PipelineResultsMixin):
 cdef class PipelineIterator(PipelineResultsMixin):
     cdef unique_ptr[StreamableExecutor] _executor
 
-    cdef set_executor(self, StreamableExecutor* executor):
-        self._executor.reset(executor)
-
     def __iter__(self):
         return self
 
     def __next__(self):
-        cdef StreamableExecutor* executor = self._executor.get()
-        if executor.executed():
-            raise StopIteration
-
-        arr_ptr = executor.executeNext()
+        arr_ptr = self._executor.get().executeNext()
         if arr_ptr is NULL:
-            executor.stop()
             raise StopIteration
 
         arr = <object> arr_ptr
         Py_DECREF(arr)
         return arr
+
+    cdef set_executor(self, StreamableExecutor* executor):
+        self._executor.reset(executor)
 
     cdef PipelineExecutor* _get_executor(self) except NULL:
         return self._executor.get()

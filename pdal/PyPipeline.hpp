@@ -55,7 +55,6 @@ public:
 
     point_count_t execute();
 
-    bool executed() const { return m_executed; }
     const PointViewSet& views() const;
     std::string getPipeline() const;
     std::string getMetadata() const;

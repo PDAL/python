@@ -84,12 +84,9 @@ public:
                        int prefetch);
     ~StreamableExecutor();
 
-    std::string getSchema() const;
     PyArrayObject* executeNext();
-    void stop();
 
 private:
-    void done();
     ConstPointTableRef pointTable() const { return m_table; }
 
     PythonPointTable m_table;

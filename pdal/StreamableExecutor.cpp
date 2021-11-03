@@ -190,49 +190,37 @@ StreamableExecutor::StreamableExecutor(std::string const& json,
 {
     if (!m_manager.pipelineStreamable())
         throw pdal_error("Pipeline is not streamable");
+
+    m_thread.reset(new std::thread([this]()
+    {
+        m_manager.executeStream(m_table);
+        m_table.done();
+    }));
 }
 
 StreamableExecutor::~StreamableExecutor()
 {
-    stop();
-}
-
-PyArrayObject *StreamableExecutor::executeNext()
-{
-    if (!m_thread)
-    {
-        m_thread.reset(new std::thread([this]()
-        {
-            m_manager.executeStream(m_table);
-            m_table.done();
-        }));
-    }
-
-    // Blocks until something is ready.
-    PyArrayObject *arr = m_table.fetchArray();
-    if (arr == nullptr)
-        done();
-    return arr;
-}
-
-void StreamableExecutor::stop()
-{
-    if (m_thread)
+    if (!m_executed)
     {
         m_table.disable();
         while (PyArrayObject* arr = m_table.fetchArray())
             Py_XDECREF(arr);
-        done();
     }
-}
-
-void StreamableExecutor::done()
-{
     Py_BEGIN_ALLOW_THREADS
     m_thread->join();
     Py_END_ALLOW_THREADS
-    m_thread.reset();
-    m_executed = true;
+}
+
+PyArrayObject *StreamableExecutor::executeNext()
+{
+    PyArrayObject* arr = nullptr;
+    if (!m_executed)
+    {
+        arr = m_table.fetchArray();
+        if (arr == nullptr)
+            m_executed = true;
+    }
+    return arr;
 }
 
 } // namespace python
