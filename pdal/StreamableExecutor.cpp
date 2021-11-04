@@ -104,6 +104,7 @@ void PythonPointTable::py_resizeArray(point_count_t np)
             {
                 PyObject* src_item = PyArray_GETITEM(m_curArray, PyArray_GETPTR1(m_curArray, src_idx));
                 PyArray_SETITEM(m_curArray, PyArray_GETPTR1(m_curArray, dest_idx), src_item);
+                Py_XDECREF(src_item);
             }
             dest_idx++;
         }
