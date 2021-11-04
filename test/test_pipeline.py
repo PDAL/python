@@ -56,11 +56,27 @@ class TestPipeline:
             pdal.Pipeline(pipeline)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
-    def test_execution(self, filename):
+    def test_execute(self, filename):
         """Can we execute a PDAL pipeline"""
         r = get_pipeline(filename)
         r.execute()
         assert len(r.pipeline) > 200
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_execute_streaming(self, filename):
+        r = get_pipeline(filename)
+        assert r.streamable
+        count = r.execute()
+        count2 = r.execute_streaming(chunk_size=100)
+        assert count == count2
+
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_execute_streaming_non_streamable(self, filename):
+        r = get_pipeline(filename)
+        assert not r.streamable
+        with pytest.raises(RuntimeError) as info:
+            r.execute_streaming()
+        assert "Attempting to use stream mode" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["bad.json", "bad.py"])
     def test_validate(self, filename):

@@ -54,6 +54,7 @@ public:
     virtual ~PipelineExecutor() = default;
 
     point_count_t execute();
+    point_count_t executeStream(point_count_t streamLimit);
 
     const PointViewSet& views() const;
     std::string getPipeline() const;
@@ -71,6 +72,19 @@ private:
     void addArrayReaders(std::vector<std::shared_ptr<Array>> arrays);
 
     std::stringstream m_logStream;
+};
+
+class CountPointTable : public FixedPointTable
+{
+public:
+    CountPointTable(point_count_t capacity) : FixedPointTable(capacity), m_count(0) {}
+    point_count_t count() const { return m_count; }
+
+protected:
+    virtual void reset();
+
+private:
+    point_count_t m_count;
 };
 
 } // namespace python

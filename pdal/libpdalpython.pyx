@@ -92,6 +92,7 @@ cdef extern from "PyPipeline.hpp" namespace "pdal::python":
     cdef cppclass PipelineExecutor:
         PipelineExecutor(string, vector[shared_ptr[Array]], int) except +
         int execute() except +
+        int executeStream(int) except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
@@ -184,6 +185,9 @@ cdef class Pipeline(PipelineResultsMixin):
 
     def execute(self):
         return self._get_executor().execute()
+
+    def execute_streaming(self, int chunk_size=10000):
+        return self._get_executor().executeStream(chunk_size)
 
     def iterator(self, int chunk_size=10000, int prefetch = 0):
         it = PipelineIterator()

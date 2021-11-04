@@ -187,7 +187,7 @@ PDAL and Python:
     ).pipeline(clamped)
     print(pipeline.execute())  # 387 points
 
-Iterating Streamable Pipelines
+Executing Streamable Pipelines
 ................................................................................
 Streamable pipelines (pipelines that consist exclusively of streamable PDAL
 stages) can be executed in streaming mode via ``Pipeline.iterator()``. This
@@ -206,6 +206,12 @@ returns an iterator object that yields Numpy arrays of up to ``chunk_size`` size
 ``Pipeline.iterator()`` also takes an optional ``prefetch`` parameter (default=0)
 to allow prefetching up to to this number of arrays in parallel and buffering
 them until they are yielded to the caller.
+
+If you just want to execute a streamable pipeline in streaming mode and don't
+need to access the data points (typically when the pipeline has Writer stage(s)),
+you can use the ``Pipeline.execute_streaming(chunk_size)`` method instead. This
+is functionally equivalent to ``sum(map(len, pipeline.iterator(chunk_size)))``
+but more efficient as it avoids allocating and filling any arrays in memory.
 
 Accessing Mesh Data
 ................................................................................

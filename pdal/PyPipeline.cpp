@@ -44,6 +44,16 @@ namespace pdal
 namespace python
 {
 
+
+void CountPointTable::reset()
+{
+    for (PointId idx = 0; idx < numPoints(); idx++)
+        if (!skip(idx))
+            m_count++;
+    FixedPointTable::reset();
+}
+
+
 PipelineExecutor::PipelineExecutor(
     std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level)
 {
@@ -69,6 +79,14 @@ point_count_t PipelineExecutor::execute()
     return count;
 }
 
+
+point_count_t PipelineExecutor::executeStream(point_count_t streamLimit)
+{
+    CountPointTable table(streamLimit);
+    m_manager.executeStream(table);
+    m_executed = true;
+    return table.count();
+}
 
 const PointViewSet& PipelineExecutor::views() const
 {
