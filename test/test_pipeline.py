@@ -249,6 +249,20 @@ class TestPipeline:
         assert "\nexiting filter()\n" in r.log
         assert "(pypipeline writers.las Debug)" in r.log
 
+    def test_only_readers(self):
+        """Does a pipeline that consists of only readers return the merged data"""
+        read = pdal.Reader("test/data/*.las")
+        r1 = read.pipeline()
+        count1 = r1.execute()
+        array1 = r1.arrays[0]
+
+        r2 = read | read
+        count2 = r2.execute()
+        array2 = r2.arrays[0]
+
+        assert count2 == 2 * count1
+        np.testing.assert_array_equal(np.concatenate([array1, array1]), array2)
+
 
 class TestArrayLoad:
     def test_merged_arrays(self):

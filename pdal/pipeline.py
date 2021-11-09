@@ -102,7 +102,10 @@ class Pipeline(libpdalpython.Pipeline):
     def _get_json(self) -> str:
         options_list = []
         stage2tag: Dict[Stage, str] = {}
-        for stage in self._stages:
+        stages = self._stages
+        if all(isinstance(stage, Reader) for stage in stages):
+            stages = [*stages, Filter.merge()]
+        for stage in stages:
             stage2tag[stage] = stage.tag or _generate_tag(stage, stage2tag.values())
             options = stage.options
             options["tag"] = stage2tag[stage]
