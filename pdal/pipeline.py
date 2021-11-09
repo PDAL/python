@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import glob
 import json
 import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
@@ -196,13 +195,7 @@ def _parse_stages(text: str) -> Iterator[Stage]:
             is_reader = i == 0 or i != last
 
         if is_reader:
-            paths = glob.glob(options.get("filename", ""))
-            if paths:
-                del options["filename"]
-                for path in paths:
-                    yield Reader(filename=path, **options)
-            else:
-                yield Reader(**options)
+            yield Reader(**options)
         elif not stage_type or stage_type.startswith("writers."):
             yield Writer(**options)
         else:
