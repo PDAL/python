@@ -113,7 +113,8 @@ class TestPipeline:
         assert json.loads(r.pipeline) == {
             "pipeline": [
                 {
-                    "filename": "test/data/1.2-with-color.las",
+                    # TODO: update this after https://github.com/PDAL/PDAL/issues/3574
+                    "filename": f"test/data{os.sep}1.2-with-color.las",
                     "tag": "readers_las1",
                     "type": "readers.las",
                 },
