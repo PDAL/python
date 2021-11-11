@@ -84,7 +84,10 @@ class TestPipeline:
         r = get_pipeline(filename)
         with pytest.raises(RuntimeError) as info:
             r.execute()
-        assert "No such file or directory" in str(info.value)
+        if os.name == "nt":
+            assert "Unable to open stream for" in str(info.value)
+        else:
+            assert "No such file or directory" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_array(self, filename):
