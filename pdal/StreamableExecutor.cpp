@@ -206,8 +206,10 @@ StreamableExecutor::~StreamableExecutor()
     if (!m_executed)
     {
         m_table.disable();
+        auto gil = PyGILState_Ensure();
         while (PyArrayObject* arr = m_table.fetchArray())
             Py_XDECREF(arr);
+        PyGILState_Release(gil);
     }
     Py_BEGIN_ALLOW_THREADS
     m_thread->join();
