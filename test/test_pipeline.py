@@ -56,18 +56,38 @@ class TestPipeline:
             pdal.Pipeline(pipeline)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
-    def test_execution(self, filename):
+    def test_execute(self, filename):
         """Can we execute a PDAL pipeline"""
         r = get_pipeline(filename)
         r.execute()
         assert len(r.pipeline) > 200
 
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_execute_streaming(self, filename):
+        r = get_pipeline(filename)
+        assert r.streamable
+        count = r.execute()
+        count2 = r.execute_streaming(chunk_size=100)
+        assert count == count2
+
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_execute_streaming_non_streamable(self, filename):
+        r = get_pipeline(filename)
+        assert not r.streamable
+        with pytest.raises(RuntimeError) as info:
+            r.execute_streaming()
+        assert "Attempting to use stream mode" in str(info.value)
+
     @pytest.mark.parametrize("filename", ["bad.json", "bad.py"])
     def test_validate(self, filename):
         """Do we complain with bad pipelines"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.execute()
+        if os.name == "nt":
+            assert "Unable to open stream for" in str(info.value)
+        else:
+            assert "No such file or directory" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_array(self, filename):
@@ -85,8 +105,9 @@ class TestPipeline:
     def test_metadata(self, filename):
         """Can we fetch PDAL metadata"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.metadata
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         j = json.loads(r.metadata)
@@ -96,8 +117,9 @@ class TestPipeline:
     def test_schema(self, filename):
         """Fetching a schema works"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.schema
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         assert r.schema["schema"]["dimensions"][0]["name"] == "X"
@@ -106,8 +128,9 @@ class TestPipeline:
     def test_pipeline(self, filename):
         """Can we fetch PDAL pipeline string"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.pipeline
+        assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
         assert json.loads(r.pipeline) == {
@@ -131,8 +154,9 @@ class TestPipeline:
     def test_no_execute(self, filename):
         """Does fetching arrays without executing throw an exception"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.arrays
+        assert "Pipeline has not been executed" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["chip.json", "chip.py"])
     def test_merged_arrays(self, filename):
@@ -193,9 +217,9 @@ class TestPipeline:
             (r, f) | (f, w)
 
         pipeline = r | w
-        with pytest.raises(RuntimeError) as ctx:
+        with pytest.raises(RuntimeError) as info:
             pipeline.execute()
-        assert "Undefined stage 'f'" in str(ctx.value)
+        assert "Undefined stage 'f'" in str(info.value)
 
     def test_inputs(self):
         """Can we combine pipelines with inputs"""
@@ -258,8 +282,6 @@ class TestPipeline:
         assert (rs | fn | ws).streamable is False
         assert (rs | fs | wn).streamable is False
 
-    # fails against PDAL master; see https://github.com/PDAL/PDAL/issues/3566
-    @pytest.mark.xfail
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
@@ -382,8 +404,9 @@ class TestMesh:
     def test_no_execute(self, filename):
         """Does fetching meshes without executing throw an exception"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError) as info:
             r.meshes
+        assert "Pipeline has not been executed" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["mesh.json", "mesh.py"])
     def test_mesh(self, filename):
@@ -407,3 +430,109 @@ class TestMesh:
         triangles = mesh.cells_dict["triangle"]
         assert len(triangles) == 134
         assert triangles[0][0] == 29
+
+
+class TestPipelineIterator:
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_non_streamable(self, filename):
+        r = get_pipeline(filename)
+        assert not r.streamable
+        with pytest.raises(RuntimeError) as info:
+            next(r.iterator(chunk_size=100))
+        assert "Attempting to use stream mode" in str(info.value)
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_array(self, filename):
+        """Can we fetch PDAL data as numpy arrays"""
+        r = get_pipeline(filename)
+        count = r.execute()
+        arrays = r.arrays
+        assert len(arrays) == 1
+        array = arrays[0]
+        assert count == len(array)
+
+        for _ in range(10):
+            arrays = list(r.iterator(chunk_size=100))
+            assert len(arrays) == 11
+            concat_array = np.concatenate(arrays)
+            np.testing.assert_array_equal(array, concat_array)
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_StopIteration(self, filename):
+        """Is StopIteration raised when the iterator is exhausted"""
+        r = get_pipeline(filename)
+        it = r.iterator(chunk_size=100)
+        for array in it:
+            assert isinstance(array, np.ndarray)
+        with pytest.raises(StopIteration):
+            next(it)
+        assert next(it, None) is None
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_metadata(self, filename):
+        """Can we fetch PDAL metadata"""
+        r = get_pipeline(filename)
+        r.execute()
+
+        it = r.iterator(chunk_size=100)
+        for _ in it:
+            pass
+
+        assert r.metadata == it.metadata
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_schema(self, filename):
+        """Fetching a schema works"""
+        r = get_pipeline(filename)
+        r.execute()
+
+        it = r.iterator(chunk_size=100)
+        for _ in it:
+            pass
+
+        assert r.schema == it.schema
+
+    def test_merged_arrays(self):
+        """Can we load data from a list of arrays to PDAL"""
+        data = np.load(os.path.join(DATADIRECTORY, "test3d.npy"))
+        arrays = [data, data, data]
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        p = pdal.Pipeline(filter_intensity, arrays)
+        p.execute()
+        non_streaming_array = np.concatenate(p.arrays)
+        for chunk_size in range(5, 100, 5):
+            streaming_arrays = list(p.iterator(chunk_size=chunk_size))
+            np.testing.assert_array_equal(
+                np.concatenate(streaming_arrays), non_streaming_array
+            )
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_premature_exit(self, filename):
+        """Can we stop iterating before all arrays are fetched"""
+        r = get_pipeline(filename)
+        r.execute()
+        assert len(r.arrays) == 1
+        array = r.arrays[0]
+
+        for _ in range(10):
+            for array2 in r.iterator(chunk_size=100):
+                np.testing.assert_array_equal(array2, array[: len(array2)])
+                break
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_multiple_iterators(self, filename):
+        """Can we create multiple independent iterators"""
+        r = get_pipeline(filename)
+        it1 = r.iterator(chunk_size=100)
+        it2 = r.iterator(chunk_size=100)
+        for a1, a2 in zip(it1, it2):
+            np.testing.assert_array_equal(a1, a2)
+        assert next(it1, None) is None
+        assert next(it2, None) is None

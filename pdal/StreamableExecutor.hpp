@@ -34,57 +34,64 @@
 
 #pragma once
 
-#include <pdal/PipelineManager.hpp>
-#include <numpy/arrayobject.h>
+#include <condition_variable>
+#include <thread>
+
+#include "PyPipeline.hpp"
 
 namespace pdal
 {
 namespace python
 {
 
-PyObject* buildNumpyDescriptor(PointLayoutPtr layout);
-PyArrayObject* viewToNumpyArray(PointViewPtr view);
-PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);
-
-class Array;
-
-class PDAL_DLL PipelineExecutor {
-public:
-    PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level);
-    virtual ~PipelineExecutor() = default;
-
-    point_count_t execute();
-    point_count_t executeStream(point_count_t streamLimit);
-
-    const PointViewSet& views() const;
-    std::string getPipeline() const;
-    std::string getMetadata() const;
-    std::string getSchema() const;
-    std::string getLog() const { return m_logStream.str(); }
-
-protected:
-    virtual ConstPointTableRef pointTable() const { return m_manager.pointTable(); }
-
-    pdal::PipelineManager m_manager;
-    bool m_executed = false;
-
-private:
-    void addArrayReaders(std::vector<std::shared_ptr<Array>> arrays);
-
-    std::stringstream m_logStream;
-};
-
-class CountPointTable : public FixedPointTable
+class PythonPointTable : public StreamPointTable
 {
 public:
-    CountPointTable(point_count_t capacity) : FixedPointTable(capacity), m_count(0) {}
-    point_count_t count() const { return m_count; }
+    PythonPointTable(point_count_t size, int prefetch);
+    ~PythonPointTable();
+
+    virtual void finalize();
+    void disable();
+    void done();
+    PyArrayObject *fetchArray();
 
 protected:
     virtual void reset();
+    virtual char *getPoint(PointId idx);
 
 private:
-    point_count_t m_count;
+    // All functions starting with py_ call Python things that need the GIL locked.
+    void py_createArray();
+    void py_resizeArray(point_count_t np);
+
+    int m_prefetch;
+    PointLayout m_layout;
+    PyArrayObject *m_curArray;
+    PyArray_Descr *m_dtype;
+    std::mutex m_mutex;
+    std::condition_variable m_producedCv;
+    std::condition_variable m_consumedCv;
+    std::queue<PyArrayObject *> m_arrays;
+};
+
+class StreamableExecutor : public PipelineExecutor
+{
+public:
+    StreamableExecutor(std::string const& json,
+                       std::vector<std::shared_ptr<Array>> arrays,
+                       int level,
+                       point_count_t chunkSize,
+                       int prefetch);
+    ~StreamableExecutor();
+
+    PyArrayObject* executeNext();
+
+private:
+    ConstPointTableRef pointTable() const { return m_table; }
+
+    PythonPointTable m_table;
+    std::unique_ptr<std::thread> m_thread;
+    std::exception_ptr m_exc;
 };
 
 } // namespace python

@@ -1,11 +1,12 @@
 # distutils: language = c++
 # cython: c_string_type=unicode, c_string_encoding=utf8
 
+import json
 from types import SimpleNamespace
 
+cimport cython
 from cython.operator cimport dereference as deref
 from cpython.ref cimport Py_DECREF
-from libcpp cimport bool
 from libcpp.memory cimport make_shared, shared_ptr, unique_ptr
 from libcpp.set cimport set as cpp_set
 from libcpp.string cimport string
@@ -84,22 +85,25 @@ cdef extern from "pdal/PointView.hpp" namespace "pdal":
     ctypedef cpp_set[PointViewPtr] PointViewSet
 
 
-cdef extern from "pdal/PipelineManager.hpp" namespace "pdal":
-    cdef cppclass PipelineManager:
-        const PointViewSet& views() const
+cdef extern from "PyPipeline.hpp" namespace "pdal::python":
+    np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
+    np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
 
-
-cdef extern from "pdal/PipelineExecutor.hpp" namespace "pdal":
     cdef cppclass PipelineExecutor:
-        PipelineExecutor(string) except +
-        const PipelineManager& getManagerConst() except +
-        bool executed() except +
+        PipelineExecutor(string, vector[shared_ptr[Array]], int) except +
         int execute() except +
+        int executeStream(int) except +
         string getPipeline() except +
         string getMetadata() except +
         string getSchema() except +
         string getLog() except +
-        void setLogLevel(int) except +
+        const PointViewSet& views() except +
+
+
+cdef extern from "StreamableExecutor.hpp" namespace "pdal::python":
+    cdef cppclass StreamableExecutor(PipelineExecutor):
+        StreamableExecutor(string, vector[shared_ptr[Array]], int, int, int) except +
+        np.PyArrayObject* executeNext() except +
 
 
 cdef extern from "PyArray.hpp" namespace "pdal::python":
@@ -107,20 +111,33 @@ cdef extern from "PyArray.hpp" namespace "pdal::python":
         Array(np.PyArrayObject*) except +
 
 
-cdef extern from "PyPipeline.hpp" namespace "pdal::python":
-    void readPipeline(PipelineExecutor*, string) except +
-    void addArrayReaders(PipelineExecutor*, vector[shared_ptr[Array]]) except +
-    np.PyArrayObject* viewToNumpyArray(PointViewPtr) except +
-    np.PyArrayObject* meshToNumpyArray(const TriangularMesh*) except +
+@cython.internal
+cdef class PipelineResultsMixin:
+    @property
+    def log(self):
+        return self._get_executor().getLog()
+
+    @property
+    def schema(self):
+        return json.loads(self._get_executor().getSchema())
+
+    @property
+    def pipeline(self):
+        return self._get_executor().getPipeline()
+
+    @property
+    def metadata(self):
+        return self._get_executor().getMetadata()
+
+    cdef PipelineExecutor* _get_executor(self) except NULL:
+        raise NotImplementedError("Abstract method")
 
 
-cdef class Pipeline:
+
+cdef class Pipeline(PipelineResultsMixin):
     cdef unique_ptr[PipelineExecutor] _executor
     cdef vector[shared_ptr[Array]] _inputs
     cdef int _loglevel
-
-    def execute(self):
-        return self._get_executor().execute()
 
     #========= writeable properties to be set before execution ===========================
 
@@ -147,28 +164,10 @@ cdef class Pipeline:
     #========= readable properties to be read after execution ============================
 
     @property
-    def log(self):
-        return self._get_executor().getLog()
-
-    @property
-    def schema(self):
-        return self._get_executor().getSchema()
-
-    @property
-    def pipeline(self):
-        return self._get_executor().getPipeline()
-
-    @property
-    def metadata(self):
-        return self._get_executor().getMetadata()
-
-    @property
     def arrays(self):
         cdef PipelineExecutor* executor = self._get_executor()
-        if not executor.executed():
-            raise RuntimeError("call execute() before fetching arrays")
         output = []
-        for view in executor.getManagerConst().views():
+        for view in executor.views():
             output.append(<object>viewToNumpyArray(view))
             Py_DECREF(output[-1])
         return output
@@ -176,13 +175,26 @@ cdef class Pipeline:
     @property
     def meshes(self):
         cdef PipelineExecutor* executor = self._get_executor()
-        if not executor.executed():
-            raise RuntimeError("call execute() before fetching the mesh")
         output = []
-        for view in executor.getManagerConst().views():
+        for view in executor.views():
             output.append(<object>meshToNumpyArray(deref(view).mesh()))
             Py_DECREF(output[-1])
         return output
+
+    #========= execution methods =========================================================
+
+    def execute(self):
+        return self._get_executor().execute()
+
+    def execute_streaming(self, int chunk_size=10000):
+        return self._get_executor().executeStream(chunk_size)
+
+    def iterator(self, int chunk_size=10000, int prefetch = 0):
+        it = PipelineIterator()
+        it.set_executor(new StreamableExecutor(
+            self._get_json(), self._inputs, self._loglevel, chunk_size, prefetch
+        ))
+        return it
 
     #========= non-public properties & methods ===========================================
 
@@ -201,10 +213,30 @@ cdef class Pipeline:
 
     cdef PipelineExecutor* _get_executor(self) except NULL:
         if not self._executor:
-            json = self._get_json()
-            executor = new PipelineExecutor(json)
-            executor.setLogLevel(self._loglevel)
-            readPipeline(executor, json)
-            addArrayReaders(executor, self._inputs)
-            self._executor.reset(executor)
+            self._executor.reset(new PipelineExecutor(
+                self._get_json(), self._inputs, self._loglevel)
+            )
+        return self._executor.get()
+
+
+@cython.internal
+cdef class PipelineIterator(PipelineResultsMixin):
+    cdef unique_ptr[StreamableExecutor] _executor
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        arr_ptr = self._executor.get().executeNext()
+        if arr_ptr is NULL:
+            raise StopIteration
+
+        arr = <object> arr_ptr
+        Py_DECREF(arr)
+        return arr
+
+    cdef set_executor(self, StreamableExecutor* executor):
+        self._executor.reset(executor)
+
+    cdef PipelineExecutor* _get_executor(self) except NULL:
         return self._executor.get()

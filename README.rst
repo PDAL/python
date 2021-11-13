@@ -187,6 +187,31 @@ PDAL and Python:
     ).pipeline(clamped)
     print(pipeline.execute())  # 387 points
 
+Executing Streamable Pipelines
+................................................................................
+Streamable pipelines (pipelines that consist exclusively of streamable PDAL
+stages) can be executed in streaming mode via ``Pipeline.iterator()``. This
+returns an iterator object that yields Numpy arrays of up to ``chunk_size`` size
+(default=10000) at a time.
+
+.. code-block:: python
+
+    import pdal
+    pipeline = pdal.Reader("test/data/autzen-utm.las") | pdal.Filter.range(limits="Intensity[80:120)")
+    for array in pipeline.iterator(chunk_size=500):
+        print(len(array))
+    # or to concatenate all arrays into one
+    # full_array = np.concatenate(list(pipeline))
+
+``Pipeline.iterator()`` also takes an optional ``prefetch`` parameter (default=0)
+to allow prefetching up to to this number of arrays in parallel and buffering
+them until they are yielded to the caller.
+
+If you just want to execute a streamable pipeline in streaming mode and don't
+need to access the data points (typically when the pipeline has Writer stage(s)),
+you can use the ``Pipeline.execute_streaming(chunk_size)`` method instead. This
+is functionally equivalent to ``sum(map(len, pipeline.iterator(chunk_size)))``
+but more efficient as it avoids allocating and filling any arrays in memory.
 
 Accessing Mesh Data
 ................................................................................
@@ -236,17 +261,14 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
 .. code-block:: python
 
     import pdal
-    import json
     import psycopg2
     import io
 
-    pipe = [
-        '.../python/test/data/1.2-with-color.las',
-        {"type":  "filters.splitter", "length": 1000}, 
-        {"type":  "filters.delaunay"}
-    ]
-
-    pl = pdal.Pipeline(json.dumps(pipe))
+    pl = (
+        pdal.Reader(".../python/test/data/1.2-with-color.las")
+        | pdal.Filter.splitter(length=1000)
+        | pdal.Filter.delaunay()
+    )
     pl.execute()
 
     conn = psycopg(%CONNNECTION_STRING%)
