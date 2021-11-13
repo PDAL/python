@@ -188,13 +188,15 @@ StreamableExecutor::StreamableExecutor(std::string const& json,
                                        int prefetch)
     : PipelineExecutor(json, arrays, level)
     , m_table(chunkSize, prefetch)
+    , m_exc(nullptr)
 {
-    if (!m_manager.pipelineStreamable())
-        throw pdal_error("Pipeline is not streamable");
-
     m_thread.reset(new std::thread([this]()
     {
-        m_manager.executeStream(m_table);
+        try {
+            m_manager.executeStream(m_table);
+        } catch (...) {
+            m_exc = std::current_exception();
+        }
         m_table.done();
     }));
 }
@@ -220,6 +222,8 @@ PyArrayObject *StreamableExecutor::executeNext()
         arr = m_table.fetchArray();
         if (arr == nullptr)
             m_executed = true;
+        if (m_exc)
+            std::rethrow_exception(m_exc);
     }
     return arr;
 }

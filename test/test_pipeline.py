@@ -436,9 +436,10 @@ class TestPipelineIterator:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_non_streamable(self, filename):
         r = get_pipeline(filename)
+        assert not r.streamable
         with pytest.raises(RuntimeError) as info:
-            r.iterator()
-        assert "Pipeline is not streamable" in str(info.value)
+            next(r.iterator(chunk_size=100))
+        assert "Attempting to use stream mode" in str(info.value)
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_array(self, filename):

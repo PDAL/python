@@ -91,6 +91,7 @@ private:
 
     PythonPointTable m_table;
     std::unique_ptr<std::thread> m_thread;
+    std::exception_ptr m_exc;
 };
 
 } // namespace python
