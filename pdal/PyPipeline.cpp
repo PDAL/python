@@ -57,7 +57,7 @@ void readPipeline(PipelineExecutor* executor, std::string json)
 }
 
 
-void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
+void addArrayReaders(PipelineExecutor* executor, std::vector<std::shared_ptr<Array>> arrays)
 {
     // Make the symbols in pdal_base global so that they're accessible
     // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
@@ -69,6 +69,8 @@ void addArrayReaders(PipelineExecutor* executor, std::vector<Array*> arrays)
 #ifndef _WIN32
     ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
 #endif
+    if (arrays.empty())
+        return;
 
     PipelineManager& manager = executor->getManager();
     std::vector<Stage *> roots = manager.roots();
@@ -177,14 +179,6 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
     return array;
 }
 
-std::vector<PyArrayObject*> getArrays(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(viewToNumpyArray(view));
-    return output;
-}
-
 
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 {
@@ -235,15 +229,6 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
         std::memcpy(p + 8, &c,  4);
     }
     return array;
-}
-
-
-std::vector<PyArrayObject*> getMeshes(const PipelineExecutor* executor)
-{
-    std::vector<PyArrayObject*> output;
-    for (auto view: executor->getManagerConst().views())
-        output.push_back(meshToNumpyArray(view->mesh()));
-    return output;
 }
 
 } // namespace python

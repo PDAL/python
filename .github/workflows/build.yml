@@ -38,24 +38,22 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest meshio
 
     - name: Install
       shell: bash -l {0}
       run: |
-        python setup.py install -- -G "Ninja" -DWITH_TESTS=ON
+        python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
         pdal --drivers
 
     - name: Test
       shell: bash -l {0}
       run: |
-        pip install  -e .
         SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
         export PDAL_DRIVER_PATH=$SKPATH
-        ls $SKPATH
         $SKPATH/pdal_filters_python_test
         $SKPATH/pdal_io_numpy_test
-        py.test
+        py.test -v
 
   windows:
     name: ${{ matrix.os }} - ${{ matrix.python-version }}
@@ -78,27 +76,25 @@ jobs:
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest meshio
 
     - name: Install
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
-        where python
         python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
+        pdal --drivers
 
     - name: Test
       shell: cmd /C CALL "{0}"
       run: |
         call conda activate test
         set PYTHONHOME=%CONDA_PREFIX%
-        py.test
         for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
         set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
         %SKPATH%\cmake-build\pdal_filters_python_test.exe
         %SKPATH%\cmake-build\pdal_io_numpy_test.exe
-        pdal --version
-        pdal --drivers
+        py.test -v
 
   dist:
     name: Distribution
@@ -121,7 +117,7 @@ jobs:
 
     - name: Dependencies
       shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal pytest
+      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} cython pdal
 
     - name: sdist
       shell: bash -l {0}

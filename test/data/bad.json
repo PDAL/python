@@ -1,0 +1,9 @@
+{
+  "pipeline": [
+    "nofile.las",
+    {
+        "type": "filters.sort",
+        "dimension": "X"
+    }
+  ]
+}
