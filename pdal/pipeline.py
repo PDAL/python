@@ -11,7 +11,7 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     Mesh = None
 
-from . import libpdalpython
+from . import drivers, libpdalpython
 
 LogLevelToPDAL = {
     logging.ERROR: 0,
@@ -41,6 +41,10 @@ class Pipeline(libpdalpython.Pipeline):
     @property
     def stages(self) -> List[Stage]:
         return list(self._stages)
+
+    @property
+    def streamable(self) -> bool:
+        return all(stage.streamable for stage in self._stages)
 
     @property
     def schema(self) -> Any:
@@ -123,6 +127,10 @@ class Stage:
     @property
     def type(self) -> str:
         return cast(str, self._options["type"])
+
+    @property
+    def streamable(self) -> bool:
+        return self.type in drivers.StreamableTypes
 
     @property
     def tag(self) -> Optional[str]:

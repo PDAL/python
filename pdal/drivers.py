@@ -1,9 +1,11 @@
 import json
 import subprocess
 from dataclasses import dataclass, field
-from typing import Callable, ClassVar, Mapping, Optional, Sequence, Type
+from typing import Callable, ClassVar, FrozenSet, Mapping, Optional, Sequence, Type
 
 from .pipeline import Filter, Reader, Stage, Writer
+
+StreamableTypes: FrozenSet
 
 
 @dataclass
@@ -67,6 +69,7 @@ def inject_pdal_drivers() -> None:
             ).stdout
         )
     )
+    streamable = []
     for d in drivers:
         name = d["name"]
         d_options = [Option(**option_dict) for option_dict in (options.get(name) or ())]
@@ -78,3 +81,7 @@ def inject_pdal_drivers() -> None:
             pass
         driver = Driver(name, d["description"], d_options)
         setattr(driver.type, driver.short_name, staticmethod(driver.factory))
+        if d["streamable"]:
+            streamable.append(driver.name)
+    global StreamableTypes
+    StreamableTypes = frozenset(streamable)

@@ -223,6 +223,41 @@ class TestPipeline:
         assert pdal.Reader().type == ""
         assert pdal.Writer().type == ""
 
+    def test_streamable(self):
+        """Can we distinguish streamable from non-streamable stages and pipeline"""
+        rs = pdal.Reader(type="readers.las", filename="foo")
+        assert rs.streamable is True
+        assert pdal.Reader.las("foo").streamable is True
+        assert pdal.Reader("foo.las").streamable is True
+
+        rn = pdal.Reader(type="readers.pts", filename="foo")
+        assert rn.streamable is False
+        assert pdal.Reader.pts("foo").streamable is False
+        assert pdal.Reader("foo.pts").streamable is False
+
+        fs = pdal.Filter(type="filters.crop")
+        assert fs.streamable is True
+        assert pdal.Filter.crop().streamable is True
+
+        fn = pdal.Filter(type="filters.cluster")
+        assert fn.streamable is False
+        assert pdal.Filter.cluster().streamable is False
+
+        ws = pdal.Writer(type="writers.ogr", filename="foo")
+        assert ws.streamable is True
+        assert pdal.Writer.ogr(filename="foo").streamable is True
+        assert pdal.Writer("foo.shp").streamable is True
+
+        wn = pdal.Writer(type="writers.glb", filename="foo")
+        assert wn.streamable is False
+        assert pdal.Writer.gltf("foo").streamable is False
+        assert pdal.Writer("foo.glb").streamable is False
+
+        assert (rs | fs | ws).streamable is True
+        assert (rn | fs | ws).streamable is False
+        assert (rs | fn | ws).streamable is False
+        assert (rs | fs | wn).streamable is False
+
     # fails against PDAL master; see https://github.com/PDAL/PDAL/issues/3566
     @pytest.mark.xfail
     @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
