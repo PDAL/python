@@ -352,7 +352,7 @@ class TestArrayLoad:
         z_vals = [1.5, 3.5, 5.5, 7.5, 9.5]
         test_data = np.array(
             [(x, y, z) for x, y, z in zip(x_vals, y_vals, z_vals)],
-            dtype=[("X", np.float), ("Y", np.float), ("Z", np.float)],
+            dtype=[("X", float), ("Y", float), ("Z", float)],
         )
 
         pipeline = """
@@ -379,7 +379,7 @@ class TestArrayLoad:
         z_vals = [1.5, 3.5, 5.5, 7.5, 9.5]
         test_data = np.array(
             [(x, y, z) for x, y, z in zip(x_vals, y_vals, z_vals)],
-            dtype=[("X", np.float), ("Y", np.float), ("Z", np.float)],
+            dtype=[("X", float), ("Y", float), ("Z", float)],
         )
 
         pipeline = """

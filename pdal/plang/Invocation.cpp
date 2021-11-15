@@ -53,7 +53,7 @@ int argCount(PyObject *function)
     // Owned by module.
     PyObject *dictionary = PyModule_GetDict(module);
     // Owned by dictionary.
-    PyObject *getargFunc = PyDict_GetItemString(dictionary, "getargspec");
+    PyObject *getargFunc = PyDict_GetItemString(dictionary, "getfullargspec");
 
     // New object.
     PyObject *inArgs = PyTuple_New(1);
