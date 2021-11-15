@@ -141,7 +141,7 @@ namespace pdal {
         int _loglevel;
     };
 
-    PYBIND11_MODULE(libpybind11, m)
+    PYBIND11_MODULE(libpdalpython, m)
     {
     py::class_<PipelineIterator>(m, "PipelineIterator")
         .def("__iter__", [](PipelineIterator &it) -> PipelineIterator& { return it; })

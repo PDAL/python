@@ -16,13 +16,6 @@ find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 # find PDAL. Require 2.1+
 find_package(PDAL 2.1 REQUIRED)
 
-if(SKBUILD)
-  find_package(PythonExtensions REQUIRED)
-  find_package(Cython REQUIRED)
-  find_package(pybind11 CONFIG REQUIRED)
-  message(STATUS "The project is built using scikit-build")
-endif()
-
 add_subdirectory(pdal)
 
 # Taken and adapted from PDAL's cmake macros.cmake

@@ -1,4 +1,3 @@
-pdal/libpdalpython.cpp
 *.pyc
 _skbuild/*
 .vscode/*
