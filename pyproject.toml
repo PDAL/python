@@ -1,2 +1,2 @@
 [build-system]
-requires = [ "wheel", "scikit-build", "cmake", "ninja", "pytest", "pybind11[global]", "packaging", "numpy"]
+requires = ["scikit-build", "cmake", "ninja", "numpy",  "pybind11[global]"]
