@@ -18,7 +18,6 @@ with open("CHANGES.txt", "r", encoding="utf-8") as fp:
 setup(
     name="PDAL",
     version=version,
-    requires=["Python (>=3.0)", "Numpy"],
     description="Point cloud data processing",
     license="BSD",
     keywords="point cloud spatial",
@@ -31,6 +30,7 @@ setup(
     long_description_content_type="text/x-rst",
     test_suite="test",
     packages=["pdal"],
+    install_requires=["numpy"],
     include_package_data=False,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
