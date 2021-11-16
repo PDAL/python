@@ -139,7 +139,7 @@ TEST_F(PythonFilterTest, pipelineJSON)
     PipelineManager manager;
 
     manager.readPipeline(
-        Support::datapath("programmable-update-y-dims.json"));
+        Support::datapath("pipeline/programmable-update-y-dims.json"));
     manager.execute();
     PointViewSet viewSet = manager.views();
     EXPECT_EQ(viewSet.size(), 1u);
@@ -571,7 +571,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_PipelineJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::datapath("from-module.json"));
+    mgr.readPipeline(Support::datapath("pipeline/from-module.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
@@ -580,7 +580,7 @@ TEST_F(PredicateFilterTest, PredicateFilterTest_EmbedJSON)
 {
     PipelineManager mgr;
 
-    mgr.readPipeline(Support::datapath("predicate-embed.json"));
+    mgr.readPipeline(Support::datapath("pipeline/predicate-embed.json"));
     point_count_t cnt = mgr.execute();
     EXPECT_EQ(cnt, 1u);
 }
