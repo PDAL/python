@@ -49,10 +49,9 @@ jobs:
     - name: Test
       shell: bash -l {0}
       run: |
-        SKPATH=$(python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())")/cmake-build
-        export PDAL_DRIVER_PATH=$SKPATH
-        $SKPATH/pdal_filters_python_test
-        $SKPATH/pdal_io_numpy_test
+        export PDAL_DRIVER_PATH=$(python -c "import skbuild; print(skbuild.constants.SKBUILD_DIR())")/cmake-build
+        $PDAL_DRIVER_PATH/pdal_filters_python_test
+        $PDAL_DRIVER_PATH/pdal_io_numpy_test
         py.test -v test/
 
   windows:
@@ -90,10 +89,9 @@ jobs:
       run: |
         call conda activate test
         set PYTHONHOME=%CONDA_PREFIX%
-        for /f %%i in ('python -c "import skbuild; print (skbuild.constants.SKBUILD_DIR())"') do set SKPATH=%%i
-        set PDAL_DRIVER_PATH=%SKPATH%\cmake-build
-        %SKPATH%\cmake-build\pdal_filters_python_test.exe
-        %SKPATH%\cmake-build\pdal_io_numpy_test.exe
+        for /f %%i in ('python -c "import skbuild; print(skbuild.constants.SKBUILD_DIR())"') do set PDAL_DRIVER_PATH=%%i\cmake-build
+        %PDAL_DRIVER_PATH%\pdal_filters_python_test.exe
+        %PDAL_DRIVER_PATH%\pdal_io_numpy_test.exe
         py.test -v test/
 
   dist:
