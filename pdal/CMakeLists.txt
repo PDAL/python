@@ -1,10 +1,8 @@
-set(EXTENSION_SRC PyArray.cpp PyPipeline.cpp StreamableExecutor.cpp)
-
+find_package(pybind11 REQUIRED)
 set(extension "libpdalpython")
-add_cython_target(${extension} "libpdalpython.pyx" CXX PY3)
-add_library(${extension} MODULE ${EXTENSION_SRC} libpdalpython)
-target_include_directories(${extension} PRIVATE . ${Python3_NumPy_INCLUDE_DIRS})
-target_link_libraries(${extension} ${PDAL_LIBRARIES})
-python_extension_module(${extension})
-
+pybind11_add_module(${extension} MODULE
+    PyArray.cpp PyPipeline.cpp StreamableExecutor.cpp libpdalpython.cpp
+)
+target_include_directories(${extension} PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
+target_link_libraries(${extension} PRIVATE ${PDAL_LIBRARIES})
 install(TARGETS ${extension} LIBRARY DESTINATION "pdal")

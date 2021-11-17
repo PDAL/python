@@ -302,7 +302,7 @@ Requirements
 
 * PDAL 2.2+
 * Python >=3.6
-* Cython (eg :code:`pip install cython`)
+* Pybind11 (eg :code:`pip install pybind11[global]`)
 * Numpy (eg :code:`pip install numpy`)
 * Packaging (eg :code:`pip install packaging`)
 * scikit-build (eg :code:`pip install scikit-build`)
