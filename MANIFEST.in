@@ -1,8 +1,0 @@
-exclude MANIFEST.in
-include LICENSE.txt CHANGES.txt README.rst pyproject.toml CMakeLists.txt pdal/CMakeLists.txt
-include test/*py
-include test/data/*
-
-recursive-include pdal/test *
-recursive-include pdal *.hpp
-recursive-include pdal *.cpp
