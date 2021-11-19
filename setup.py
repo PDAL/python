@@ -28,10 +28,8 @@ setup(
     url="https://pdal.io",
     long_description=readme + "\n\n" + changes,
     long_description_content_type="text/x-rst",
-    test_suite="test",
     packages=["pdal"],
     install_requires=["numpy"],
-    include_package_data=False,
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
