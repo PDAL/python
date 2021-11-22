@@ -1,4 +1,4 @@
-__version__ = "2.4.2"
+__version__ = "3.0.0"
 __all__ = ["Pipeline", "Stage", "Reader", "Filter", "Writer", "dimensions", "info"]
 
 from . import libpdalpython

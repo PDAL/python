@@ -1,10 +1,26 @@
 Changes
 --------------------------------------------------------------------------------
 
+3.0.0
+................................................................................
+
+* Pythonic pipeline creation https://github.com/PDAL/python/pull/91
+
+* Support streaming pipeline execution https://github.com/PDAL/python/pull/94
+
+* Replace Cython with PyBind11 https://github.com/PDAL/python/pull/102
+
+* Remove pdal.pio module https://github.com/PDAL/python/pull/101
+
+* Move readers.numpy and filters.python to separate repository https://github.com/PDAL/python/pull/104
+
+* Miscellaneous refactorings and cleanups
+
 2.3.5
 ................................................................................
 
 * Fix memory leak https://github.com/PDAL/python/pull/74
+
 * Handle metadata with invalid unicode by erroring https://github.com/PDAL/python/pull/74
 
 2.3.0
@@ -29,5 +45,3 @@ Changes
   schedule at https://github.com/PDAL/python
 
 * Extension now builds and works under PDAL OSGeo4W64 on Windows.
-
-
