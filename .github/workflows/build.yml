@@ -10,121 +10,83 @@ on:
   release:
     types:
       - published
+
+defaults:
+  run:
+    shell: bash -l -eo pipefail {0}
+
 jobs:
-  unix:
-    name: ${{ matrix.os }} - ${{ matrix.python-version }}
-
+  build:
+    name: Build ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: true
       matrix:
-        os: ['ubuntu-latest', 'macos-latest' ]
-        python-version: ['3.7','3.8', '3.9']
+        os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
+        python-version: ['3.7', '3.8', '3.9']
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - name: Check out python-pdal
+      uses: actions/checkout@v2
+
+    - name: Check out python-pdal-plugins
+      uses: actions/checkout@v2
       with:
-        python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
-        activate-environment: test
-        channels: conda-forge
-        auto-activate-base: false
+        repository: PDAL/python-plugins
+        path: ./plugins
 
-    - name: Linux dependencies
-      if: matrix.os == 'ubuntu-latest'
-      shell: bash -l {0}
-      run: sudo apt-get install gcc-multilib -y
+    - name: Setup micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-file: .github/environment.yml
+        extra-specs: |
+          python=${{ matrix.python-version }}
 
-    - name: Dependencies
-      shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} pybind11 pdal pytest meshio
+    - name: Install python-pdal
+      run: pip install -e .
 
-    - name: Install
-      shell: bash -l {0}
-      run: |
-        python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
-        pdal --drivers
+    - name: Install python-pdal-plugins
+      working-directory: ./plugins
+      run: pip install -e .
 
     - name: Test
-      shell: bash -l {0}
       run: |
-        export PDAL_DRIVER_PATH=$(python -c "import skbuild; print(skbuild.constants.SKBUILD_DIR())")/cmake-build
-        $PDAL_DRIVER_PATH/pdal_filters_python_test
-        $PDAL_DRIVER_PATH/pdal_io_numpy_test
-        py.test -v test/
-
-  windows:
-    name: ${{ matrix.os }} - ${{ matrix.python-version }}
-
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ['windows-latest']
-        python-version: ['3.7','3.8', '3.9']
-
-    steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
-      with:
-        channels: conda-forge
-        python-version: ${{ matrix.python-version }}
-
-    - name: Dependencies
-      shell: cmd /C CALL "{0}"
-      run: |
-        call conda activate test
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} pybind11 pdal pytest meshio
-
-    - name: Install
-      shell: cmd /C CALL "{0}"
-      run: |
-        call conda activate test
-        python setup.py develop -- -G "Ninja" -DWITH_TESTS=ON
+        export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
         pdal --drivers
-
-    - name: Test
-      shell: cmd /C CALL "{0}"
-      run: |
-        call conda activate test
-        set PYTHONHOME=%CONDA_PREFIX%
-        for /f %%i in ('python -c "import skbuild; print(skbuild.constants.SKBUILD_DIR())"') do set PDAL_DRIVER_PATH=%%i\cmake-build
-        %PDAL_DRIVER_PATH%\pdal_filters_python_test.exe
-        %PDAL_DRIVER_PATH%\pdal_io_numpy_test.exe
         py.test -v test/
 
-  dist:
-    name: Distribution
-    needs: [windows, unix]
+    - name: Build wheel distribution
+      run: python setup.py --skip-cmake bdist_wheel
 
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ['ubuntu-latest']
-        python-version: ['3.8']
+    - name: Build source distribution
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.8'
+      run: python setup.py sdist
+
+    - name: Upload distribution(s)
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os }}-py${{ matrix.python-version }}
+        path: ./dist/*
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build]
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: conda-incubator/setup-miniconda@v2
+    - name: Download distribution(s)
+      uses: actions/download-artifact@v2
       with:
-        channels: conda-forge
-        python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
+        path: ./artifacts
 
-    - name: Dependencies
-      shell: bash -l {0}
-      run: mamba install --yes --quiet -c conda-forge scikit-build numpy python=${{ matrix.python-version }} pybind11 pdal
-
-    - name: sdist
-      shell: bash -l {0}
+    - name: Move artifacts to dist
       run: |
-        python setup.py sdist
-        ls dist
+        mkdir dist
+        find ./artifacts -type f -exec mv {} ./dist \;
+        tree ./dist
 
-    - uses: pypa/gh-action-pypi-publish@master
-      name: Publish package
+    - name: Publish package
+      uses: pypa/gh-action-pypi-publish@master
       if: github.event_name == 'release' && github.event.action == 'published'
       with:
         user: __token__

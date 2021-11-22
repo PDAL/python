@@ -11,6 +11,10 @@ import pdal
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
 
+def a_filter(ins, outs):
+    return True
+
+
 def get_pipeline(filename):
     with open(os.path.join(DATADIRECTORY, filename), "r") as f:
         if filename.endswith(".json"):
@@ -59,8 +63,8 @@ class TestPipeline:
     def test_execute(self, filename):
         """Can we execute a PDAL pipeline"""
         r = get_pipeline(filename)
-        r.execute()
-        assert len(r.pipeline) > 200
+        count = r.execute()
+        assert count == 1065
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_execute_streaming(self, filename):
@@ -282,9 +286,36 @@ class TestPipeline:
         assert (rs | fn | ws).streamable is False
         assert (rs | fs | wn).streamable is False
 
-    @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
+    @pytest.mark.parametrize("filename", ["chip.json", "chip.py"])
     def test_logging(self, filename):
         """Can we fetch log output"""
+        r = get_pipeline(filename)
+        assert r.loglevel == logging.ERROR
+        assert r.log == ""
+
+        for loglevel in logging.CRITICAL, -1:
+            with pytest.raises(ValueError):
+                r.loglevel = loglevel
+
+        count = r.execute()
+        assert count == 1065
+        assert r.log == ""
+
+        r.loglevel = logging.DEBUG
+        assert r.loglevel == logging.DEBUG
+        count = r.execute()
+        assert count == 1065
+        assert "(pypipeline readers.las Debug)" in r.log
+        assert "(pypipeline Debug) Executing pipeline in standard mode" in r.log
+        assert "(pypipeline writers.las Debug)" in r.log
+
+    @pytest.mark.skipif(
+        not hasattr(pdal.Filter, "python"),
+        reason="filters.python PDAL plugin is not available",
+    )
+    @pytest.mark.parametrize("filename", ["reproject.json", "reproject.py"])
+    def test_logging_filters_python(self, filename):
+        """Can we fetch log output including print() statements from filters.python"""
         r = get_pipeline(filename)
         assert r.loglevel == logging.ERROR
         assert r.log == ""
@@ -306,6 +337,16 @@ class TestPipeline:
         assert "\nentered filter()\n" in r.log
         assert "\nexiting filter()\n" in r.log
         assert "(pypipeline writers.las Debug)" in r.log
+
+    @pytest.mark.skipif(
+        not hasattr(pdal.Filter, "python"),
+        reason="filters.python PDAL plugin is not available",
+    )
+    def test_filters_python(self):
+        r = pdal.Reader("test/data/autzen-utm.las")
+        f = pdal.Filter.python(script=__file__, function="a_filter", module="anything")
+        count = (r | f).execute()
+        assert count == 1065
 
     def test_only_readers(self):
         """Does a pipeline that consists of only readers return the merged data"""
@@ -412,8 +453,7 @@ class TestMesh:
     def test_mesh(self, filename):
         """Can we fetch PDAL face data as a numpy array"""
         r = get_pipeline(filename)
-        points = r.execute()
-        assert points == 1065
+        r.execute()
         meshes = r.meshes
         assert len(meshes) == 24
 
