@@ -137,14 +137,14 @@ The following more complex scenario demonstrates the full cycling between
 PDAL and Python:
 
 * Read a small testfile from GitHub into a Numpy array
-* Filters those arrays with Numpy for Intensity
+* Filters the array with Numpy for Intensity
 * Pass the filtered array to PDAL to be filtered again
-* Write the filtered array to an LAS file.
+* Write the final filtered array to a LAS file and a TileDB_ array
+  via the `TileDB-PDAL integration`_ using the `TileDB writer plugin`_
 
 .. code-block:: python
 
     import pdal
-    import numpy as np
 
     data = "https://github.com/PDAL/PDAL/blob/master/test/data/las/1.2-with-color.las?raw=true"
 
@@ -170,9 +170,12 @@ PDAL and Python:
     print(pipeline.execute())  # 387 points
     clamped = pipeline.arrays[0]
 
-    # Write our intensity data to an LAS file
+    # Write our intensity data to a LAS file and a TileDB array. For TileDB it is
+    # recommended to use Hilbert ordering by default with geospatial point cloud data,
+    # which requires specifying a domain extent. This can be determined automatically
+    # from a stats filter that computes statistics about each dimension (min, max, etc.).
     pipeline = pdal.Writer.las(
-        filename="clamped2.las",
+        filename="clamped.las",
         offset_x="auto",
         offset_y="auto",
         offset_z="auto",
@@ -180,7 +183,13 @@ PDAL and Python:
         scale_y=0.01,
         scale_z=0.01,
     ).pipeline(clamped)
+    pipeline |= pdal.Filter.stats() | pdal.Writer.tiledb(array_name="clamped")
     print(pipeline.execute())  # 387 points
+
+    # Dump the TileDB array schema
+    import tiledb
+    with tiledb.open("clamped") as a:
+        print(a.schema)
 
 Executing Streamable Pipelines
 ................................................................................
@@ -288,6 +297,9 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
 .. _`Numpy`: http://www.numpy.org/
 .. _`schema`: http://www.pdal.io/dimensions.html
 .. _`metadata`: http://www.pdal.io/development/metadata.html
+.. _`TileDB`: https://tiledb.com/
+.. _`TileDB-PDAL integration`: https://docs.tiledb.com/geospatial/pdal
+.. _`TileDB writer plugin`: https://pdal.io/stages/writers.tiledb.html
 
 .. image:: https://github.com/PDAL/python/workflows/Build/badge.svg
    :target: https://github.com/PDAL/python/actions?query=workflow%3ABuild
