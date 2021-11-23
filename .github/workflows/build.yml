@@ -74,6 +74,9 @@ jobs:
     needs: [build]
 
     steps:
+    - name: Check out
+      uses: actions/checkout@v2
+
     - name: Dependencies
       shell: bash -l {0}
       run: |
