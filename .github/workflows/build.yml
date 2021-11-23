@@ -74,16 +74,15 @@ jobs:
     needs: [build]
 
     steps:
-    - name: Download distribution(s)
-      uses: actions/download-artifact@v2
-      with:
-        path: ./artifacts
-
-    - name: Move artifacts to dist
+    - name: Dependencies
+      shell: bash -l {0}
       run: |
-        mkdir dist
-        find ./artifacts -type f -exec mv {} ./dist \;
-        tree ./dist
+        conda install --yes --quiet -c conda-forge scikit-build numpy python=3.9 pybind11
+    - name: sdist
+      shell: bash -l {0}
+      run: |
+        python setup.py sdist
+        ls dist
 
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
