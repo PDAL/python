@@ -307,8 +307,8 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
 Requirements
 ================================================================================
 
-* PDAL 2.2+
-* Python >=3.6
+* PDAL 2.3+
+* Python >=3.7
 * Pybind11 (eg :code:`pip install pybind11[global]`)
 * Numpy (eg :code:`pip install numpy`)
 * Packaging (eg :code:`pip install packaging`)
