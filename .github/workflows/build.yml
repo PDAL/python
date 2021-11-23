@@ -77,10 +77,14 @@ jobs:
     - name: Check out
       uses: actions/checkout@v2
 
-    - name: Dependencies
-      shell: bash -l {0}
-      run: |
-        conda install --yes --quiet -c conda-forge scikit-build numpy python=3.9 pybind11
+    - name: Setup micromamba
+      uses: mamba-org/provision-with-micromamba@main
+      with:
+        environment-file: .github/environment.yml
+        extra-specs: |
+          python=3.9
+
+
     - name: sdist
       shell: bash -l {0}
       run: |
