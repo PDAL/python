@@ -311,6 +311,4 @@ Requirements
 * Python >=3.7
 * Pybind11 (eg :code:`pip install pybind11[global]`)
 * Numpy (eg :code:`pip install numpy`)
-* Packaging (eg :code:`pip install packaging`)
 * scikit-build (eg :code:`pip install scikit-build`)
-
