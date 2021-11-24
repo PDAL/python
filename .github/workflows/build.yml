@@ -57,6 +57,7 @@ jobs:
         py.test -v test/
 
     - name: Build wheel distribution
+      if: matrix.os != 'ubuntu-latest'
       run: python setup.py --skip-cmake bdist_wheel
 
     - name: Build source distribution
@@ -74,22 +75,16 @@ jobs:
     needs: [build]
 
     steps:
-    - name: Check out
-      uses: actions/checkout@v2
-
-    - name: Setup micromamba
-      uses: mamba-org/provision-with-micromamba@main
+    - name: Download distributions
+      uses: actions/download-artifact@v2
       with:
-        environment-file: .github/environment.yml
-        extra-specs: |
-          python=3.9
+        path: ./artifacts
 
-
-    - name: sdist
-      shell: bash -l {0}
+    - name: Move artifacts to dist
       run: |
-        python setup.py sdist
-        ls dist
+        mkdir dist
+        find ./artifacts -type f -exec mv {} ./dist \;
+        tree ./dist
 
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
