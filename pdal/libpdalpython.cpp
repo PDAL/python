@@ -57,10 +57,10 @@ namespace pdal {
 
     };
 
-   std::vector<py::object> getOptions() {
+   std::map<std::string, py::object> getOptions() {
         py::gil_scoped_acquire acquire;
         py::object json = py::module_::import("json");
-        std::vector<py::object> stageOptions;
+        std::map<std::string, py::object> stageOptions;
 
         pdal::StageFactory f;
         pdal::PluginManager<pdal::Stage>::loadAll();
@@ -87,12 +87,10 @@ namespace pdal {
             }
 
             f.destroyStage(s);
-            py::list l = py::make_tuple( name, pystring);
-            stageOptions.push_back(std::move(l));
+            stageOptions[name] = j;
        }
-        return stageOptions;
-
-    };
+       return stageOptions;
+    }
 
     std::vector<py::dict> getDimensions() {
         py::object np = py::module_::import("numpy");
