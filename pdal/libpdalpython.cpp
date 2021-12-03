@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <iostream>
 
 #include <pdal/pdal_config.hpp>
 #include <pdal/StageFactory.hpp>
@@ -25,6 +26,72 @@ namespace pdal {
                 "sha1"_a = pdal::Config::sha1(),
                 "plugin"_a = pdal::Config::pluginInstallPath()
         );
+    };
+
+   std::vector<py::dict> getDrivers() {
+        py::gil_scoped_acquire acquire;
+        std::vector<py::dict> drivers;
+
+        pdal::StageFactory f(false);
+        pdal::PluginManager<pdal::Stage>::loadAll();
+        pdal::StringList stages = pdal::PluginManager<pdal::Stage>::names();
+
+        pdal::StageExtensions& extensions = pdal::PluginManager<pdal::Stage>::extensions();
+        for (auto name : stages)
+        {
+            pdal::Stage *s = f.createStage(name);
+            std::string description = pdal::PluginManager<Stage>::description(name);
+            std::string link = pdal::PluginManager<Stage>::link(name);
+            std::vector<std::string> extension_names = extensions.extensions(name);
+
+            py::dict d(
+                "name"_a=name,
+                "description"_a=description,
+                "streamable"_a=s->pipelineStreamable(),
+                "extensions"_a=extension_names
+            );
+            f.destroyStage(s);
+            drivers.push_back(std::move(d));
+        }
+        return drivers;
+
+    };
+
+   std::vector<py::object> getOptions() {
+        py::gil_scoped_acquire acquire;
+        py::object json = py::module_::import("json");
+        std::vector<py::object> stageOptions;
+
+        pdal::StageFactory f;
+        pdal::PluginManager<pdal::Stage>::loadAll();
+        pdal::StringList stages = pdal::PluginManager<pdal::Stage>::names();
+
+        for (auto name : stages)
+        {
+            if ( name == "filters.info" ) continue;
+            pdal::Stage *s = f.createStage(name);
+            pdal::ProgramArgs args;
+            s->addAllArgs(args);
+            std::ostringstream ostr;
+            args.dump3(ostr);
+            py::str pystring(ostr.str());
+            pystring.attr("strip");
+
+            py::object j;
+
+            try {
+                j = json.attr("loads")(pystring);
+            } catch (py::error_already_set &e) {
+                std::cout << "failed:" << name << "'" << ostr.str() << "'" <<std::endl;
+                continue; // skip this one because we can't parse it
+            }
+
+            f.destroyStage(s);
+            py::list l = py::make_tuple( name, pystring);
+            stageOptions.push_back(std::move(l));
+       }
+        return stageOptions;
+
     };
 
     std::vector<py::dict> getDimensions() {
@@ -169,6 +236,8 @@ namespace pdal {
         .def("_get_json", &Pipeline::getJson)
         .def("_del_executor", &Pipeline::delExecutor);
     m.def("getInfo", &getInfo);
+    m.def("getDrivers", &getDrivers);
+    m.def("getOptions", &getOptions);
     m.def("getDimensions", &getDimensions);
     m.def("infer_reader_driver", &StageFactory::inferReaderDriver);
     m.def("infer_writer_driver", &StageFactory::inferWriterDriver);

@@ -16,7 +16,7 @@ with open("CHANGES.txt", "r", encoding="utf-8") as fp:
     changes = fp.read()
 
 setup(
-    name="PDAL",
+    name="python-pdal",
     version=version,
     description="Point cloud data processing",
     license="BSD",

@@ -4,6 +4,9 @@ from dataclasses import dataclass, field
 from typing import Callable, ClassVar, FrozenSet, Mapping, Optional, Sequence, Type
 
 from .pipeline import Filter, Reader, Stage, Writer
+from . import libpdalpython
+
+import shlex
 
 StreamableTypes: FrozenSet
 
@@ -59,6 +62,11 @@ class Driver:
 
 
 def inject_pdal_drivers() -> None:
+
+#     drivers = libpdalpython.getDrivers()
+#
+#     options = libpdalpython.getOptions()
+
     drivers = json.loads(
         subprocess.run(["pdal", "--drivers", "--showjson"], capture_output=True).stdout
     )
@@ -69,6 +77,19 @@ def inject_pdal_drivers() -> None:
             ).stdout
         )
     )
+
+    command = 'pdal --options all --showjson'
+
+    p = subprocess.run(shlex.split(command),
+                    encoding='utf-8',
+                    capture_output=True)
+    output, error = p.stdout, p.stderr
+    if p.returncode:
+        print (f'return code {p.returncode} error: "{error}"')
+        if error:
+            raise RuntimeError(f"Unable to run pdal --options with error '{error}'")
+
+    options = dict( json.loads( output ))
     streamable = []
     for d in drivers:
         name = d["name"]
