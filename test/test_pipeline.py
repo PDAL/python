@@ -362,6 +362,12 @@ class TestPipeline:
         assert count2 == 2 * count1
         np.testing.assert_array_equal(np.concatenate([array1, array1]), array2)
 
+    def test_quickinfo(self):
+        r = pdal.Reader("test/data/autzen-utm.las")
+        p = r.pipeline()
+        info = json.loads(p.quickinfo)
+        assert 'readers.las' in info.keys()
+        assert info['readers.las']['num_points'] == 1065
 
 class TestArrayLoad:
     def test_merged_arrays(self):

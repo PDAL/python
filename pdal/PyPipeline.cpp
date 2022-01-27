@@ -34,6 +34,7 @@
 
 #include "PyArray.hpp"
 #include "PyPipeline.hpp"
+#include <pdal/util/Utils.hpp>
 
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -131,6 +132,74 @@ std::string PipelineExecutor::getSchema() const
     return strm.str();
 }
 
+
+MetadataNode computePreview(Stage* stage)
+{
+    if (!stage)
+        throw pdal_error("no valid stage in QuickInfo");
+
+    QuickInfo qi = stage->preview();
+    if (!qi.valid())
+        throw pdal_error("No summary data available for stage '" + stage->getName()+"'" );
+
+    std::stringstream strm;
+    MetadataNode summary(stage->getName());
+    summary.add("num_points", qi.m_pointCount);
+    if (qi.m_srs.valid())
+    {
+        MetadataNode srs = qi.m_srs.toMetadata();
+        summary.add(srs);
+    }
+    if (qi.m_bounds.valid())
+    {
+        MetadataNode bounds = Utils::toMetadata(qi.m_bounds);
+        summary.add(bounds.clone("bounds"));
+    }
+
+    std::string dims;
+    auto di = qi.m_dimNames.begin();
+    while (di != qi.m_dimNames.end())
+    {
+        dims += *di;
+        ++di;
+        if (di != qi.m_dimNames.end())
+           dims += ", ";
+    }
+    if (dims.size())
+        summary.add("dimensions", dims);
+    pdal::Utils::toJSON(summary, strm);
+    return summary;
+
+}
+
+
+std::string PipelineExecutor::getQuickInfo() const
+{
+
+    Stage* stage(nullptr);
+    std::vector<Stage *> stages = m_manager.stages();
+    std::vector<Stage *> previewStages;
+
+    for (auto const& s: stages)
+    {
+        auto n = s->getName();
+        auto v = pdal::Utils::split2(n,'.');
+        if (v.size() > 0)
+            if (pdal::Utils::iequals(v[0], "readers"))
+                previewStages.push_back(s);
+    }
+
+    MetadataNode summary;
+    for (auto const& stage: previewStages)
+    {
+        MetadataNode n = computePreview(stage);
+        summary.add(n);
+    }
+
+    std::stringstream strm;
+    pdal::Utils::toJSON(summary, strm);
+    return strm.str();
+}
 
 void PipelineExecutor::addArrayReaders(std::vector<std::shared_ptr<Array>> arrays)
 {
