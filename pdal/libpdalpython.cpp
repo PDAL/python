@@ -95,6 +95,8 @@ namespace pdal {
 
         std::string getPipeline() { return getExecutor()->getPipeline(); }
 
+        std::string getQuickInfo() { return getExecutor()->getQuickInfo(); }
+
         std::string getMetadata() { return getExecutor()->getMetadata(); }
 
         py::object getSchema() {
@@ -161,6 +163,7 @@ namespace pdal {
         .def_property_readonly("log", &Pipeline::getLog)
         .def_property_readonly("schema", &Pipeline::getSchema)
         .def_property_readonly("pipeline", &Pipeline::getPipeline)
+        .def_property_readonly("quickinfo", &Pipeline::getQuickInfo)
         .def_property_readonly("metadata", &Pipeline::getMetadata)
         .def_property_readonly("arrays", &Pipeline::getArrays)
         .def_property_readonly("meshes", &Pipeline::getMeshes)

@@ -59,6 +59,7 @@ public:
     const PointViewSet& views() const;
     std::string getPipeline() const;
     std::string getMetadata() const;
+    std::string getQuickInfo() const;
     std::string getSchema() const;
     std::string getLog() const { return m_logStream.str(); }
 
