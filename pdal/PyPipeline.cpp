@@ -100,9 +100,6 @@ const PointViewSet& PipelineExecutor::views() const
 
 std::string PipelineExecutor::getPipeline() const
 {
-    if (!m_executed)
-        throw pdal_error("Pipeline has not been executed!");
-
     std::stringstream strm;
     pdal::PipelineWriter::writePipeline(m_manager.getStage(), strm);
     return strm.str();

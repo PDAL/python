@@ -132,10 +132,6 @@ class TestPipeline:
     def test_pipeline(self, filename):
         """Can we fetch PDAL pipeline string"""
         r = get_pipeline(filename)
-        with pytest.raises(RuntimeError) as info:
-            r.pipeline
-        assert "Pipeline has not been executed" in str(info.value)
-
         r.execute()
         assert json.loads(r.pipeline) == {
             "pipeline": [

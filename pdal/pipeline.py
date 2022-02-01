@@ -38,6 +38,13 @@ class Pipeline(libpdalpython.Pipeline):
         self.inputs = arrays
         self.loglevel = loglevel
 
+    def __getstate__(self):
+        state = self.pipeline
+        return state
+
+    def __setstate__(self, state):
+        self.__init__(state)
+
     @property
     def stages(self) -> List[Stage]:
         return list(self._stages)
