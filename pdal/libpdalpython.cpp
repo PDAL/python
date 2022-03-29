@@ -129,6 +129,23 @@ namespace pdal {
             return py::reinterpret_steal<py::array>((PyObject*)arr);
         }
 
+        py::object getMetadata() {
+            py::object json = py::module_::import("json");
+
+            std::stringstream strm;
+            MetadataNode root = (StreamableExecutor::getMetadata()).clone("metadata");
+            pdal::Utils::toJSON(root, strm);
+
+            py::str pystring(strm.str());
+            pystring.attr("strip");
+
+            py::object j;
+            j = json.attr("loads")(pystring);
+
+            return j;
+
+        }
+
     };
 
     class Pipeline {
@@ -162,9 +179,23 @@ namespace pdal {
 
         std::string getPipeline() { return getExecutor()->getPipeline(); }
 
-        std::string getQuickInfo() { return getExecutor()->getQuickInfo(); }
+        py::object getQuickInfo() {
+            py::gil_scoped_acquire acquire;
+            py::object json = py::module_::import("json");
 
-        std::string getMetadata() { return getExecutor()->getMetadata(); }
+            py::str pystring(getExecutor()->getQuickInfo());
+            pystring.attr("strip");
+
+            py::object j;
+            j = json.attr("loads")(pystring);
+
+            return j;
+
+        }
+
+        py::object getMetadata() {
+            return py::module_::import("json").attr("loads")(getExecutor()->getMetadata());
+        }
 
         py::object getSchema() {
             return py::module_::import("json").attr("loads")(getExecutor()->getSchema());

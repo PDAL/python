@@ -114,8 +114,7 @@ class TestPipeline:
         assert "Pipeline has not been executed" in str(info.value)
 
         r.execute()
-        j = json.loads(r.metadata)
-        assert j["metadata"]["readers.las"]["count"] == 1065
+        assert r.metadata["metadata"]["readers.las"]["count"] == 1065
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_schema(self, filename):
@@ -361,7 +360,7 @@ class TestPipeline:
     def test_quickinfo(self):
         r = pdal.Reader("test/data/autzen-utm.las")
         p = r.pipeline()
-        info = json.loads(p.quickinfo)
+        info = p.quickinfo
         assert 'readers.las' in info.keys()
         assert info['readers.las']['num_points'] == 1065
 
