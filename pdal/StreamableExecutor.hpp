@@ -84,6 +84,7 @@ public:
                        int prefetch);
     ~StreamableExecutor();
 
+    MetadataNode getMetadata() { return m_table.metadata(); }
     PyArrayObject* executeNext();
 
 private:
