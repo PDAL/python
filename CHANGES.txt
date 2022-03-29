@@ -1,6 +1,24 @@
 Changes
 --------------------------------------------------------------------------------
 
+3.1.0
+................................................................................
+
+* **Breaking change** – pipeline.metadata now returns a dictionary from
+  json.loads instead of a string.
+
+* pipeline.quickinfo will fetch the PDAL preview() information for a data source.
+  You can use this to fetch header or other information without reading data.
+  https://github.com/PDAL/python/pull/109
+
+* PDAL driver and option collection now uses the PDAL library directly rather
+  than shelling out to the pdal command https://github.com/PDAL/python/pull/107
+
+* Pipelines now support pickling for use with things like Dask
+  https://github.com/PDAL/python/pull/110
+
+
+
 3.0.0
 ................................................................................
 

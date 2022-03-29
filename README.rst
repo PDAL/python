@@ -220,10 +220,10 @@ but more efficient as it avoids allocating and filling any arrays in memory.
 Accessing Mesh Data
 ................................................................................
 
-Some PDAL stages (for instance ``filters.delaunay``) create TIN type mesh data. 
+Some PDAL stages (for instance ``filters.delaunay``) create TIN type mesh data.
 
-This data can be accessed in Python using the ``Pipeline.meshes`` property, which returns a ``numpy.ndarray`` 
-of shape (1,n) where n is the number of Triangles in the mesh. 
+This data can be accessed in Python using the ``Pipeline.meshes`` property, which returns a ``numpy.ndarray``
+of shape (1,n) where n is the number of Triangles in the mesh.
 
 If the PointView contains no mesh data, then n = 0.
 
@@ -235,7 +235,7 @@ Meshio Integration
 The meshes property provides the face data but is not easy to use as a mesh. Therefore, we have provided optional Integration
 into the `Meshio <https://github.com/nschloe/meshio>`__ library.
 
-The ``pdal.Pipeline`` class provides the ``get_meshio(idx: int) -> meshio.Mesh`` method. This 
+The ``pdal.Pipeline`` class provides the ``get_meshio(idx: int) -> meshio.Mesh`` method. This
 method creates a `Mesh` object from the `PointView` array and mesh properties.
 
 .. note:: The meshio integration requires that meshio is installed (e.g. ``pip install meshio``). If it is not, then the method fails with an informative RuntimeError.
@@ -243,7 +243,7 @@ method creates a `Mesh` object from the `PointView` array and mesh properties.
 Simple use of the functionality could be as follows:
 
 .. code-block:: python
-    
+
     import pdal
 
     ...
@@ -284,7 +284,7 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
             m.write(buffer,  file_format = "wkt")
             with conn.cursor() as curr:
               curr.execute(
-                  "INSERT INTO %table-name% (mesh) VALUES (ST_GeomFromEWKT(%(ewkt)s)", 
+                  "INSERT INTO %table-name% (mesh) VALUES (ST_GeomFromEWKT(%(ewkt)s)",
                   { "ewkt": buffer.getvalue()}
               )
 
@@ -307,7 +307,7 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
 Requirements
 ================================================================================
 
-* PDAL 2.3+
+* PDAL 2.4+
 * Python >=3.7
 * Pybind11 (eg :code:`pip install pybind11[global]`)
 * Numpy (eg :code:`pip install numpy`)
