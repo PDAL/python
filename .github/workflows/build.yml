@@ -88,8 +88,9 @@ jobs:
 
     - name: Publish package
       uses: pypa/gh-action-pypi-publish@master
-      if: github.event_name == 'release' && github.event.action == 'published'
+        #      if: github.event_name == 'release' && github.event.action == 'published'
       with:
         user: __token__
         password: ${{ secrets.PYPI_TOKEN }}
         packages_dir: ./dist
+        verbose: true
