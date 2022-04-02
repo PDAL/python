@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11.0)
-project(PDAL)
+project(pdal-python)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,7 +13,7 @@ set(Python3_FIND_FRAMEWORK "LAST")
 find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
 
 # find PDAL. Require 2.1+
-find_package(PDAL 2.1 REQUIRED)
+find_package(PDAL 2.4 REQUIRED)
 
 # find PyBind11
 find_package(pybind11 REQUIRED)
