@@ -10,7 +10,17 @@ set(CMAKE_BUILD_TYPE "Release")
 set(Python3_FIND_STRATEGY "LOCATION")
 set(Python3_FIND_REGISTRY "LAST")
 set(Python3_FIND_FRAMEWORK "LAST")
-find_package(Python3 COMPONENTS Interpreter Development NumPy REQUIRED)
+
+# Development vs. Development.Module
+# https://cmake.org/cmake/help/latest/module/FindPython3.html?highlight=Development.Module
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0")
+    set(DEVELOPMENT_COMPONENT "Development.Module")
+else()
+    set(DEVELOPMENT_COMPONENT "Development")
+endif()
+
+# find Python3
+find_package(Python3 COMPONENTS Interpreter "${DEVELOPMENT_COMPONENT}" NumPy REQUIRED)
 
 # find PDAL. Require 2.1+
 find_package(PDAL 2.4 REQUIRED)
