@@ -13,7 +13,8 @@ set(Python3_FIND_FRAMEWORK "LAST")
 
 # Development vs. Development.Module
 # https://cmake.org/cmake/help/latest/module/FindPython3.html?highlight=Development.Module
-if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0")
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.18.0" AND NOT APPLE)
+    message("we are here!")
     set(DEVELOPMENT_COMPONENT "Development.Module")
 else()
     set(DEVELOPMENT_COMPONENT "Development")
