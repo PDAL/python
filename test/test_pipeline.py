@@ -143,7 +143,7 @@ class TestPipeline:
             "pipeline": [
                 {
                     # TODO: update this after https://github.com/PDAL/PDAL/issues/3574
-                    "filename": f"test/data{os.sep}1.2-with-color.las",
+                    "filename": f"test/data/1.2-with-color.las",
                     "tag": "readers_las1",
                     "type": "readers.las",
                 },
