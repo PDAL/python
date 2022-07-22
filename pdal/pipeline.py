@@ -120,6 +120,7 @@ class Pipeline(libpdalpython.Pipeline):
             if inputs:
                 options["inputs"] = inputs
             options_list.append(options)
+
         return json.dumps(options_list)
 
 
