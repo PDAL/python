@@ -371,6 +371,14 @@ class TestPipeline:
         assert 'readers.las' in info.keys()
         assert info['readers.las']['num_points'] == 1065
 
+    def test_jsonkwarg(self):
+        pipeline = pdal.Reader("test/data/autzen-utm.las").pipeline().toJSON()
+        r = pdal.Pipeline(json=pipeline)
+        p = r.pipeline
+        assert 'readers.las' in p
+
+
+
 class TestArrayLoad:
     def test_merged_arrays(self):
         """Can we load data from a list of arrays to PDAL"""
@@ -568,7 +576,7 @@ class TestPipelineIterator:
         assert len(r.arrays) == 1
         array = r.arrays[0]
 
-        # the dtype ordering of these arrays are not going to be the 
+        # the dtype ordering of these arrays are not going to be the
         # same. Use our testing method to compare them.
 
         for _ in range(10):

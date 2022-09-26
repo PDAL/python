@@ -60,7 +60,6 @@ namespace pdal {
    py::object getOptions() {
         py::gil_scoped_acquire acquire;
         py::object json = py::module_::import("json");
-        // std::vector<py::object> stageOptions;
         py::dict stageOptions;
 
         pdal::StageFactory f;
@@ -69,7 +68,6 @@ namespace pdal {
 
         for (auto name : stages)
         {
-            if ( name == "filters.info" ) continue;
             pdal::Stage *s = f.createStage(name);
             pdal::ProgramArgs args;
             s->addAllArgs(args);
@@ -83,13 +81,11 @@ namespace pdal {
             try {
                 j = json.attr("loads")(pystring);
             } catch (py::error_already_set &e) {
-                std::cout << "failed:" << name << "'" << ostr.str() << "'" <<std::endl;
+                std::cerr << "failed:" << name << "'" << ostr.str() << "'" <<std::endl;
                 continue; // skip this one because we can't parse it
             }
 
             f.destroyStage(s);
-            // py::list l = py::make_tuple( name, pystring);
-            // stageOptions.push_back(std::move(l));
             stageOptions[pybind11::cast(name)] = std::move(j);
        }
         return stageOptions;

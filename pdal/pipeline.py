@@ -28,7 +28,10 @@ class Pipeline(libpdalpython.Pipeline):
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
         loglevel: int = logging.ERROR,
+        json: str = None
     ):
+        if json:
+            spec = json
         super().__init__()
         self._stages: List[Stage] = []
         if spec:
