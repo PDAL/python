@@ -107,9 +107,6 @@ class Pipeline(libpdalpython.Pipeline):
         )
 
     def _get_json(self) -> str:
-        return self.toJSON()
-
-    def toJSON(self) -> str:
         options_list = []
         stage2tag: Dict[Stage, str] = {}
         stages = self._stages

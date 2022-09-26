@@ -222,7 +222,7 @@ namespace pdal {
         }
 
         std::string getJson() const {
-            PYBIND11_OVERRIDE_PURE_NAME(std::string, Pipeline, "toJSON", getJson);
+            PYBIND11_OVERRIDE_PURE_NAME(std::string, Pipeline, "_get_json", getJson);
         }
 
         bool hasInputs() { return !_inputs.empty(); }
@@ -269,7 +269,7 @@ namespace pdal {
         .def_property_readonly("meshes", &Pipeline::getMeshes)
         .def_property_readonly("_has_inputs", &Pipeline::hasInputs)
         .def("_copy_inputs", &Pipeline::copyInputs)
-        .def("toJSON", &Pipeline::getJson)
+        .def("_get_json", &Pipeline::getJson)
         .def("_del_executor", &Pipeline::delExecutor);
     m.def("getInfo", &getInfo);
     m.def("getDrivers", &getDrivers);
