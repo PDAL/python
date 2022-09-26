@@ -44,11 +44,11 @@ jobs:
           python=${{ matrix.python-version }}
 
     - name: Install python-pdal
-      run: pip install -e .
+      run: pip install .
 
     - name: Install python-pdal-plugins
       working-directory: ./plugins
-      run: pip install -e .
+      run: pip install .
 
     - name: Test
       run: |
