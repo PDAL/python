@@ -5,7 +5,23 @@ Changes
 ................................................................................
 
 * PDAL base library 2.4.0+ is required
-* CMake project updated to pdal-python
+
+* CMake project name updated to pdal-python
+
+* `srswkt2` property added to allow fetching of SRS info
+
+* pip builds require cmake >= 3.11
+
+* CMAKE_CXX_STANDARD set to c++17 to match PDAL 2.4.x
+
+* Driver and options *actually* uses the library instead of
+  shelling out to `pdal` application :)
+
+* _get_json renamed to toJSON and made public
+
+* Fix #119, 'json' optional kwarg put back for now
+
+* DEVELOPMENT_COMPONENT in CMake FindPython skipped on OSX
 
 3.1.0
 ................................................................................
