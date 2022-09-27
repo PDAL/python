@@ -176,6 +176,7 @@ namespace pdal {
         std::string getLog() { return getExecutor()->getLog(); }
 
         std::string getPipeline() { return getExecutor()->getPipeline(); }
+        std::string getSrsWKT2() { return getExecutor()->getSrsWKT2(); }
 
         py::object getQuickInfo() {
             py::gil_scoped_acquire acquire;
@@ -246,6 +247,7 @@ namespace pdal {
         .def("__next__", &PipelineIterator::executeNext)
         .def_property_readonly("log", &PipelineIterator::getLog)
         .def_property_readonly("schema", &PipelineIterator::getSchema)
+        .def_property_readonly("srswkt2", &PipelineIterator::getSrsWKT2)
         .def_property_readonly("pipeline", &PipelineIterator::getPipeline)
         .def_property_readonly("metadata", &PipelineIterator::getMetadata);
 
@@ -258,6 +260,7 @@ namespace pdal {
         .def_property("loglevel", &Pipeline::getLoglevel, &Pipeline::setLogLevel)
         .def_property_readonly("log", &Pipeline::getLog)
         .def_property_readonly("schema", &Pipeline::getSchema)
+        .def_property_readonly("srswkt2", &Pipeline::getSrsWKT2)
         .def_property_readonly("pipeline", &Pipeline::getPipeline)
         .def_property_readonly("quickinfo", &Pipeline::getQuickInfo)
         .def_property_readonly("metadata", &Pipeline::getMetadata)

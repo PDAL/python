@@ -61,6 +61,8 @@ public:
     std::string getMetadata() const;
     std::string getQuickInfo() const;
     std::string getSchema() const;
+    std::string getSrsWKT2() const;
+    PipelineManager const& getManager() const { return m_manager; }
     std::string getLog() const { return m_logStream.str(); }
 
 protected:

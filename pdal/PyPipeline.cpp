@@ -80,6 +80,17 @@ point_count_t PipelineExecutor::execute()
     return count;
 }
 
+std::string PipelineExecutor::getSrsWKT2() const
+{
+    std::string output("");
+    pdal::PointTableRef pointTable = m_manager.pointTable();
+
+
+    pdal::SpatialReference srs = pointTable.spatialReference();
+    output = srs.getWKT();
+
+    return output;
+}
 
 point_count_t PipelineExecutor::executeStream(point_count_t streamLimit)
 {
