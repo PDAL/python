@@ -116,6 +116,7 @@ class Pipeline(libpdalpython.Pipeline):
             stage2tag[stage] = stage.tag or _generate_tag(stage, stage2tag.values())
             options = stage.options
             options["tag"] = stage2tag[stage]
+            options["type"] = stage.type
             inputs = _get_input_tags(stage, stage2tag)
             if inputs:
                 options["inputs"] = inputs
