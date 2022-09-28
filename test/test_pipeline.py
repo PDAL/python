@@ -142,8 +142,7 @@ class TestPipeline:
         assert json.loads(r.pipeline) == {
             "pipeline": [
                 {
-                    # TODO: update this after https://github.com/PDAL/PDAL/issues/3574
-                    "filename": f"test/data/1.2-with-color.las",
+                    "filename": "test/data/1.2-with-color.las",
                     "tag": "readers_las1",
                     "type": "readers.las",
                 },
@@ -512,7 +511,7 @@ class TestPipelineIterator:
             arrays = list(r.iterator(chunk_size=100))
             assert len(arrays) == 11
             concat_array = np.concatenate(arrays)
-            assert compare_structured_arrays(np.concatenate(arrays), concat_array) == True
+            assert compare_structured_arrays(np.concatenate(arrays), concat_array)
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_StopIteration(self, filename):
@@ -566,7 +565,7 @@ class TestPipelineIterator:
         non_streaming_array = np.concatenate(p.arrays)
         for chunk_size in range(5, 100, 5):
             streaming_arrays = list(p.iterator(chunk_size=chunk_size))
-            assert compare_structured_arrays(np.concatenate(streaming_arrays), non_streaming_array) == True
+            assert compare_structured_arrays(np.concatenate(streaming_arrays), non_streaming_array)
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
     def test_premature_exit(self, filename):
@@ -581,7 +580,7 @@ class TestPipelineIterator:
 
         for _ in range(10):
             for array2 in r.iterator(chunk_size=100):
-                assert compare_structured_arrays(array2, array[: len(array2)]) == True
+                assert compare_structured_arrays(array2, array[: len(array2)])
                 break
 
     @pytest.mark.parametrize("filename", ["range.json", "range.py"])
