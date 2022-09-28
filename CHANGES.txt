@@ -23,6 +23,8 @@ Changes
 
 * DEVELOPMENT_COMPONENT in CMake FindPython skipped on OSX
 
+* Make sure 'type' gets set when serializing to JSON
+
 3.1.0
 ................................................................................
 
