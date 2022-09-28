@@ -57,10 +57,10 @@ namespace pdal {
 
     };
 
-   std::vector<py::object> getOptions() {
+   py::object getOptions() {
         py::gil_scoped_acquire acquire;
         py::object json = py::module_::import("json");
-        std::vector<py::object> stageOptions;
+        py::dict stageOptions;
 
         pdal::StageFactory f;
         pdal::PluginManager<pdal::Stage>::loadAll();
@@ -68,7 +68,6 @@ namespace pdal {
 
         for (auto name : stages)
         {
-            if ( name == "filters.info" ) continue;
             pdal::Stage *s = f.createStage(name);
             pdal::ProgramArgs args;
             s->addAllArgs(args);
@@ -82,13 +81,12 @@ namespace pdal {
             try {
                 j = json.attr("loads")(pystring);
             } catch (py::error_already_set &e) {
-                std::cout << "failed:" << name << "'" << ostr.str() << "'" <<std::endl;
+                std::cerr << "failed:" << name << "'" << ostr.str() << "'" <<std::endl;
                 continue; // skip this one because we can't parse it
             }
 
             f.destroyStage(s);
-            py::list l = py::make_tuple( name, pystring);
-            stageOptions.push_back(std::move(l));
+            stageOptions[pybind11::cast(name)] = std::move(j);
        }
         return stageOptions;
 
@@ -178,6 +176,7 @@ namespace pdal {
         std::string getLog() { return getExecutor()->getLog(); }
 
         std::string getPipeline() { return getExecutor()->getPipeline(); }
+        std::string getSrsWKT2() { return getExecutor()->getSrsWKT2(); }
 
         py::object getQuickInfo() {
             py::gil_scoped_acquire acquire;
@@ -220,7 +219,7 @@ namespace pdal {
         }
 
         std::string getJson() const {
-            PYBIND11_OVERRIDE_PURE_NAME(std::string, Pipeline, "_get_json", getJson);
+            PYBIND11_OVERRIDE_PURE_NAME(std::string, Pipeline, "toJSON", getJson);
         }
 
         bool hasInputs() { return !_inputs.empty(); }
@@ -248,6 +247,7 @@ namespace pdal {
         .def("__next__", &PipelineIterator::executeNext)
         .def_property_readonly("log", &PipelineIterator::getLog)
         .def_property_readonly("schema", &PipelineIterator::getSchema)
+        .def_property_readonly("srswkt2", &PipelineIterator::getSrsWKT2)
         .def_property_readonly("pipeline", &PipelineIterator::getPipeline)
         .def_property_readonly("metadata", &PipelineIterator::getMetadata);
 
@@ -260,6 +260,7 @@ namespace pdal {
         .def_property("loglevel", &Pipeline::getLoglevel, &Pipeline::setLogLevel)
         .def_property_readonly("log", &Pipeline::getLog)
         .def_property_readonly("schema", &Pipeline::getSchema)
+        .def_property_readonly("srswkt2", &Pipeline::getSrsWKT2)
         .def_property_readonly("pipeline", &Pipeline::getPipeline)
         .def_property_readonly("quickinfo", &Pipeline::getQuickInfo)
         .def_property_readonly("metadata", &Pipeline::getMetadata)
@@ -267,7 +268,7 @@ namespace pdal {
         .def_property_readonly("meshes", &Pipeline::getMeshes)
         .def_property_readonly("_has_inputs", &Pipeline::hasInputs)
         .def("_copy_inputs", &Pipeline::copyInputs)
-        .def("_get_json", &Pipeline::getJson)
+        .def("toJSON", &Pipeline::getJson)
         .def("_del_executor", &Pipeline::delExecutor);
     m.def("getInfo", &getInfo);
     m.def("getDrivers", &getDrivers);

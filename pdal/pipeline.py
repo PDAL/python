@@ -28,7 +28,13 @@ class Pipeline(libpdalpython.Pipeline):
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
         loglevel: int = logging.ERROR,
+        json: Optional[str] = None
     ):
+        if json:
+            if spec and json:
+                raise ValueError("provide 'spec' or 'json' arguments, not both")
+            spec = json
+
         super().__init__()
         self._stages: List[Stage] = []
         if spec:
@@ -107,6 +113,9 @@ class Pipeline(libpdalpython.Pipeline):
         )
 
     def _get_json(self) -> str:
+        return self.toJSON()
+
+    def toJSON(self) -> str:
         options_list = []
         stage2tag: Dict[Stage, str] = {}
         stages = self._stages
@@ -121,6 +130,7 @@ class Pipeline(libpdalpython.Pipeline):
             if inputs:
                 options["inputs"] = inputs
             options_list.append(options)
+
         return json.dumps(options_list)
 
 
