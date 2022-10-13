@@ -344,7 +344,7 @@ class TestPipeline:
         reason="filters.python PDAL plugin is not available",
     )
     def test_filters_python(self):
-        r = pdal.Reader("test/data/autzen-utm.las")
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
         f = pdal.Filter.python(script=__file__, function="a_filter", module="anything")
         count = (r | f).execute()
         assert count == 1065
@@ -364,14 +364,14 @@ class TestPipeline:
         np.testing.assert_array_equal(np.concatenate([array1, array1]), array2)
 
     def test_quickinfo(self):
-        r = pdal.Reader("test/data/autzen-utm.las")
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
         p = r.pipeline()
         info = p.quickinfo
         assert 'readers.las' in info.keys()
         assert info['readers.las']['num_points'] == 1065
 
     def test_jsonkwarg(self):
-        pipeline = pdal.Reader("test/data/autzen-utm.las").pipeline().toJSON()
+        pipeline = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las")).pipeline().toJSON()
         r = pdal.Pipeline(json=pipeline)
         p = r.pipeline
         assert 'readers.las' in p
@@ -486,6 +486,45 @@ class TestMesh:
         triangles = mesh.cells_dict["triangle"]
         assert len(triangles) == 134
         assert triangles[0][0] == 29
+
+class TestDataFrame:
+
+    @pytest.mark.skipif(
+        not pdal.pipeline.DataFrame,
+        reason="pandas is not available",
+    )
+    def test_fetch(self):
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
+        p = r.pipeline()
+        p.execute()
+        df = p.get_dataframe(0)
+        assert df.size == 17040
+
+    def test_load(self):
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
+        p = r.pipeline()
+        p.execute()
+        data = p.arrays[0]
+        df = pdal.pipeline.DataFrame
+        dataframes = [df(data), df(data), df(data)]
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        p = pdal.Pipeline(filter_intensity, dataframes = dataframes)
+        p.execute()
+        arrays = p.arrays
+        assert len(arrays) == 3
+
+        # We copied the array three times. Sum the Intensity values
+        # post filtering to see if we had our intended effect
+        for data in arrays:
+            assert len(data) == 387
+            assert data["Intensity"].sum() == 57684
 
 
 class TestPipelineIterator:

@@ -11,6 +11,11 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     Mesh = None
 
+try:
+    from pandas import DataFrame
+except ModuleNotFoundError:  # pragma: no cover
+    DataFrame = None
+
 from . import drivers, libpdalpython
 
 LogLevelToPDAL = {
@@ -28,12 +33,18 @@ class Pipeline(libpdalpython.Pipeline):
         spec: Union[None, str, Sequence[Stage]] = None,
         arrays: Sequence[np.ndarray] = (),
         loglevel: int = logging.ERROR,
-        json: Optional[str] = None
+        json: Optional[str] = None,
+        dataframes: Sequence[DataFrame] = (),
     ):
+
         if json:
             if spec and json:
                 raise ValueError("provide 'spec' or 'json' arguments, not both")
             spec = json
+
+        # Convert our data frames to Numpy Structured Arrays
+        if dataframes:
+            arrays = [df.to_records() for df in dataframes]
 
         super().__init__()
         self._stages: List[Stage] = []
@@ -111,6 +122,13 @@ class Pipeline(libpdalpython.Pipeline):
             np.stack((array["X"], array["Y"], array["Z"]), 1),
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
+
+
+    def get_dataframe(self, idx: int) -> Optional[DataFrame]:
+        if DataFrame is None:
+            raise RuntimeError("Pandas support requires Pandas to be installed")
+
+        return DataFrame(self.arrays[idx])
 
     def _get_json(self) -> str:
         return self.toJSON()
