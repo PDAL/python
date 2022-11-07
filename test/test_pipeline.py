@@ -500,6 +500,10 @@ class TestDataFrame:
         df = p.get_dataframe(0)
         assert df.size == 17040
 
+    @pytest.mark.skipif(
+        not pdal.pipeline.DataFrame,
+        reason="pandas is not available",
+    )
     def test_load(self):
         r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
         p = r.pipeline()
