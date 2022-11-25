@@ -183,7 +183,7 @@ namespace pdal {
             py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
-            py::str pybytes(getExecutor()->getQuickInfo());
+            py::pybytes pybytes(getExecutor()->getQuickInfo());
 
             py::str pystring ( pybytes.attr("decode")("utf-8", "ignore"));
             pystring.attr("strip");
