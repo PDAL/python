@@ -55,7 +55,7 @@ jobs:
 
     - name: Test
       run: |
-        export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
+        # export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
         pdal --drivers
         py.test -v test/
 
