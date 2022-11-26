@@ -51,7 +51,7 @@ jobs:
       run: pip install .
 
     - name: Install pytest
-      run: pip install pytest
+      run: pip install --upgrade --force-reinstall pytest
 
     - name: Test
       run: |
