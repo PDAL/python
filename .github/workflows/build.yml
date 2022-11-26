@@ -54,7 +54,7 @@ jobs:
       run: |
         export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
         pdal --drivers
-        py.test -v test/
+        python -m pytest -v test/
 
     - name: Build wheel distribution
       if: matrix.os != 'ubuntu-latest'
