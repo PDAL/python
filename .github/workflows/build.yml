@@ -90,7 +90,7 @@ jobs:
         tree ./dist
 
     - name: Publish package
-      uses: pypa/gh-action-pypi-publish@master
+      uses: pypa/gh-action-pypi-publish@release/v1
       if: github.event_name == 'release' && github.event.action == 'published'
       with:
         user: __token__
