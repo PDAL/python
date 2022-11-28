@@ -34,7 +34,7 @@ def get_pipeline(filename):
 def test_dimensions():
     """Ask PDAL for its valid dimensions list"""
     dims = pdal.dimensions
-    assert 71 < len(dims) < 120
+    assert 71 < len(dims) < 122
 
 
 class TestPipeline:
