@@ -134,8 +134,9 @@ namespace pdal {
             MetadataNode root = (StreamableExecutor::getMetadata()).clone("metadata");
             pdal::Utils::toJSON(root, strm);
 
-            py::str pystring(strm.str());
-            pystring.attr("strip");
+
+            py::bytes pybytes(strm.str());
+            py::str pystring ( pybytes.attr("decode")("utf-8", "ignore"));
 
             py::object j;
             j = json.attr("loads")(pystring);
@@ -182,7 +183,9 @@ namespace pdal {
             py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
-            py::str pystring(getExecutor()->getQuickInfo());
+            py::bytes pybytes(getExecutor()->getQuickInfo());
+
+            py::str pystring ( pybytes.attr("decode")("utf-8", "ignore"));
             pystring.attr("strip");
 
             py::object j;
@@ -193,7 +196,16 @@ namespace pdal {
         }
 
         py::object getMetadata() {
-            return py::module_::import("json").attr("loads")(getExecutor()->getMetadata());
+            py::object json = py::module_::import("json");
+
+            py::bytes pybytes(getExecutor()->getMetadata());
+            py::str pystring ( pybytes.attr("decode")("utf-8", "ignore"));
+
+            py::object j;
+            j = json.attr("loads")(pystring);
+
+            return j;
+
         }
 
         py::object getSchema() {
