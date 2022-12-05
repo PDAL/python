@@ -1,6 +1,17 @@
 Changes
 --------------------------------------------------------------------------------
 
+
+3.2.1
+................................................................................
+
+* implement #129, add pandas DataFrame i/o for convenience by @hobu in
+  https://github.com/PDAL/python/pull/130
+* harden getMetadata and related calls from getting non-utf-8 'json'  by @hobu
+  in https://github.com/PDAL/python/pull/140
+* ignore DataFrame test if not GeoPandas, give up on Python 3.7 builds by @hobu
+  in https://github.com/PDAL/python/pull/137
+
 3.2.0
 ................................................................................
 
