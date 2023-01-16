@@ -38,6 +38,9 @@
 #include <pdal/io/MemoryViewReader.hpp>
 #include <numpy/ndarraytypes.h>
 
+#include <vector>
+#include <memory>
+
 namespace pdal
 {
 namespace python
@@ -54,6 +57,12 @@ public:
 
     Array(PyArrayObject* array);
     ~Array();
+
+    Array(Array&& a) = default;
+    Array& operator=(Array&& a) = default;
+
+    Array(const Array&) = delete;
+    Array() = delete;
 
     bool rowMajor() const { return m_rowMajor; };
     Shape shape() const { return m_shape; }

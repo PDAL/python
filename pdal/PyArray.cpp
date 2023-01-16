@@ -164,7 +164,7 @@ Array::~Array()
 ArrayIter& Array::iterator()
 {
     ArrayIter *it = new ArrayIter(m_array);
-    m_iterators.push_back(std::unique_ptr<ArrayIter>(it));
+    m_iterators.emplace_back((it));
     return *it;
 }
 
