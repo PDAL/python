@@ -50,10 +50,6 @@ jobs:
     - name: Install python-pdal
       run: pip install .
 
-    - name: libcxx=14 for OSX
-      if: matrix.os == 'macos-latest'
-      run: mamba install -c conda-forge libcxx=14 -y
-
     - name: Install python-pdal-plugins
       working-directory: ./plugins
       run: pip install .
