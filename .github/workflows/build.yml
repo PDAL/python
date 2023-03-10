@@ -37,7 +37,7 @@ jobs:
         path: ./plugins
 
     - name: Setup micromamba
-      uses: mamba-org/provision-with-micromamba@main
+      uses: conda-incubator/setup-miniconda@v2
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
