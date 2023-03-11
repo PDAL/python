@@ -54,9 +54,6 @@ jobs:
       working-directory: ./plugins
       run: pip install .
 
-    - name: Install pytest
-      run: pip install --upgrade --force-reinstall pytest
-
     - name: Test
       run: |
         export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
