@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import pdal
+import pathlib
 
 DATADIRECTORY = os.path.join(os.path.dirname(__file__), "data")
 
@@ -486,6 +487,14 @@ class TestMesh:
         triangles = mesh.cells_dict["triangle"]
         assert len(triangles) == 134
         assert triangles[0][0] == 29
+
+    def test_pathlib(self):
+        """Can we build a pipeline using pathlib.Path as the filenames"""
+        path = pathlib.Path("test/data/autzen-utm.las")
+        read = pdal.Reader(path)
+        pipeline = read.pipeline()
+        pipeline.execute()
+
 
 class TestDataFrame:
 

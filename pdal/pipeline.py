@@ -5,6 +5,7 @@ import logging
 from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
 
 import numpy as np
+import pathlib
 
 try:
     from meshio import Mesh
@@ -142,6 +143,9 @@ class Pipeline(libpdalpython.Pipeline):
         for stage in stages:
             stage2tag[stage] = stage.tag or _generate_tag(stage, stage2tag.values())
             options = stage.options
+            for option in options:
+                if isinstance(options[option], pathlib.Path):
+                    options[option] = str(options[option])
             options["tag"] = stage2tag[stage]
             options["type"] = stage.type
             inputs = _get_input_tags(stage, stage2tag)
