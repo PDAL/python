@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/stl/filesystem.h>
 #include <iostream>
 
 #include <pdal/pdal_config.hpp>
@@ -107,6 +108,16 @@ namespace pdal {
         }
         return dims;
     };
+
+    std::string getReaderDriver(std::filesystem::path const& p)
+    {
+        return StageFactory::inferReaderDriver(p.string());
+    }
+
+    std::string getWriterDriver(std::filesystem::path const& p)
+    {
+        return StageFactory::inferWriterDriver(p.string());
+    }
 
     using pdal::python::PipelineExecutor;
     using pdal::python::StreamableExecutor;
@@ -286,8 +297,8 @@ namespace pdal {
     m.def("getDrivers", &getDrivers);
     m.def("getOptions", &getOptions);
     m.def("getDimensions", &getDimensions);
-    m.def("infer_reader_driver", &StageFactory::inferReaderDriver);
-    m.def("infer_writer_driver", &StageFactory::inferWriterDriver);
+    m.def("infer_reader_driver", &getReaderDriver);
+    m.def("infer_writer_driver", &getWriterDriver);
     };
 
 }; // namespace pdal
