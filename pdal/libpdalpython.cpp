@@ -94,6 +94,7 @@ namespace pdal {
     };
 
     std::vector<py::dict> getDimensions() {
+        py::gil_scoped_acquire acquire;
         py::object np = py::module_::import("numpy");
         py::object dtype = np.attr("dtype");
         std::vector<py::dict> dims;
@@ -111,11 +112,13 @@ namespace pdal {
 
     std::string getReaderDriver(std::filesystem::path const& p)
     {
+        py::gil_scoped_acquire acquire;
         return StageFactory::inferReaderDriver(p.string());
     }
 
     std::string getWriterDriver(std::filesystem::path const& p)
     {
+        py::gil_scoped_acquire acquire;
         return StageFactory::inferWriterDriver(p.string());
     }
 
@@ -139,6 +142,7 @@ namespace pdal {
         }
 
         py::object getMetadata() {
+            py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
             std::stringstream strm;
@@ -160,10 +164,23 @@ namespace pdal {
 
     class Pipeline {
     public:
-        point_count_t execute() { return getExecutor()->execute(); }
+        point_count_t execute() {
+            point_count_t response(0);
+            {
+                py::gil_scoped_release release;
+                response = getExecutor()->execute();
+            }
+            return response;
+
+        }
 
         point_count_t executeStream(point_count_t streamLimit) {
-            return getExecutor()->executeStream(streamLimit);
+            point_count_t response(0);
+            {
+                py::gil_scoped_release release;
+                response = getExecutor()->executeStream(streamLimit);
+            }
+            return response;
         }
 
         std::unique_ptr<PipelineIterator> iterator(int chunk_size, int prefetch) {
@@ -173,6 +190,7 @@ namespace pdal {
         }
 
         void setInputs(std::vector<py::array> ndarrays) {
+            py::gil_scoped_acquire acquire;
             _inputs.clear();
             for (const auto& ndarray: ndarrays) {
                 PyArrayObject* ndarray_ptr = (PyArrayObject*)ndarray.ptr();
@@ -194,7 +212,12 @@ namespace pdal {
             py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
-            py::bytes pybytes(getExecutor()->getQuickInfo());
+            std::string response;
+            {
+                py::gil_scoped_release release;
+                response = getExecutor()->getQuickInfo();
+            }
+            py::bytes pybytes(response);
 
             py::str pystring ( pybytes.attr("decode")("utf-8", "ignore"));
             pystring.attr("strip");
@@ -252,6 +275,7 @@ namespace pdal {
         void delExecutor() { _executor.reset(); }
 
         PipelineExecutor* getExecutor() {
+            py::gil_scoped_acquire acquire;
             if (!_executor)
                 _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
             return _executor.get();

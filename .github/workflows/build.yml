@@ -24,28 +24,26 @@ jobs:
       fail-fast: true
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.9', '3.10', '3.11', '3.12']
 
     steps:
     - name: Check out python-pdal
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Check out python-pdal-plugins
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         repository: PDAL/python-plugins
         path: ./plugins
 
     - name: Setup micromamba
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         miniforge-variant: Mambaforge
         miniforge-version: latest
         use-mamba: true
         auto-update-conda: true
         environment-file: .github/environment.yml
-        extra-specs: |
-          python=${{ matrix.python-version }}
 
     - name: Install python-pdal
       run: pip install .
@@ -57,15 +55,15 @@ jobs:
     - name: Test
       run: |
         export PDAL_DRIVER_PATH=$(python -c "import os, skbuild; print(os.path.join('plugins', skbuild.constants.SKBUILD_DIR(), 'cmake-build'))")
-        pdal --drivers
+        pdal --drivers --debug
         py.test -v test/
 
     - name: Build source distribution
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11'
       run: python setup.py sdist
 
     - name: Upload distribution(s)
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.os }}-py${{ matrix.python-version }}
         path: ./dist/*
@@ -76,7 +74,7 @@ jobs:
 
     steps:
     - name: Download distributions
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         path: ./artifacts
 
