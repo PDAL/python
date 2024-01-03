@@ -4,6 +4,7 @@ channels:
 dependencies:
   - scikit-build
   - numpy
+  - compilers
   - pybind11
   - pdal
   - pytest
