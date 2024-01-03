@@ -190,6 +190,7 @@ namespace pdal {
         }
 
         void setInputs(std::vector<py::array> ndarrays) {
+            py::gil_scoped_acquire acquire;
             _inputs.clear();
             for (const auto& ndarray: ndarrays) {
                 PyArrayObject* ndarray_ptr = (PyArrayObject*)ndarray.ptr();
@@ -274,6 +275,7 @@ namespace pdal {
         void delExecutor() { _executor.reset(); }
 
         PipelineExecutor* getExecutor() {
+            py::gil_scoped_acquire acquire;
             if (!_executor)
                 _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
             return _executor.get();

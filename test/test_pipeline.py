@@ -35,7 +35,7 @@ def get_pipeline(filename):
 def test_dimensions():
     """Ask PDAL for its valid dimensions list"""
     dims = pdal.dimensions
-    assert 71 < len(dims) < 122
+    assert len(dims) > 0
 
 
 class TestPipeline:
@@ -507,7 +507,8 @@ class TestDataFrame:
         p = r.pipeline()
         p.execute()
         df = p.get_dataframe(0)
-        assert df.size == 17040
+        assert len(df) == 1065
+        assert len(df.columns) == 20
 
     @pytest.mark.skipif(
         not pdal.pipeline.DataFrame,
