@@ -35,7 +35,6 @@ jobs:
       with:
         repository: PDAL/python-plugins
         path: ./plugins
-        ref: gil-management
 
     - name: Setup micromamba
       uses: conda-incubator/setup-miniconda@v3
