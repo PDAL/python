@@ -169,7 +169,12 @@ namespace pdal {
         }
 
         point_count_t executeStream(point_count_t streamLimit) {
-            return  getExecutor()->executeStream(streamLimit);
+            point_count_t response(0);
+            {
+                py::gil_scoped_release release;
+                response = getExecutor()->executeStream(streamLimit);
+            }
+            return response;
         }
 
         std::unique_ptr<PipelineIterator> iterator(int chunk_size, int prefetch) {
