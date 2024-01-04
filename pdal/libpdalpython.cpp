@@ -142,7 +142,6 @@ namespace pdal {
         }
 
         py::object getMetadata() {
-            py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
             std::stringstream strm;
