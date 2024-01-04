@@ -30,7 +30,6 @@ namespace pdal {
     };
 
    std::vector<py::dict> getDrivers() {
-        py::gil_scoped_acquire acquire;
         std::vector<py::dict> drivers;
 
         pdal::StageFactory f(false);
@@ -59,7 +58,6 @@ namespace pdal {
     };
 
    py::object getOptions() {
-        py::gil_scoped_acquire acquire;
         py::object json = py::module_::import("json");
         py::dict stageOptions;
 
@@ -94,7 +92,6 @@ namespace pdal {
     };
 
     std::vector<py::dict> getDimensions() {
-        py::gil_scoped_acquire acquire;
         py::object np = py::module_::import("numpy");
         py::object dtype = np.attr("dtype");
         std::vector<py::dict> dims;
@@ -112,13 +109,11 @@ namespace pdal {
 
     std::string getReaderDriver(std::filesystem::path const& p)
     {
-        py::gil_scoped_acquire acquire;
         return StageFactory::inferReaderDriver(p.string());
     }
 
     std::string getWriterDriver(std::filesystem::path const& p)
     {
-        py::gil_scoped_acquire acquire;
         return StageFactory::inferWriterDriver(p.string());
     }
 
@@ -272,6 +267,7 @@ namespace pdal {
         void delExecutor() { _executor.reset(); }
 
         PipelineExecutor* getExecutor() {
+            py::gil_scoped_acquire acquire;
             if (!_executor)
                 _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
             return _executor.get();
