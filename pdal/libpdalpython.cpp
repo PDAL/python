@@ -207,7 +207,6 @@ namespace pdal {
         std::string getSrsWKT2() { return getExecutor()->getSrsWKT2(); }
 
         py::object getQuickInfo() {
-            py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
             std::string response;
