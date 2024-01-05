@@ -30,7 +30,6 @@ namespace pdal {
     };
 
    std::vector<py::dict> getDrivers() {
-        py::gil_scoped_acquire acquire;
         std::vector<py::dict> drivers;
 
         pdal::StageFactory f(false);
@@ -59,7 +58,6 @@ namespace pdal {
     };
 
    py::object getOptions() {
-        py::gil_scoped_acquire acquire;
         py::object json = py::module_::import("json");
         py::dict stageOptions;
 
@@ -94,7 +92,6 @@ namespace pdal {
     };
 
     std::vector<py::dict> getDimensions() {
-        py::gil_scoped_acquire acquire;
         py::object np = py::module_::import("numpy");
         py::object dtype = np.attr("dtype");
         std::vector<py::dict> dims;
@@ -112,13 +109,11 @@ namespace pdal {
 
     std::string getReaderDriver(std::filesystem::path const& p)
     {
-        py::gil_scoped_acquire acquire;
         return StageFactory::inferReaderDriver(p.string());
     }
 
     std::string getWriterDriver(std::filesystem::path const& p)
     {
-        py::gil_scoped_acquire acquire;
         return StageFactory::inferWriterDriver(p.string());
     }
 
@@ -142,7 +137,6 @@ namespace pdal {
         }
 
         py::object getMetadata() {
-            py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
             std::stringstream strm;
@@ -190,7 +184,6 @@ namespace pdal {
         }
 
         void setInputs(std::vector<py::array> ndarrays) {
-            py::gil_scoped_acquire acquire;
             _inputs.clear();
             for (const auto& ndarray: ndarrays) {
                 PyArrayObject* ndarray_ptr = (PyArrayObject*)ndarray.ptr();
@@ -209,7 +202,6 @@ namespace pdal {
         std::string getSrsWKT2() { return getExecutor()->getSrsWKT2(); }
 
         py::object getQuickInfo() {
-            py::gil_scoped_acquire acquire;
             py::object json = py::module_::import("json");
 
             std::string response;
@@ -275,6 +267,10 @@ namespace pdal {
         void delExecutor() { _executor.reset(); }
 
         PipelineExecutor* getExecutor() {
+            // We need to acquire the GIL before we create the executor
+            // because this method does Python init stuff but pybind11 doesn't
+            // automatically encapsulate it with a gil_scoped_acquire like it
+            // does for all of the other methods it knows about
             py::gil_scoped_acquire acquire;
             if (!_executor)
                 _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
