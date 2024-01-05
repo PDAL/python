@@ -267,6 +267,10 @@ namespace pdal {
         void delExecutor() { _executor.reset(); }
 
         PipelineExecutor* getExecutor() {
+            // We need to acquire the GIL before we create the executor
+            // because this method does Python init stuff but pybind11 doesn't
+            // automatically encapsulate it with a gil_scoped_acquire like it
+            // does for all of the other methods it knows about
             py::gil_scoped_acquire acquire;
             if (!_executor)
                 _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
