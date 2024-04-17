@@ -60,7 +60,7 @@ build-backend = "scikit_build_core.build"
 build-dir = "build/{wheel_tag}"
 sdist.exclude = [".github"]
 sdist.cmake = true
-cmake.build-type = "RelWithDebugInfo"
+cmake.build-type = "Release"
 sdist.include = [
   "src",
   "CMakeLists.txt"
