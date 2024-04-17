@@ -57,7 +57,8 @@ jobs:
 
     - name: Test
       run: |
-        export PDAL_DRIVER_PATH=$(python -c "import pdal; print(pdal.__path__[0])")
+        export PDAL_DRIVER_PATH=$(python -m pdal --pdal-plugin-path)
+        echo $PDAL_DRIVER_PATH
         pdal --drivers --debug
         py.test -v test/
 
