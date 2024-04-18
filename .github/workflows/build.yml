@@ -49,11 +49,11 @@ jobs:
 
     - name: Install python-pdal
       run: |
-        pip install -vv .
+        pip install -vv . --no-deps --no-build-isolation
 
     - name: Install python-pdal-plugins
       working-directory: ./plugins
-      run: pip install -vv .
+      run: pip install -vv . --no-deps --no-build-isolation
 
     - name: Test
       run: |
