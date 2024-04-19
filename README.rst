@@ -9,6 +9,8 @@ Additionally, you can use it to fetch `schema`_ and `metadata`_ from PDAL operat
 Installation
 --------------------------------------------------------------------------------
 
+**Note** The PDAL Python bindings require the PDAL base library installed. Source code can be found at https://pdal.io and `GitHub <https://github.com/PDAL/PDAL>`__.
+
 PyPI
 ................................................................................
 
