@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11.0)
-project(pdal-python)
+project(pdal-python VERSION)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,17 +23,17 @@ endif()
 find_package(Python3 COMPONENTS Interpreter ${DEVELOPMENT_COMPONENT} NumPy REQUIRED)
 
 # find PDAL. Require 2.1+
-find_package(PDAL 2.5 REQUIRED)
+find_package(PDAL 2.6 REQUIRED)
 
 # find PyBind11
 find_package(pybind11 REQUIRED)
 
 set(extension "libpdalpython")
 pybind11_add_module(${extension} MODULE
-    pdal/PyArray.cpp
-    pdal/PyPipeline.cpp
-    pdal/StreamableExecutor.cpp
-    pdal/libpdalpython.cpp
+    src/pdal/PyArray.cpp
+    src/pdal/PyPipeline.cpp
+    src/pdal/StreamableExecutor.cpp
+    src/pdal/libpdalpython.cpp
 )
 target_include_directories(${extension} PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
 target_link_libraries(${extension} PRIVATE ${PDAL_LIBRARIES})

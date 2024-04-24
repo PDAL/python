@@ -1,2 +1,69 @@
+[project]
+name = "pdal"
+description = "Point cloud data processing"
+readme = "README.rst"
+requires-python = ">=3.9"
+license = {file = "LICENSE.txt"}
+keywords = ["point", "cloud", "spatial"]
+authors = [
+  {email = "howard@hobu.co"},
+  {name = "Howard Butler"}
+]
+maintainers = [
+  {name = "Howard Butler", email = "howard@hobu.co"}
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+
+dependencies = [
+  "numpy"
+]
+
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+  "pandas",
+  "meshio"
+]
+
+[tool.setuptools]
+package-dir = {"" =  "src"}
+zip-safe = false
+
+[project.urls]
+homepage = "https://pdal.io"
+documentation = "https://pdal.io"
+repository = "https://github.com/PDAL/Python"
+changelog = "https://github.com/PDAL/python/blob/main/README.rst"
+
 [build-system]
-requires = ["scikit-build", "cmake>=3.11", "ninja", "numpy",  "pybind11[global]"]
+requires = ["scikit-build-core >= 0.9", "numpy",  "pybind11[global]"]
+build-backend = "scikit_build_core.build"
+
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+sdist.exclude = [".github"]
+sdist.cmake = true
+cmake.build-type = "Release"
+sdist.include = [
+  "src",
+  "CMakeLists.txt"
+]
+cmake.verbose = false
+logging.level = "ERROR"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "src/pdal/__init__.py"
