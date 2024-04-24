@@ -35,7 +35,12 @@
 #pragma once
 
 #include <pdal/PointView.hpp>
+
+#define NPY_TARGET_VERSION NPY_1_22_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_22_API_VERSION
+
 #include <pdal/io/MemoryViewReader.hpp>
+
 #include <numpy/ndarraytypes.h>
 
 #include <vector>

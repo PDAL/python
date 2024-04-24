@@ -35,6 +35,10 @@
 #pragma once
 
 #include <pdal/PipelineManager.hpp>
+
+#define NPY_TARGET_VERSION NPY_1_22_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_22_API_VERSION
+
 #include <numpy/arrayobject.h>
 
 namespace pdal
