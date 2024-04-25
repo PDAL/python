@@ -23,7 +23,7 @@ def print_driver_path(args):
     print (os.environ['PDAL_DRIVER_PATH'])
 
 def print_plugin_path(args):
-    purelib = sysconfig.get_paths()["purelib"]+os.path.sep+"pdal"
+    purelib = sysconfig.get_paths()["purelib"]+os.path.sep
 
     if sys.platform == "linux" or sys.platform == "linux2":
         suffix = 'so'
