@@ -35,6 +35,9 @@
 #include "PyPipeline.hpp"
 #include "StreamableExecutor.hpp"
 
+#define NO_IMPORT_ARRAY
+#define PY_ARRAY_UNIQUE_SYMBOL PDAL_ARRAY_API
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -67,8 +70,7 @@ void PythonPointTable::finalize()
 
     // create dtype
     auto gil = PyGILState_Ensure();
-    if (_import_array() < 0)
-        std::cerr << "Could not import array!\n";
+
     PyObject *dtype_dict = buildNumpyDescriptor(&m_layout);
     if (PyArray_DescrConverter(dtype_dict, &m_dtype) == NPY_FAIL)
         throw pdal_error("Unable to create numpy dtype");

@@ -39,9 +39,13 @@
 #define NPY_TARGET_VERSION NPY_1_22_API_VERSION
 #define NPY_NO_DEPRECATED_API NPY_1_22_API_VERSION
 
+#define NO_IMPORT_ARRAY
+#define PY_ARRAY_UNIQUE_SYMBOL PDAL_ARRAY_API
+
 #include <pdal/io/MemoryViewReader.hpp>
 
 #include <numpy/ndarraytypes.h>
+#include <numpy/arrayobject.h>
 
 #include <vector>
 #include <memory>
