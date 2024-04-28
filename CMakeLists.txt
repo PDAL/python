@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.11.0)
-project(pdal-python VERSION)
+project(pdal-python VERSION ${SKBUILD_PROJECT_VERSION}
+                    DESCRIPTION "PDAL Python bindings"
+                    HOMEPAGE_URL "https://github.com/PDAL/Python")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

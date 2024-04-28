@@ -35,6 +35,9 @@
 #include "PyPipeline.hpp"
 #include "StreamableExecutor.hpp"
 
+#define NO_IMPORT_ARRAY
+#define PY_ARRAY_UNIQUE_SYMBOL PDAL_ARRAY_API
+
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
@@ -67,8 +70,7 @@ void PythonPointTable::finalize()
 
     // create dtype
     auto gil = PyGILState_Ensure();
-    if (_import_array() < 0)
-        std::cerr << "Could not import array!\n";
+
     PyObject *dtype_dict = buildNumpyDescriptor(&m_layout);
     if (PyArray_DescrConverter(dtype_dict, &m_dtype) == NPY_FAIL)
         throw pdal_error("Unable to create numpy dtype");
@@ -102,8 +104,8 @@ void PythonPointTable::py_resizeArray(point_count_t np)
         {
             if (src_idx != dest_idx)
             {
-                PyObject* src_item = PyArray_GETITEM(m_curArray, PyArray_GETPTR1(m_curArray, src_idx));
-                PyArray_SETITEM(m_curArray, PyArray_GETPTR1(m_curArray, dest_idx), src_item);
+                PyObject* src_item = PyArray_GETITEM(m_curArray, (const char*) PyArray_GETPTR1(m_curArray, src_idx));
+                PyArray_SETITEM(m_curArray, (char*) PyArray_GETPTR1(m_curArray, dest_idx), src_item);
                 Py_XDECREF(src_item);
             }
             dest_idx++;

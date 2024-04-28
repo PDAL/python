@@ -211,16 +211,7 @@ std::string PipelineExecutor::getQuickInfo() const
 
 void PipelineExecutor::addArrayReaders(std::vector<std::shared_ptr<Array>> arrays)
 {
-    // Make the symbols in pdal_base global so that they're accessible
-    // to PDAL plugins.  Python dlopen's this extension with RTLD_LOCAL,
-    // which means that without this, symbols in libpdal_base aren't available
-    // for resolution of symbols on future runtime linking.  This is an issue
-    // on Alpine and other Linux variants that don't use UNIQUE symbols
-    // for C++ template statics only.  Without this, you end up with multiple
-    // copies of template statics.
-#ifndef _WIN32
-    ::dlopen("libpdal_base.so", RTLD_NOLOAD | RTLD_GLOBAL);
-#endif
+
     if (arrays.empty())
         return;
 
@@ -320,8 +311,6 @@ PyObject* buildNumpyDescriptor(PointLayoutPtr layout)
 
 PyArrayObject* viewToNumpyArray(PointViewPtr view)
 {
-    if (_import_array() < 0)
-        throw pdal_error("Could not import numpy.core.multiarray.");
 
     PyObject* dtype_dict = buildNumpyDescriptor(view->layout());
     PyArray_Descr *dtype = nullptr;
@@ -344,9 +333,6 @@ PyArrayObject* viewToNumpyArray(PointViewPtr view)
 
 PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh)
 {
-    if (_import_array() < 0)
-        throw pdal_error("Could not import numpy.core.multiarray.");
-
     // Build up a numpy dtype dictionary
     //
     // {'formats': ['f8', 'f8', 'f8', 'u2', 'u1', 'u1', 'u1', 'u1', 'u1',

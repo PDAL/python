@@ -92,9 +92,6 @@ std::string toString(PyObject *pname)
 
 Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 {
-    if (_import_array() < 0)
-        throw pdal_error("Could not import numpy.core.multiarray.");
-
     Py_XINCREF(array);
 
     PyArray_Descr *dtype = PyArray_DTYPE(m_array);

@@ -7,6 +7,13 @@
 #include <pdal/pdal_config.hpp>
 #include <pdal/StageFactory.hpp>
 
+#define NPY_TARGET_VERSION NPY_1_22_API_VERSION
+#define NPY_NO_DEPRECATED_API NPY_1_22_API_VERSION
+
+#define PY_ARRAY_UNIQUE_SYMBOL PDAL_ARRAY_API
+
+#include <numpy/arrayobject.h>
+
 #include "PyArray.hpp"
 #include "PyDimension.hpp"
 #include "PyPipeline.hpp"
@@ -283,8 +290,12 @@ namespace pdal {
         int _loglevel;
     };
 
+
+
     PYBIND11_MODULE(libpdalpython, m)
     {
+        _import_array();
+
     py::class_<PipelineIterator>(m, "PipelineIterator")
         .def("__iter__", [](PipelineIterator &it) -> PipelineIterator& { return it; })
         .def("__next__", &PipelineIterator::executeNext)
@@ -293,6 +304,7 @@ namespace pdal {
         .def_property_readonly("srswkt2", &PipelineIterator::getSrsWKT2)
         .def_property_readonly("pipeline", &PipelineIterator::getPipeline)
         .def_property_readonly("metadata", &PipelineIterator::getMetadata);
+
 
     py::class_<Pipeline>(m, "Pipeline")
         .def(py::init<>())
@@ -319,6 +331,12 @@ namespace pdal {
     m.def("getDimensions", &getDimensions);
     m.def("infer_reader_driver", &getReaderDriver);
     m.def("infer_writer_driver", &getWriterDriver);
+
+    if (pdal::Config::versionMajor() < 2)
+        throw pybind11::import_error("PDAL version must be >= 2.6");
+
+    if (pdal::Config::versionMajor() == 2 && pdal::Config::versionMinor() < 6)
+        throw pybind11::import_error("PDAL version must be >= 2.6");
     };
 
 }; // namespace pdal
