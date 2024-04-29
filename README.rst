@@ -312,5 +312,5 @@ Requirements
 * PDAL 2.6+
 * Python >=3.9
 * Pybind11 (eg :code:`pip install pybind11[global]`)
-* Numpy (eg :code:`pip install numpy`)
+* Numpy >= 1.22 (eg :code:`pip install numpy`)
 * scikit-build-core (eg :code:`pip install scikit-build-core`)
