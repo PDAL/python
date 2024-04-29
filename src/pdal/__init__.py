@@ -1,5 +1,5 @@
 __all__ = ["Pipeline", "Stage", "Reader", "Filter", "Writer", "dimensions", "info"]
-__version__ = '3.4.0'
+__version__ = '3.4.1'
 
 from . import libpdalpython
 from .drivers import inject_pdal_drivers
