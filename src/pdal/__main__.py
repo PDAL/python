@@ -2,8 +2,6 @@ import sys
 import os
 import pathlib
 
-import distutils.ccompiler
-so_ext = distutils.ccompiler.new_compiler().shared_lib_extension
 import sysconfig
 
 import argparse
