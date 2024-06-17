@@ -48,7 +48,10 @@ def print_version(args):
 
     line = '----------------------------------------------------------------------------------------------------------------------------\n'
     version = f'PDAL version {pdal_version}\nPython bindings version {__version__}\n'
-    plugin = f"Environment-set PDAL_DRIVER_PATH: {os.environ['PDAL_DRIVER_PATH']}"
+    driver_path = 'PDAL_DRIVER_PATH not set!'
+    if 'PDAL_DRIVER_PATH' in os.environ:
+        driver_path = os.environ['PDAL_DRIVER_PATH']
+    plugin = f"Environment-set PDAL_DRIVER_PATH: {driver_path}"
     output = f'{line}{version}{plugin}\n{line}\n{debug}'
     print (output)
 

@@ -97,9 +97,11 @@ Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
     PyArray_Descr *dtype = PyArray_DTYPE(m_array);
     npy_intp ndims = PyArray_NDIM(m_array);
     npy_intp *shape = PyArray_SHAPE(m_array);
-    int numFields = (dtype->fields == Py_None) ?
+
+    PyObject* fields = PyDataType_FIELDS(dtype);
+    int numFields = (fields  == Py_None) ?
         0 :
-        static_cast<int>(PyDict_Size(dtype->fields));
+        static_cast<int>(PyDict_Size(fields));
 
     int xyz = 0;
     if (numFields == 0)
@@ -110,7 +112,7 @@ Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
     }
     else
     {
-        PyObject *names_dict = dtype->fields;
+        PyObject *names_dict = fields;
         PyObject *names = PyDict_Keys(names_dict);
         PyObject *values = PyDict_Values(names_dict);
         if (!names || !values)
