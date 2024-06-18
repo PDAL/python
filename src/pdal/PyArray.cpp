@@ -90,6 +90,10 @@ std::string toString(PyObject *pname)
 } // unnamed namespace
 
 
+#if NPY_ABI_VERSION < 0x02000000
+  #define PyDataType_FIELDS(descr) ((descr)->fields)
+#endif
+
 Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 {
     Py_XINCREF(array);
