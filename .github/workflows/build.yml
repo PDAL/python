@@ -50,7 +50,7 @@ jobs:
 
     - name: Install numpy ${{ matrix.numpy-version }}
       run: |
-        mamba install -y ${{ matrix-numpy-version }}
+        mamba install -y ${{ matrix.numpy-version }}
 
     - name: Install python-pdal
       run: |
