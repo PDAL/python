@@ -17,7 +17,7 @@ defaults:
 
 jobs:
   build:
-    name: Build ${{ matrix.os }} py${{ matrix.python-version }}
+    name: Build ${{ matrix.os }} py${{ matrix.python-version }} numpy ${{ matrix.numpy-version }}
     runs-on: ${{ matrix.os }}
 
     strategy:
