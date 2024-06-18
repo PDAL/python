@@ -25,6 +25,7 @@ jobs:
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
         python-version: ['3.9', '3.10', '3.11', '3.12']
+        numpy-version: ['1.22', '2.0']
 
     steps:
     - name: Check out python-pdal
@@ -46,6 +47,10 @@ jobs:
         use-mamba: true
         auto-update-conda: true
         environment-file: .github/environment.yml
+
+    - name: Install numpy ${{ matrix.numpy-version }}
+      run: |
+        mamba install -y ${{ matrix-numpy-version }}
 
     - name: Install python-pdal
       run: |
