@@ -28,7 +28,7 @@ jobs:
         numpy-version: ['1.22', '2.0']
         exclude:
           - python-version: '3.12'
-          - numpy-version: '1.22'
+            numpy-version: '1.22'
 
     steps:
     - name: Check out python-pdal
