@@ -17,6 +17,11 @@ try:
 except ModuleNotFoundError:  # pragma: no cover
     DataFrame = None
 
+try:
+    from geopandas import GeoDataFrame, points_from_xy
+except ModuleNotFoundError:  # pragma: no cover
+    GeoDataFrame = points_from_xy = None
+
 from . import drivers, libpdalpython
 
 LogLevelToPDAL = {
@@ -45,7 +50,7 @@ class Pipeline(libpdalpython.Pipeline):
 
         # Convert our data frames to Numpy Structured Arrays
         if dataframes:
-            arrays = [df.to_records() for df in dataframes]
+            arrays = [df.to_records() if not "geometry" in df.columns else df.drop(columns=["geometry"]).to_records() for df in dataframes]
 
         super().__init__()
         self._stages: List[Stage] = []
@@ -124,12 +129,25 @@ class Pipeline(libpdalpython.Pipeline):
             [("triangle", np.stack((mesh["A"], mesh["B"], mesh["C"]), 1))],
         )
 
-
     def get_dataframe(self, idx: int) -> Optional[DataFrame]:
         if DataFrame is None:
             raise RuntimeError("Pandas support requires Pandas to be installed")
 
         return DataFrame(self.arrays[idx])
+
+    def get_geodataframe(self, idx: int, xyz: bool=False, crs: Any=None) -> Optional[GeoDataFrame]:
+        if GeoDataFrame is None:
+            raise RuntimeError("GeoPandas support requires GeoPandas to be installed")
+        df = DataFrame(self.arrays[idx])
+        coords = [df["X"], df["Y"], df["Z"]] if xyz else [df["X"], df["Y"]]
+        geometry = points_from_xy(*coords)
+        gdf = GeoDataFrame(
+            df,
+            geometry=geometry,
+            crs=crs,
+        )
+        df = coords = geometry = None
+        return gdf
 
     def _get_json(self) -> str:
         return self.toJSON()
