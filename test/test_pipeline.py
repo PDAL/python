@@ -541,6 +541,65 @@ class TestDataFrame:
             assert data["Intensity"].sum() == 57684
 
 
+class TestGeoDataFrame:
+
+    @pytest.mark.skipif(
+        not pdal.pipeline.GeoDataFrame,
+        reason="geopandas is not available",
+    )
+    def test_fetch(self):
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
+        p = r.pipeline()
+        p.execute()
+        record_count = p.arrays[0].shape[0]
+        dimension_count = len(p.arrays[0].dtype)
+        gdf = p.get_geodataframe(0)
+        gdf_xyz = p.get_geodataframe(0, xyz=True)
+        gdf_crs = p.get_geodataframe(0, crs="EPSG:4326")
+        assert len(gdf) == record_count
+        assert len(gdf.columns) == dimension_count + 1
+        assert isinstance(gdf, pdal.pipeline.GeoDataFrame)
+        assert gdf.geometry.is_valid.all()
+        assert not gdf.geometry.is_empty.any()
+        assert gdf.crs is None
+        assert gdf.geometry.z.isna().all()
+        assert not gdf_xyz.geometry.z.isna().any()
+        assert gdf_crs.crs.srs == "EPSG:4326"
+
+    @pytest.mark.skipif(
+        not pdal.pipeline.GeoDataFrame,
+        reason="geopandas is not available",
+    )
+    def test_load(self):
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las"))
+        p = r.pipeline()
+        p.execute()
+        data = p.arrays[0]
+        gdf = pdal.pipeline.GeoDataFrame(
+            data,
+            geometry=pdal.pipeline.points_from_xy(data["X"], data["Y"], data["Z"])
+        )
+        dataframes = [gdf, gdf, gdf]
+        filter_intensity = """{
+          "pipeline":[
+            {
+              "type":"filters.range",
+              "limits":"Intensity[100:300)"
+            }
+          ]
+        }"""
+        p = pdal.Pipeline(filter_intensity, dataframes = dataframes)
+        p.execute()
+        arrays = p.arrays
+        assert len(arrays) == 3
+
+        # We copied the array three times. Sum the Intensity values
+        # post filtering to see if we had our intended effect
+        for data in arrays:
+            assert len(data) == 387
+            assert data["Intensity"].sum() == 57684
+
+
 class TestPipelineIterator:
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_non_streamable(self, filename):
