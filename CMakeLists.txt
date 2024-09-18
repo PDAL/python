@@ -39,4 +39,20 @@ pybind11_add_module(${extension} MODULE
 )
 target_include_directories(${extension} PRIVATE ${Python3_NumPy_INCLUDE_DIRS})
 target_link_libraries(${extension} PRIVATE ${PDAL_LIBRARIES})
+
+#
+# This places the necessary files into the binary directory to allow running
+# without installation as long as PYTHONPATH is set to the binary (build) directory.
+# Note that if you add ".py" source files, you'll have to re-run cmake to get the
+# new file copied to the binary directory.
+#
+set_target_properties(${extension}
+    PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/pdal
+)
+file(GLOB PDAL_PYTHON_SOURCES src/pdal/*.py)
+foreach(PDAL_PYTHON_FILE ${PDAL_PYTHON_SOURCES})
+    configure_file(${PDAL_PYTHON_FILE} pdal COPYONLY)
+endforeach()
+
 install(TARGETS ${extension} LIBRARY DESTINATION "pdal")
