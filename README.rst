@@ -6,6 +6,25 @@ PDAL Python support allows you to process data with PDAL into `Numpy`_ arrays.
 It provides a PDAL extension module to control Python interaction with PDAL.
 Additionally, you can use it to fetch `schema`_ and `metadata`_ from PDAL operations.
 
+Build
+--------------------------------------------------------------------------------
+You can build the extension with cmake in the standard way: create a build directory
+at the top level of the source tree, run cmake from that build directory and then
+run the build tool. If you're a developer, you can then include the build
+directory in your PYTHONPATH and then execute Python programs using PDAL without
+installation of the extension. This is an example of commands to be executed from
+the directory containing this README file for a linux-like system using the Ninja
+build tool:
+
+.. code-block::
+
+    mkdir build
+    cd build
+    cmake -G Ninja ..
+    ninja
+    EXPORT PYTHONPATH=.
+
+
 Installation
 --------------------------------------------------------------------------------
 
