@@ -9,4 +9,4 @@ dependencies:
   - pdal
   - pytest
   - meshio
-  - pandas
+  - geopandas
