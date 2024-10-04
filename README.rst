@@ -20,6 +20,21 @@ PDAL Python support is installable via PyPI:
 
     pip install PDAL
 
+
+Developers can control many settings including debug builds and where the libraries are installed
+using `scikit-build-core <https://scikit-build-core.readthedocs.io>`_ settings:
+
+.. code-block::
+
+    python -m pip install \
+        -Cbuild-dir=build \
+        -e \
+        . \
+        --config-settings=cmake.build-type="Debug" \
+        -vv \
+        --no-deps \
+        --no-build-isolation
+
 GitHub
 ................................................................................
 
@@ -168,7 +183,7 @@ PDAL and Python:
     print(len(intensity))  # 704 points
 
     # Now use pdal to clamp points that have intensity 100 <= v < 300
-    pipeline = pdal.Filter.range(limits="Intensity[100:300)").pipeline(intensity)
+    pipeline = pdal.Filter.expression(expression="Intensity >= 100 && Intensity < 300").pipeline(intensity)
     print(pipeline.execute())  # 387 points
     clamped = pipeline.arrays[0]
 
@@ -203,7 +218,7 @@ returns an iterator object that yields Numpy arrays of up to ``chunk_size`` size
 .. code-block:: python
 
     import pdal
-    pipeline = pdal.Reader("test/data/autzen-utm.las") | pdal.Filter.range(limits="Intensity[80:120)")
+    pipeline = pdal.Reader("test/data/autzen-utm.las") | pdal.Filter.expression(expression="Intensity > 80 && Intensity < 120)")
     for array in pipeline.iterator(chunk_size=500):
         print(len(array))
     # or to concatenate all arrays into one
