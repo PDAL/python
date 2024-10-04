@@ -44,7 +44,7 @@ jobs:
     - name: Setup micromamba
       uses: conda-incubator/setup-miniconda@v3
       with:
-        miniforge-variant: Mambaforge
+        miniforge-variant: Miniforge3
         miniforge-version: latest
         python-version: ${{ matrix.python-version }}
         use-mamba: true
