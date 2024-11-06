@@ -3,6 +3,8 @@ import logging
 import os
 import sys
 
+from typing import List
+from itertools import product
 import numpy as np
 import pytest
 
@@ -728,3 +730,123 @@ class TestPipelineIterator:
             np.testing.assert_array_equal(a1, a2)
         assert next(it1, None) is None
         assert next(it2, None) is None
+
+
+def gen_chunk(count, random_seed = 12345):
+    rng = np.random.RandomState(count*random_seed)
+    # Generate dummy data
+    result = np.zeros(count, dtype=[("X", float), ("Y", float), ("Z", float)])
+    result['X'][:] = rng.uniform(-2, -1, count)
+    result['Y'][:] = rng.uniform(1, 2, count)
+    result['Z'][:] = rng.uniform(3, 4, count)
+    return result
+
+
+class TestPipelineInputStreams():
+
+    # Test cases
+    ONE_ARRAY_FULL = [[gen_chunk(1234)]]
+    MULTI_ARRAYS_FULL = [*ONE_ARRAY_FULL, [gen_chunk(4321)]]
+
+    ONE_ARRAY_STREAMED = [[gen_chunk(10), gen_chunk(7), gen_chunk(3), gen_chunk(5), gen_chunk(1)]]
+    MULTI_ARRAYS_STREAMED = [*ONE_ARRAY_STREAMED, [gen_chunk(5), gen_chunk(2), gen_chunk(3), gen_chunk(1)]]
+
+    MULTI_ARRAYS_MIXED = [
+        *MULTI_ARRAYS_STREAMED,
+        *MULTI_ARRAYS_FULL
+    ]
+
+    @pytest.mark.parametrize("in_arrays_chunks, use_setter", [
+        (arrays_chunks, use_setter) for arrays_chunks, use_setter in product([
+            ONE_ARRAY_FULL, MULTI_ARRAYS_FULL,
+            ONE_ARRAY_STREAMED, MULTI_ARRAYS_STREAMED,
+            MULTI_ARRAYS_MIXED
+        ], ['False', 'True'])
+    ])
+    def test_pipeline_run(self, in_arrays_chunks, use_setter):
+        """
+        Test case to validate possible usages:
+        - Combining "full" arrays and "streamed" ones
+        - Setting input arrays through the Pipeline constructor or the setter
+        """
+        # Assuming stream mode for lists that contain more than one chunk.
+        # And that first chunk is the biggest of all, to simplify input buffer size creation.
+        in_arrays = [
+            np.zeros(chunks[0].shape, chunks[0].dtype) if len(chunks) > 1 else chunks[0]
+            for chunks in in_arrays_chunks
+        ]
+
+        def get_stream_handler(in_array, in_array_chunks):
+            in_array_chunks_it = iter(in_array_chunks)
+            def load_next_chunk():
+                try:
+                    next_chunk = next(in_array_chunks_it)
+                except StopIteration:
+                    return 0
+
+                chunk_size = next_chunk.size
+                in_array[:chunk_size]["X"] = next_chunk[:]["X"]
+                in_array[:chunk_size]["Y"] = next_chunk[:]["Y"]
+                in_array[:chunk_size]["Z"] = next_chunk[:]["Z"]
+
+                return chunk_size
+
+            return load_next_chunk
+
+        stream_handlers = [
+            get_stream_handler(arr, chunks) if len(chunks) > 1 else None
+            for arr, chunks in zip(in_arrays, in_arrays_chunks)
+        ]
+
+        expected_count = sum([sum([len(c) for c in chunks]) for chunks in in_arrays_chunks])
+
+        pipeline = """
+        {
+            "pipeline": [{
+                "type": "filters.stats"
+            }]
+        }
+        """
+        if use_setter:
+            p = pdal.Pipeline(pipeline)
+            p.inputs = [(a, h) for a, h in zip(in_arrays, stream_handlers)]
+        else:
+            p = pdal.Pipeline(pipeline, arrays=in_arrays, stream_handlers=stream_handlers)
+
+        count = p.execute()
+        out_arrays = p.arrays
+        assert count == expected_count
+        assert len(out_arrays) == len(in_arrays)
+
+        for in_array_chunks, out_array in zip(in_arrays_chunks, out_arrays):
+            np.testing.assert_array_equal(out_array, np.concatenate(in_array_chunks))
+
+    @pytest.mark.parametrize("in_arrays, use_setter", [
+        (arrays, use_setter) for arrays, use_setter in product([
+            [c[0] for c in ONE_ARRAY_FULL],
+            [c[0] for c in MULTI_ARRAYS_FULL]
+        ], ['False', 'True'])
+    ])
+    def test_pipeline_run_backward_compat(self, in_arrays, use_setter: bool):
+        expected_count = sum([len(a) for a in in_arrays])
+
+        pipeline = """
+        {
+            "pipeline": [{
+                "type": "filters.stats"
+            }]
+        }
+        """
+        if use_setter:
+            p = pdal.Pipeline(pipeline)
+            p.inputs = in_arrays
+        else:
+            p = pdal.Pipeline(pipeline, arrays=in_arrays)
+
+        count = p.execute()
+        out_arrays = p.arrays
+        assert count == expected_count
+        assert len(out_arrays) == len(in_arrays)
+
+        for in_array, out_array in zip(in_arrays, out_arrays):
+            np.testing.assert_array_equal(out_array, in_array)

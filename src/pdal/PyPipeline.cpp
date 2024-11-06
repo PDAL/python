@@ -245,14 +245,20 @@ void PipelineExecutor::addArrayReaders(std::vector<std::shared_ptr<Array>> array
         for (auto f : array->fields())
             r.pushField(f);
 
-        ArrayIter& iter = array->iterator();
-        auto incrementer = [&iter](PointId id) -> char *
+        auto arrayIter = array->iterator();
+        auto incrementer = [arrayIter, firstPoint = true](PointId id) mutable -> char *
         {
-            if (! iter)
+            ArrayIter& iter = *arrayIter;
+            if (!firstPoint && iter) {
+                ++iter;
+            } else {
+                firstPoint = false;
+            }
+
+            if (!iter)
                 return nullptr;
 
             char *c = *iter;
-            ++iter;
             return c;
         };
 
