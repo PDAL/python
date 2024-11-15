@@ -81,7 +81,8 @@ public:
                        std::vector<std::shared_ptr<Array>> arrays,
                        int level,
                        point_count_t chunkSize,
-                       int prefetch);
+                       int prefetch,
+                       pdal::StringList allowedDim);
     ~StreamableExecutor();
 
     MetadataNode getMetadata() { return m_table.metadata(); }

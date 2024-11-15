@@ -73,8 +73,13 @@ PipelineExecutor::PipelineExecutor(
 }
 
 
-point_count_t PipelineExecutor::execute()
+point_count_t PipelineExecutor::execute(pdal::StringList allowedDims)
 {
+    if (allowedDims.size())
+    {
+        m_manager.pointTable().layout()->setAllowedDims(allowedDims);
+    }
+
     point_count_t count = m_manager.execute();
     m_executed = true;
     return count;
@@ -92,9 +97,14 @@ std::string PipelineExecutor::getSrsWKT2() const
     return output;
 }
 
-point_count_t PipelineExecutor::executeStream(point_count_t streamLimit)
+point_count_t PipelineExecutor::executeStream(point_count_t streamLimit,
+                                              pdal::StringList allowedDims)
 {
     CountPointTable table(streamLimit);
+    if (allowedDims.size())
+    {
+        pointTable().layout()->setAllowedDims(allowedDims);
+    }
     m_manager.executeStream(table);
     m_executed = true;
     return table.count();
@@ -272,6 +282,7 @@ PyObject* buildNumpyDescriptor(PointLayoutPtr layout)
     {
         return layout->dimOffset(id1) < layout->dimOffset(id2);
     };
+
     auto dims = layout->dims();
     std::sort(dims.begin(), dims.end(), sortByOffset);
 

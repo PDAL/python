@@ -60,8 +60,8 @@ public:
     PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level);
     virtual ~PipelineExecutor() = default;
 
-    point_count_t execute();
-    point_count_t executeStream(point_count_t streamLimit);
+    point_count_t execute(pdal::StringList allowedDims);
+    point_count_t executeStream(point_count_t streamLimit, pdal::StringList allowedDims);
 
     const PointViewSet& views() const;
     std::string getPipeline() const;

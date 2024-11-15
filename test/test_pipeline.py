@@ -82,6 +82,17 @@ class TestPipeline:
         count2 = r.execute_streaming(chunk_size=100)
         assert count == count2
 
+
+    @pytest.mark.parametrize("filename", ["range.json", "range.py"])
+    def test_subsetstreaming(self, filename):
+        """Can we fetch a subset of PDAL dimensions as a numpy array while streaming"""
+        r = get_pipeline(filename)
+        limit = ['X','Y','Z','Intensity']
+        arrays = list(r.iterator(chunk_size=100,allowed_dims=limit))
+        assert len(arrays) == 11
+        assert len(arrays[0].dtype) == 4
+
+
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_execute_streaming_non_streamable(self, filename):
         r = get_pipeline(filename)
@@ -112,6 +123,18 @@ class TestPipeline:
         a = arrays[0]
         assert a[0][0] == 635619.85
         assert a[1064][2] == 456.92
+
+    @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
+    def test_subsetarray(self, filename):
+        """Can we fetch a subset of PDAL dimensions as a numpy array"""
+        r = get_pipeline(filename)
+        limit = ['X','Y','Z']
+        r.execute(allowed_dims=limit)
+        arrays = r.arrays
+        assert len(arrays) == 1
+        assert len(arrays[0].dtype) == 3
+
+
 
     @pytest.mark.parametrize("filename", ["sort.json", "sort.py"])
     def test_metadata(self, filename):
