@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(pdal-python VERSION ${SKBUILD_PROJECT_VERSION}
                     DESCRIPTION "PDAL Python bindings"
                     HOMEPAGE_URL "https://github.com/PDAL/Python")
@@ -6,7 +6,6 @@ project(pdal-python VERSION ${SKBUILD_PROJECT_VERSION}
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_BUILD_TYPE "Release")
 
 # Python-finding settings
 set(Python3_FIND_STRATEGY "LOCATION")
@@ -25,7 +24,7 @@ endif()
 find_package(Python3 COMPONENTS Interpreter ${DEVELOPMENT_COMPONENT} NumPy REQUIRED)
 
 # find PDAL. Require 2.1+
-find_package(PDAL 2.6 REQUIRED)
+find_package(PDAL 2.7 REQUIRED)
 
 # find PyBind11
 find_package(pybind11 REQUIRED)
