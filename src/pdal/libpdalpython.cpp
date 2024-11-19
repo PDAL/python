@@ -165,28 +165,27 @@ namespace pdal {
 
     class Pipeline {
     public:
-        point_count_t execute() {
+        point_count_t execute(pdal::StringList allowedDims) {
             point_count_t response(0);
             {
                 py::gil_scoped_release release;
-                response = getExecutor()->execute();
-            }
-            return response;
-
-        }
-
-        point_count_t executeStream(point_count_t streamLimit) {
-            point_count_t response(0);
-            {
-                py::gil_scoped_release release;
-                response = getExecutor()->executeStream(streamLimit);
+                response = getExecutor()->execute(allowedDims);
             }
             return response;
         }
 
-        std::unique_ptr<PipelineIterator> iterator(int chunk_size, int prefetch) {
+        point_count_t executeStream(point_count_t streamLimit, pdal::StringList allowedDims) {
+            point_count_t response(0);
+            {
+                py::gil_scoped_release release;
+                response = getExecutor()->executeStream(streamLimit, allowedDims);
+            }
+            return response;
+        }
+
+        std::unique_ptr<PipelineIterator> iterator(int chunk_size, int prefetch, pdal::StringList allowedDims) {
             return std::unique_ptr<PipelineIterator>(new PipelineIterator(
-                getJson(), _inputs, _loglevel, chunk_size, prefetch
+                getJson(), _inputs, _loglevel, chunk_size, prefetch, allowedDims
             ));
         }
 
@@ -308,9 +307,9 @@ namespace pdal {
 
     py::class_<Pipeline>(m, "Pipeline")
         .def(py::init<>())
-        .def("execute", &Pipeline::execute)
-        .def("execute_streaming", &Pipeline::executeStream, "chunk_size"_a=10000)
-        .def("iterator", &Pipeline::iterator, "chunk_size"_a=10000, "prefetch"_a=0)
+        .def("execute", &Pipeline::execute, py::arg("allowed_dims") =py::list())
+        .def("execute_streaming", &Pipeline::executeStream, "chunk_size"_a=10000, py::arg("allowed_dims") =py::list())
+        .def("iterator", &Pipeline::iterator, "chunk_size"_a=10000, "prefetch"_a=0, py::arg("allowed_dims") =py::list())
         .def_property("inputs", nullptr, &Pipeline::setInputs)
         .def_property("loglevel", &Pipeline::getLoglevel, &Pipeline::setLogLevel)
         .def_property_readonly("log", &Pipeline::getLog)
@@ -333,10 +332,10 @@ namespace pdal {
     m.def("infer_writer_driver", &getWriterDriver);
 
     if (pdal::Config::versionMajor() < 2)
-        throw pybind11::import_error("PDAL version must be >= 2.6");
+        throw pybind11::import_error("PDAL version must be >= 2.7");
 
-    if (pdal::Config::versionMajor() == 2 && pdal::Config::versionMinor() < 6)
-        throw pybind11::import_error("PDAL version must be >= 2.6");
+    if (pdal::Config::versionMajor() == 2 && pdal::Config::versionMinor() < 7)
+        throw pybind11::import_error("PDAL version must be >= 2.7");
     };
 
 }; // namespace pdal

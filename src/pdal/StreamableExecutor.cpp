@@ -187,11 +187,17 @@ StreamableExecutor::StreamableExecutor(std::string const& json,
                                        std::vector<std::shared_ptr<Array>> arrays,
                                        int level,
                                        point_count_t chunkSize,
-                                       int prefetch)
+                                       int prefetch,
+                                       pdal::StringList allowedDims)
     : PipelineExecutor(json, arrays, level)
     , m_table(chunkSize, prefetch)
     , m_exc(nullptr)
 {
+
+    if (allowedDims.size())
+    {
+        m_table.layout()->setAllowedDims(allowedDims);
+    }
     m_thread.reset(new std::thread([this]()
     {
         try {

@@ -55,6 +55,7 @@ namespace pdal
 namespace python
 {
 
+
 class ArrayIter;
 
 
@@ -87,7 +88,7 @@ private:
 };
 
 
-class ArrayIter
+class PDAL_DLL ArrayIter
 {
 public:
     ArrayIter(const ArrayIter&) = delete;

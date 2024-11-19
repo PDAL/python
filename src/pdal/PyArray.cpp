@@ -78,7 +78,7 @@ Dimension::Type pdalType(int t)
     return Type::None;
 }
 
-std::string toString(PyObject *pname)
+std::string pyObjectToString(PyObject *pname)
 {
     PyObject* r = PyObject_Str(pname);
     if (!r)
@@ -92,6 +92,7 @@ std::string toString(PyObject *pname)
 
 #if NPY_ABI_VERSION < 0x02000000
   #define PyDataType_FIELDS(descr) ((descr)->fields)
+  #define PyDataType_NAMES(descr) ((descr)->names)
 #endif
 
 Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
@@ -124,7 +125,7 @@ Array::Array(PyArrayObject* array) : m_array(array), m_rowMajor(true)
 
         for (int i = 0; i < numFields; ++i)
         {
-            std::string name = toString(PyList_GetItem(names, i));
+            std::string name = python::pyObjectToString(PyList_GetItem(names, i));
             if (name == "X")
                 xyz |= 1;
             else if (name == "Y")
