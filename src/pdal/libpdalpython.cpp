@@ -1,6 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/numpy.h>
+#include <pybind11/functional.h>
 #include <pybind11/stl/filesystem.h>
 #include <iostream>
 
@@ -189,11 +190,22 @@ namespace pdal {
             ));
         }
 
-        void setInputs(std::vector<py::array> ndarrays) {
+        void setInputs(const std::vector<py::object>& inputs) {
             _inputs.clear();
-            for (const auto& ndarray: ndarrays) {
-                PyArrayObject* ndarray_ptr = (PyArrayObject*)ndarray.ptr();
-                _inputs.push_back(std::make_shared<pdal::python::Array>(ndarray_ptr));
+            for (const auto& input_obj: inputs) {
+                if (py::isinstance<py::array>(input_obj)) {
+                    // Backward compatibility for accepting list of numpy arrays
+                    auto ndarray = input_obj.cast<py::array>();
+                    _inputs.push_back(std::make_shared<pdal::python::Array>((PyArrayObject*)ndarray.ptr()));
+                } else {
+                    // Now expected to be a list of pairs: (numpy array, <optional> stream handler)
+                    auto input = input_obj.cast<std::pair<py::array, pdal::python::ArrayStreamHandler>>();
+                    _inputs.push_back(std::make_shared<pdal::python::Array>(
+                            (PyArrayObject*)input.first.ptr(),
+                            input.second ?
+                                std::make_shared<pdal::python::ArrayStreamHandler>(input.second)
+                                : nullptr));
+                }
             }
             delExecutor();
         }

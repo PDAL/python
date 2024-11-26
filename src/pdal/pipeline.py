@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast
+from typing import Any, Container, Dict, Iterator, List, Optional, Sequence, Union, cast, Callable
 
 import numpy as np
 import pathlib
@@ -41,6 +41,7 @@ class Pipeline(libpdalpython.Pipeline):
         loglevel: int = logging.ERROR,
         json: Optional[str] = None,
         dataframes: Sequence[DataFrame] = (),
+        stream_handlers: Sequence[Callable[[], int]] = (),
     ):
 
         if json:
@@ -58,7 +59,14 @@ class Pipeline(libpdalpython.Pipeline):
             stages = _parse_stages(spec) if isinstance(spec, str) else spec
             for stage in stages:
                 self |= stage
-        self.inputs = arrays
+
+        if stream_handlers:
+            if len(stream_handlers) != len(arrays):
+                raise RuntimeError("stream_handlers must match the number of specified input arrays / dataframes")
+            self.inputs = [(a, h) for a, h in zip(arrays, stream_handlers)]
+        else:
+            self.inputs = [(a, None) for a in arrays]
+
         self.loglevel = loglevel
 
     def __getstate__(self):
