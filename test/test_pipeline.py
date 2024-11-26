@@ -850,3 +850,29 @@ class TestPipelineInputStreams():
 
         for in_array, out_array in zip(in_arrays, out_arrays):
             np.testing.assert_array_equal(out_array, in_array)
+
+    @pytest.mark.parametrize("in_array, invalid_chunk_size", [
+        (in_array, invalid_chunk_size) for in_array, invalid_chunk_size in product(
+            [gen_chunk(1234)],
+            [-1, 12345])
+    ])
+    def test_pipeline_fail_with_invalid_chunk_size(self, in_array, invalid_chunk_size):
+        """
+        Ensure execution fails when using an invalid stream handler:
+        - One that returns a negative chunk size
+        - One that returns a chunk size bigger than the buffer capacity
+        """
+        was_called = False
+        def invalid_stream_handler():
+            nonlocal was_called
+            if was_called:
+                # avoid infinite loop
+                raise ValueError("Invalid handler should not have been called a second time")
+            was_called = True
+            return invalid_chunk_size
+
+        p = pdal.Pipeline(arrays=[in_array], stream_handlers=[invalid_stream_handler])
+        with pytest.raises(RuntimeError,
+                           match=f"Stream chunk size not in the range of array length: {invalid_chunk_size}"):
+            p.execute()
+

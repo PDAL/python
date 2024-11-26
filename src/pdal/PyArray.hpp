@@ -49,7 +49,6 @@
 
 #include <vector>
 #include <memory>
-#include <optional>
 
 namespace pdal
 {
@@ -112,7 +111,8 @@ private:
     bool m_done;
 
     std::shared_ptr<ArrayStreamHandler> m_stream_handler;
-    void resetIterator(std::optional<PyArrayObject*> np_array);
+    void initIterator();
+    void resetIterator();
 };
 
 } // namespace python

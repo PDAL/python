@@ -172,54 +172,62 @@ std::shared_ptr<ArrayIter> Array::iterator()
 ArrayIter::ArrayIter(PyArrayObject* np_array, std::shared_ptr<ArrayStreamHandler> stream_handler)
     : m_stream_handler(std::move(stream_handler))
 {
-    resetIterator(np_array);
+    // Create iterator
+    m_iter = NpyIter_New(np_array,
+                         NPY_ITER_EXTERNAL_LOOP | NPY_ITER_READONLY | NPY_ITER_REFS_OK,
+                         NPY_KEEPORDER, NPY_NO_CASTING, NULL);
+    if (!m_iter)
+        throw pdal_error("Unable to create numpy iterator.");
+
+    initIterator();
 }
 
-void ArrayIter::resetIterator(std::optional<PyArrayObject*> np_array = {})
+void ArrayIter::initIterator()
 {
-    std::optional<int> stream_chunk_size = std::nullopt;
+    // For a stream handler, first execute it to get the buffer populated and know the size of the data to iterate
+    int64_t stream_chunk_size = 0;
     if (m_stream_handler) {
         stream_chunk_size = (*m_stream_handler)();
-        if (*stream_chunk_size == 0) {
+        if (!stream_chunk_size) {
             m_done = true;
             return;
         }
     }
 
-    if (np_array) {
-        // Init iterator
-        m_iter = NpyIter_New(np_array.value(),
-                             NPY_ITER_EXTERNAL_LOOP | NPY_ITER_READONLY | NPY_ITER_REFS_OK,
-                             NPY_KEEPORDER, NPY_NO_CASTING, NULL);
-        if (!m_iter)
-            throw pdal_error("Unable to create numpy iterator.");
-    } else {
-        // Otherwise, reset the iterator to the initial state
-        if (NpyIter_Reset(m_iter, NULL) != NPY_SUCCEED) {
-            NpyIter_Deallocate(m_iter);
-            throw pdal_error("Unable to reset numpy iterator.");
-        }
-    }
-
+    // Initialize the iterator function
     char *itererr;
     m_iterNext = NpyIter_GetIterNext(m_iter, &itererr);
     if (!m_iterNext)
     {
         NpyIter_Deallocate(m_iter);
-        throw pdal_error(std::string("Unable to create numpy iterator: ") + itererr);
+        m_iter = nullptr;
+        throw pdal_error(std::string("Unable to retrieve iteration function from numpy iterator: ") + itererr);
     }
     m_data = NpyIter_GetDataPtrArray(m_iter);
     m_stride = *NpyIter_GetInnerStrideArray(m_iter);
     m_size = *NpyIter_GetInnerLoopSizePtr(m_iter);
     if (stream_chunk_size) {
-        if (0 <= *stream_chunk_size && *stream_chunk_size <= m_size) {
-            m_size = *stream_chunk_size;
+        // Ensure chunk size is valid and then limit iteration accordingly
+        if (0 < stream_chunk_size && stream_chunk_size <= m_size) {
+            m_size = stream_chunk_size;
         } else {
             throw pdal_error(std::string("Stream chunk size not in the range of array length: ") +
-                             std::to_string(*stream_chunk_size));
+                             std::to_string(stream_chunk_size));
         }
     }
     m_done = false;
+}
+
+void ArrayIter::resetIterator()
+{
+    // Reset the iterator to the initial state
+    if (NpyIter_Reset(m_iter, NULL) != NPY_SUCCEED) {
+        NpyIter_Deallocate(m_iter);
+        m_iter = nullptr;
+        throw pdal_error("Unable to reset numpy iterator.");
+    }
+
+    initIterator();
 }
 
 ArrayIter::~ArrayIter()
