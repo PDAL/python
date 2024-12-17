@@ -208,6 +208,104 @@ PDAL and Python:
     with tiledb.open("clamped") as a:
         print(a.schema)
 
+Reading using Numpy Arrays as buffers (advanced)
+................................................................................
+
+It's also possible to treat the Numpy arrays passed to PDAL as buffers that are iteratively populated through
+custom python functions during the execution of the pipeline.
+
+This may be useful in cases where you want the reading of the input data to be handled in a streamable fashion,
+like for example:
+
+* When the total Numpy array data wouldn't fit into memory.
+* To initiate execution of a streamable PDAL pipeline while the input data is still being read.
+
+To enable this mode, you just need to include the python populate function along with each corresponding Numpy array.
+
+.. code-block:: python
+
+    # Numpy array to be used as buffer
+    in_buffer = np.zeros(max_chunk_size, dtype=[("X", float), ("Y", float), ("Z", float)])
+
+    # The function to populate the buffer iteratively
+    def load_next_chunk() -> int:
+    """
+    Function called by PDAL before reading the data from the buffer.
+
+    IMPORTANT: must return the total number of items to be read from the buffer.
+    The Pipeline execution will keep calling this function in a loop until 0 is returned.
+    """
+        #
+        # Replace here with your code that populates the buffer and returns the number of elements to read
+        #
+        chunk_size = next_chunk.size
+        in_buffer[:chunk_size]["X"] = next_chunk[:]["X"]
+        in_buffer[:chunk_size]["Y"] = next_chunk[:]["Y"]
+        in_buffer[:chunk_size]["Z"] = next_chunk[:]["Z"]
+
+        return chunk_size
+
+    # Configure input array and handler during Pipeline initialization...
+    p = pdal.Pipeline(pipeline_json, arrays=[in_buffer], stream_handlers=[load_next_chunk])
+
+    # ...alternatively you can use the setter on an existing Pipeline
+    # p.inputs = [(in_buffer, load_next_chunk)]
+
+The following snippet provides a simple example of how to use a Numpy array as buffer to support writing through PDAL
+with total control over the maximum amount of memory to use.
+
+.. raw:: html
+
+   <details>
+   <summary>Example: Streaming the read and write of a very large LAZ file with low memory footprint</summary>
+
+.. code-block:: python
+
+    import numpy as np
+    import pdal
+
+    in_chunk_size = 10_000_000
+    in_pipeline = pdal.Reader.las(**{
+        "filename": "in_test.laz"
+    }).pipeline()
+
+    in_pipeline_it = in_pipeline.iterator(in_chunk_size).__iter__()
+
+    out_chunk_size = 50_000_000
+    out_file = "out_test.laz"
+    out_pipeline = pdal.Writer.las(
+        filename=out_file
+    ).pipeline()
+
+    out_buffer = np.zeros(in_chunk_size, dtype=[("X", float), ("Y", float), ("Z", float)])
+
+    def load_next_chunk():
+        try:
+            next_chunk = next(in_pipeline_it)
+        except StopIteration:
+            # Stops the streaming
+            return 0
+
+        chunk_size = next_chunk.size
+        out_buffer[:chunk_size]["X"] = next_chunk[:]["X"]
+        out_buffer[:chunk_size]["Y"] = next_chunk[:]["Y"]
+        out_buffer[:chunk_size]["Z"] = next_chunk[:]["Z"]
+
+        print(f"Loaded next chunk -> {chunk_size}")
+
+        return chunk_size
+
+    out_pipeline.inputs = [(out_buffer, load_next_chunk)]
+
+    out_pipeline.loglevel = 20 # INFO
+    count = out_pipeline.execute_streaming(out_chunk_size)
+
+    print(f"\nWROTE - {count}")
+
+.. raw:: html
+
+   </details>
+
 Executing Streamable Pipelines
 ................................................................................
 Streamable pipelines (pipelines that consist exclusively of streamable PDAL
