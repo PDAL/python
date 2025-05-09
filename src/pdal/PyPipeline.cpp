@@ -185,6 +185,12 @@ MetadataNode computePreview(Stage* stage)
     }
     if (dims.size())
         summary.add("dimensions", dims);
+
+    if (!qi.m_metadata.empty() && qi.m_metadata.valid())
+    {
+        summary.add(qi.m_metadata.clone("metadata"));
+    }
+
     pdal::Utils::toJSON(summary, strm);
     return summary;
 
