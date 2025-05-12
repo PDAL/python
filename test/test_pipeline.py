@@ -396,6 +396,15 @@ class TestPipeline:
         assert 'readers.las' in info.keys()
         assert info['readers.las']['num_points'] == 1065
 
+    def test_quickinfo_offsets_scales(self):
+        r = pdal.Reader(os.path.join(DATADIRECTORY,"simple.laz"))
+        p = r.pipeline()
+        info = p.quickinfo
+        assert 'readers.las' in info.keys()
+        assert 'offset_x' in info['readers.las']['metadata'].keys()
+        assert 'scale_x' in info['readers.las']['metadata'].keys()
+        assert info['readers.las']['num_points'] == 1065
+
     def test_jsonkwarg(self):
         pipeline = pdal.Reader(os.path.join(DATADIRECTORY,"autzen-utm.las")).pipeline().toJSON()
         r = pdal.Pipeline(json=pipeline)

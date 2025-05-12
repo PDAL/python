@@ -74,5 +74,5 @@ jobs:
         export PDAL_DRIVER_PATH=$PDAL_PLUGIN_PATH:$PDAL_DRIVER_PATH
         python -m pdal
         pdal --drivers --debug
-        py.test -v test/
+        python -m pytest -v test/
 
