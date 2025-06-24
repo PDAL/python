@@ -36,12 +36,12 @@ jobs:
         auto-update-conda: true
         environment-file: .github/environment.yml
 
-    - name: Install pipx
+    - name: Install build
       run: |
-        mamba install -y pipx
+        pip install build
 
     - name: Build sdist
-      run: python -m pipx run build --sdist
+      run: python -m build --sdist -n
 
     - uses: actions/upload-artifact@v4
       with:
