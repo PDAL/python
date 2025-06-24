@@ -41,7 +41,7 @@ jobs:
         mamba install -y pipx
 
     - name: Build sdist
-      run: pipx run build --sdist
+      run: python -m pipx run build --sdist
 
     - uses: actions/upload-artifact@v4
       with:
@@ -49,6 +49,7 @@ jobs:
         path: dist/*.tar.gz
 
   upload_pypi:
+    name: Upload to PyPI
     needs: [build_sdist]
     runs-on: ubuntu-latest
     environment: test
