@@ -26,10 +26,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - uses: actions/setup-python@v5
-      name: Install Python
+    - name: Setup environment
+      uses: conda-incubator/setup-miniconda@v3
       with:
-        python-version: '3.11'
+        miniforge-variant: Miniforge3
+        miniforge-version: latest
+        python-version: ${{ matrix.python-version }}
+        use-mamba: true
+        auto-update-conda: true
+        environment-file: .github/environment.yml
 
     - name: Build sdist
       run: pipx run build --sdist
