@@ -61,7 +61,7 @@ sdist.include = [
   "src",
   "CMakeLists.txt"
 ]
-cmake.verbose = false
+build.verbose = false
 logging.level = "ERROR"
 
 [tool.scikit-build.metadata.version]
