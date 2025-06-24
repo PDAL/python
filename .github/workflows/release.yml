@@ -36,6 +36,10 @@ jobs:
         auto-update-conda: true
         environment-file: .github/environment.yml
 
+    - name: Install pipx
+      run: |
+        mamba install -y pipx
+
     - name: Build sdist
       run: pipx run build --sdist
 
@@ -47,7 +51,7 @@ jobs:
   upload_pypi:
     needs: [build_sdist]
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: test
     permissions:
       id-token: write
     if: github.event_name == 'release' && github.event.action == 'published'

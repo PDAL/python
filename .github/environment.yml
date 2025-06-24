@@ -6,7 +6,7 @@ dependencies:
   - numpy
   - compilers
   - pybind11
-  - pdal
+  - libpdal-core
   - pytest
   - meshio
   - geopandas
