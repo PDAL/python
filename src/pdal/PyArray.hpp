@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include "export.hpp"
 #include <pdal/PointView.hpp>
 
 #define NPY_TARGET_VERSION NPY_1_22_API_VERSION
@@ -60,7 +61,7 @@ class ArrayIter;
 
 using ArrayStreamHandler = std::function<int64_t()>;
 
-class PDAL_DLL Array
+class PDAL_EXPORT Array
 {
 public:
     using Shape = std::array<size_t, 3>;
@@ -89,7 +90,7 @@ private:
 };
 
 
-class PDAL_DLL ArrayIter
+class PDAL_EXPORT ArrayIter
 {
 public:
     ArrayIter(const ArrayIter&) = delete;
