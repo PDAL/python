@@ -34,7 +34,7 @@
 
 #pragma once
 
-#include <pdal/util/pdal_util_export.hpp>
+#include "export.hpp"
 #include <pdal/PipelineManager.hpp>
 
 #define NPY_TARGET_VERSION NPY_1_22_API_VERSION
