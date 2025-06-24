@@ -31,37 +31,24 @@ jobs:
       with:
         miniforge-variant: Miniforge3
         miniforge-version: latest
-        python-version: ${{ matrix.python-version }}
+        python-version: '3.12'
         use-mamba: true
         auto-update-conda: true
         environment-file: .github/environment.yml
 
-    - name: Install build
+    - name: Install dependencies
+      shell: bash -l {0}
       run: |
-        pip install build
-
-    - name: Build sdist
-      run: python -m build --sdist -n
+        python -m pip install build pipx twine
+        pipx run build --sdist -Ccmake.define.CMAKE_BUILD_WITH_INSTALL_RPATH=ON
 
     - uses: actions/upload-artifact@v4
       with:
         name: cibw-sdist
         path: dist/*.tar.gz
 
-  upload_pypi:
-    name: Upload to PyPI
-    needs: [build_sdist]
-    runs-on: ubuntu-latest
-    environment: test
-    permissions:
-      id-token: write
-    if: github.event_name == 'release' && github.event.action == 'published'
-    steps:
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: cibw-*
-        path: dist
-        merge-multiple: true
+    - name: Publish package distributions to PyPI
+      if: github.event_name == 'release' && github.event.action == 'published'
+      uses: pypa/gh-action-pypi-publish@release/v1
 
-    - uses: pypa/gh-action-pypi-publish@release/v1
 
