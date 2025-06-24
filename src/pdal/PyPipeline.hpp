@@ -34,6 +34,7 @@
 
 #pragma once
 
+#include <pdal/util/pdal_util_export.hpp>
 #include <pdal/PipelineManager.hpp>
 
 #define NPY_TARGET_VERSION NPY_1_22_API_VERSION
@@ -55,7 +56,7 @@ PyArrayObject* meshToNumpyArray(const TriangularMesh* mesh);
 
 class Array;
 
-class PDAL_DLL PipelineExecutor {
+class PDAL_EXPORT PipelineExecutor {
 public:
     PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level);
     virtual ~PipelineExecutor() = default;
