@@ -254,10 +254,10 @@ To enable this mode, you just need to include the python populate function along
 The following snippet provides a simple example of how to use a Numpy array as buffer to support writing through PDAL
 with total control over the maximum amount of memory to use.
 
-.. raw:: html
+Example: Streaming the read and write of a very large LAZ file with low memory footprint
+.........................................................................................
 
-   <details>
-   <summary>Example: Streaming the read and write of a very large LAZ file with low memory footprint</summary>
+
 
 .. code-block:: python
 
@@ -302,9 +302,7 @@ with total control over the maximum amount of memory to use.
 
     print(f"\nWROTE - {count}")
 
-.. raw:: html
 
-   </details>
 
 Executing Streamable Pipelines
 ................................................................................
