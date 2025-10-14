@@ -406,6 +406,76 @@ USE-CASE : Take a LiDAR map, create a mesh from the ground points, split into ti
     buffer.close()
 
 
+Digital Terrain Model (DTM) Creation Example
+................................................................................
+
+The following is a script sample that can be used to create a DTM from a PDAL-
+readable pointcloud.
+
+Method:
+1. read point cloud file
+2. remove noise
+3. clean up invalid values
+4. classify ground points using `SMRF <https://pdal.io/en/2.9.2/stages/filters.smrf.html>`__
+5. write with `GDAL writer <https://pdal.io/en/2.9.2/stages/writers.gdal.html>`__
+
+.. note:: If your pointcloud already has ground classified, you can skip all but
+    the reader and writer and achieve the same result.
+
+.. code-block:: python
+
+    import pdal
+
+    pc_path = 'https://github.com/PDAL/data/raw/refs/heads/main/autzen/autzen.laz'
+    out_file = 'autzen_dtm.tif'
+
+
+    # read
+    reader = pdal.Reader.las(pc_path)
+
+    # remove noisy points
+    lownoise_filter = pdal.Filter.range(
+        limits='Classification![7:7]', tag='lownoise'
+    )
+    highnoise_filter = pdal.Filter.range(
+        limits='Classification![18:]', tag='highnoise'
+    )
+
+    # saving incorrectly labeled returns here, some people want this, some don't
+    prepare_ground = pdal.Filter.assign(
+        value=[
+            'Classification=0',
+            'ReturnNumber=1 WHERE ReturnNumber < 1',
+            'NumberOfReturns=1 WHERE NumberOfReturns < 1',
+        ],
+        tag='prepare_ground_classifier',
+    )
+
+    # classify ground
+    smrf_classifier = pdal.Filter.smrf(tag='ground_classifier')
+
+    # write with gdal, resolution in feet for autzen
+    gdal_writer = pdal.Writer.gdal(
+        filename=out_file,
+        where='Classification == 2',
+        data_type='float32',
+        resolution=10,
+        output_type='idw',
+        window_size=3,
+        pdal_metadata=True,
+    )
+
+    # collect pdal stages and execute pipline
+    pipeline = (
+        reader
+        | lownoise_filter
+        | highnoise_filter
+        | prepare_ground
+        | smrf_classifier
+        | gdal_writer
+    )
+    pipeline.execute()
+
 
 .. _`Numpy`: http://www.numpy.org/
 .. _`schema`: http://www.pdal.io/dimensions.html
