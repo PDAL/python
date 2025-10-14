@@ -413,11 +413,12 @@ The following is a script sample that can be used to create a DTM from a PDAL-
 readable pointcloud.
 
 Method:
-1. read point cloud file
-2. remove noise
-3. clean up invalid values
-4. classify ground points using `SMRF <https://pdal.io/en/2.9.2/stages/filters.smrf.html>`__
-5. write with `GDAL writer <https://pdal.io/en/2.9.2/stages/writers.gdal.html>`__
+
+#. read point cloud file
+#. remove noise
+#. clean up invalid values
+#. classify ground points using `SMRF <https://pdal.io/en/2.9.2/stages/filters.smrf.html>`__
+#. write with `GDAL writer <https://pdal.io/en/2.9.2/stages/writers.gdal.html>`__
 
 .. note:: If your pointcloud already has ground classified, you can skip all but
     the reader and writer and achieve the same result.
