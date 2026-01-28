@@ -218,7 +218,9 @@ class InferableTypeStage(Stage):
     def __init__(self, filename: Optional[str] = None, **options: Any):
         if filename:
             if isinstance(filename, dict):
-                options["filename"] = filename.get("path")
+                if "path" not in filename:
+                    raise ValueError(f"'path' is missing in the provided filespec: {filename}")
+                options["filename"] = filename["path"]
             else:
                 options["filename"] = filename
         super().__init__(**options)
