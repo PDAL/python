@@ -217,7 +217,10 @@ class Stage:
 class InferableTypeStage(Stage):
     def __init__(self, filename: Optional[str] = None, **options: Any):
         if filename:
-            options["filename"] = filename
+            if isinstance(filename, dict):
+                options["filename"] = filename.get("path")
+            else:
+                options["filename"] = filename
         super().__init__(**options)
 
     @property
