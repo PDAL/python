@@ -59,11 +59,11 @@ jobs:
 
     - name: Install python-pdal
       run: |
-        pip install -vv . --no-deps --no-build-isolation
+        uv pip install -vv . --no-deps
 
     - name: Install python-pdal-plugins
       working-directory: ./plugins
-      run: pip install -vv . --no-deps --no-build-isolation
+      run: uv pip install -vv . --no-deps --no-build-isolation
 
     - name: Test
       run: |
@@ -75,4 +75,3 @@ jobs:
         python -m pdal
         pdal --drivers --debug
         python -m pytest -v test/
-

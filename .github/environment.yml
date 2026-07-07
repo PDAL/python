@@ -2,11 +2,13 @@ name: testenv
 channels:
   - conda-forge
 dependencies:
-  - scikit-build-core
-  - numpy
+  - scikit-build-core >=1.0
+  - numpy >=1.24
   - compilers
-  - pybind11
+  - ninja
+  - pybind11 >=2.12
   - libpdal-core
-  - pytest
-  - meshio
+  - pytest >=8
+  - meshio >=5.3
   - geopandas
+  - uv
