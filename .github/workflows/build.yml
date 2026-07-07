@@ -59,12 +59,13 @@ jobs:
 
     - name: Install python-pdal
       run: |
-        git checkout build-updates
         uv pip install -vv . --no-deps
 
     - name: Install python-pdal-plugins
       working-directory: ./plugins
-      run: uv pip install -vv . --no-deps --no-build-isolation
+      run: |
+        git checkout build-updates
+        uv pip install -vv . --no-deps --no-build-isolation
 
     - name: Test
       run: |
