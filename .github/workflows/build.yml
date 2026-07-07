@@ -41,7 +41,7 @@ jobs:
       with:
         repository: PDAL/python-plugins
         path: ./plugins
-        ref: build-updates
+        ref: main
 
     - name: Setup micromamba
       uses: conda-incubator/setup-miniconda@v3
