@@ -59,6 +59,7 @@ jobs:
 
     - name: Install python-pdal
       run: |
+        git checkout build-updates
         uv pip install -vv . --no-deps
 
     - name: Install python-pdal-plugins
