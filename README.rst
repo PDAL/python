@@ -35,21 +35,11 @@ using `scikit-build-core <https://scikit-build-core.readthedocs.io>`_ settings:
         --no-deps \
         --no-build-isolation
 
-The project is also configured for uv builds that use the active conda
-environment for PDAL and build dependencies:
-
-.. code-block::
-
-    conda activate pdal-python
-    uv build
-    uv pip install -e . --no-deps
 
 GitHub
 ................................................................................
 
 The repository for PDAL's Python extension is available at https://github.com/PDAL/python
-
-Python support released independently from PDAL itself as of PDAL 1.7.
 
 Usage
 --------------------------------------------------------------------------------
