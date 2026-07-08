@@ -24,13 +24,15 @@ jobs:
       fail-fast: true
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-        numpy-version: ['1.24', '2.1']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        numpy-version: ['2.2', '2.5']
         exclude:
-          - python-version: '3.12'
-            numpy-version: '1.24'
-          - python-version: '3.13'
-            numpy-version: '1.24'
+          - python-version: '3.14'
+            numpy-version: '2.2'
+          - python-version: '3.11'
+            numpy-version: '2.5'
+          - python-version: '3.10'
+            numpy-version: '2.5'
 
     steps:
     - name: Check out python-pdal
@@ -59,11 +61,12 @@ jobs:
 
     - name: Install python-pdal
       run: |
-        pip install -vv . --no-deps --no-build-isolation
+        uv pip install -vv . --no-deps
 
     - name: Install python-pdal-plugins
       working-directory: ./plugins
-      run: pip install -vv . --no-deps --no-build-isolation
+      run: |
+        uv pip install -vv . --no-deps --no-build-isolation
 
     - name: Test
       run: |
@@ -75,4 +78,3 @@ jobs:
         python -m pdal
         pdal --drivers --debug
         python -m pytest -v test/
-
