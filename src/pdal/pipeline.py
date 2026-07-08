@@ -220,9 +220,11 @@ class InferableTypeStage(Stage):
             if isinstance(filename, dict):
                 if "path" not in filename:
                     raise ValueError(f"'path' is missing in the provided filespec: {filename}")
-                options["filename"] = filename["path"]
-            else:
                 options["filename"] = filename
+
+            else:
+                filespec = {'path':str(filename)}
+                options["filename"] = filespec
         super().__init__(**options)
 
     @property
@@ -231,7 +233,15 @@ class InferableTypeStage(Stage):
             return super().type
         except KeyError:
             filename = self._options.get("filename")
-            return str(self._infer_type(filename) if filename else "")
+            if isinstance(filename, dict):
+                if "path" not in filename:
+                    raise ValueError(f"'path' is missing in the provided filespec: {filename}")
+                path = filename.get('path')
+            else:
+                path = str(filename)
+
+
+            return str(self._infer_type(path) if filename else "")
 
     _infer_type = staticmethod(lambda filename: "")
 
