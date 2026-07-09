@@ -23,7 +23,7 @@ endif()
 # find Python3
 find_package(Python3 COMPONENTS Interpreter ${DEVELOPMENT_COMPONENT} NumPy REQUIRED)
 
-# find PDAL. Require 2.1+
+# find PDAL. Require 2.7+
 find_package(PDAL 2.7 REQUIRED)
 
 # find PyBind11

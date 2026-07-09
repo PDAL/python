@@ -35,12 +35,11 @@ using `scikit-build-core <https://scikit-build-core.readthedocs.io>`_ settings:
         --no-deps \
         --no-build-isolation
 
+
 GitHub
 ................................................................................
 
 The repository for PDAL's Python extension is available at https://github.com/PDAL/python
-
-Python support released independently from PDAL itself as of PDAL 1.7.
 
 Usage
 --------------------------------------------------------------------------------
@@ -91,7 +90,7 @@ Stage Objects
 - A stage is an instance of ``pdal.Reader``, ``pdal.Filter`` or ``pdal.Writer``.
 - A stage can be instantiated by passing as keyword arguments the options
   applicable to the respective PDAL stage. For more on PDAL stages and their
-  options, check the PDAL documentation on `Stage Objects <https://pdal.io/pipeline.html#stage-objects>`__.
+  options, check the PDAL documentation on `Stage Objects <https://pdal.org/pipeline.html#stage-objects>`__.
 
   - The ``filename`` option of ``Readers`` and ``Writers`` as well as the ``type``
     option of ``Filters`` can be passed positionally as the first argument.
@@ -417,8 +416,8 @@ Method:
 #. read point cloud file
 #. remove noise
 #. clean up invalid values
-#. classify ground points using `SMRF <https://pdal.io/en/2.9.2/stages/filters.smrf.html>`__
-#. write with `GDAL writer <https://pdal.io/en/2.9.2/stages/writers.gdal.html>`__
+#. classify ground points using `SMRF <https://pdal.org/en/latest/stages/filters.smrf.html>`__
+#. write with `GDAL writer <https://pdal.io/en/stable/stages/writers.gdal.html>`__
 
 .. note:: If your pointcloud already has ground classified, you can skip all but
     the reader and writer and achieve the same result.
@@ -479,11 +478,11 @@ Method:
 
 
 .. _`Numpy`: http://www.numpy.org/
-.. _`schema`: http://www.pdal.io/dimensions.html
-.. _`metadata`: http://www.pdal.io/development/metadata.html
+.. _`schema`: http://www.pdal.org/dimensions.html
+.. _`metadata`: http://www.pdal.org/development/metadata.html
 .. _`TileDB`: https://tiledb.com/
 .. _`TileDB-PDAL integration`: https://docs.tiledb.com/geospatial/pdal
-.. _`TileDB writer plugin`: https://pdal.io/stages/writers.tiledb.html
+.. _`TileDB writer plugin`: https://pdal.org/stages/writers.tiledb.html
 
 .. image:: https://github.com/PDAL/python/workflows/Build/badge.svg
    :target: https://github.com/PDAL/python/actions?query=workflow%3ABuild
@@ -493,6 +492,6 @@ Requirements
 
 * PDAL 2.7+
 * Python >=3.9
-* Pybind11 (eg :code:`pip install pybind11[global]`)
-* Numpy >= 1.22 (eg :code:`pip install numpy`)
-* scikit-build-core (eg :code:`pip install scikit-build-core`)
+* Pybind11 >= 2.12 (eg :code:`pip install pybind11[global]`)
+* Numpy >= 1.24 at runtime and >= 2.0 for isolated builds (eg :code:`pip install numpy`)
+* scikit-build-core >= 1.0 (eg :code:`pip install scikit-build-core`)
