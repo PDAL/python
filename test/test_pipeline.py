@@ -295,6 +295,7 @@ class TestPipeline:
         spec = {'path':'junk.las', 'headers':{'header1':'header_1', 'header2':'header_2'}, 'query':{'query1':'query_1', 'query2':'query_2'}}
         assert pdal.Reader(spec).type == "readers.las"
         assert pdal.Reader(spec).options['filename']['path'] == "junk.las"
+        assert pdal.Reader(spec).options['filename']['headers']['header2'] == "header_2"
         assert pdal.Writer("foo.las").type == "writers.las"
 
     def test_streamable(self):
