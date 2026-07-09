@@ -3,7 +3,6 @@ import logging
 import os
 import sys
 
-from typing import List
 from itertools import product
 import numpy as np
 import pytest
@@ -284,6 +283,20 @@ class TestPipeline:
         assert pdal.Writer("foo.xxx").type == ""
         assert pdal.Reader().type == ""
         assert pdal.Writer().type == ""
+        assert pdal.Reader({"path": "foo.las"}).type == "readers.las"
+        assert pdal.Writer({"path": "foo.las"}).type == "writers.las"
+        assert pdal.Reader({"path": "foo.xxx"}).type == ""
+        assert pdal.Writer({"path": "foo.xxx"}).type == ""
+        assert pdal.Reader({}).type == ""
+        assert pdal.Writer({}).type == ""
+
+    def test_filespec(self):
+        """Can transit filespecs"""
+        spec = {'path':'junk.las', 'headers':{'header1':'header_1', 'header2':'header_2'}, 'query':{'query1':'query_1', 'query2':'query_2'}}
+        assert pdal.Reader(spec).type == "readers.las"
+        assert pdal.Reader(spec).options['filename']['path'] == "junk.las"
+        assert pdal.Reader(spec).options['filename']['headers']['header2'] == "header_2"
+        assert pdal.Writer("foo.las").type == "writers.las"
 
     def test_streamable(self):
         """Can we distinguish streamable from non-streamable stages and pipeline"""

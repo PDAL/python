@@ -33,6 +33,13 @@ LogLevelToPDAL = {
 LogLevelFromPDAL = {v: k for k, v in LogLevelToPDAL.items()}
 
 
+HaveFileSpecSupport = False
+if libpdalpython.getInfo().major == 2 and \
+        libpdalpython.getInfo().minor >= 9 or \
+        libpdalpython.getInfo().major > 2:
+            HaveFileSpecSupport = True
+
+
 class Pipeline(libpdalpython.Pipeline):
     def __init__(
         self,
@@ -217,7 +224,25 @@ class Stage:
 class InferableTypeStage(Stage):
     def __init__(self, filename: Optional[str] = None, **options: Any):
         if filename:
-            options["filename"] = filename
+            if isinstance(filename, dict):
+                if "path" not in filename:
+                    raise ValueError(f"'path' is missing in the provided filespec: {filename}")
+                if HaveFileSpecSupport:
+                    options["filename"] = filename
+                else:
+                    # log that we can't pass FileSpec to PDAL
+                    # because the library version is too old
+                    msg = "PDAL library version is too old for FileSpec support. " \
+                          "Defaulting to using filename only"
+                    logging.info(msg)
+                    options["filename"] = filename["path"]
+
+            else:
+                if HaveFileSpecSupport:
+                    filespec = {'path':str(filename)}
+                    options["filename"] = filespec
+                else:
+                    options["filename"] = filename
         super().__init__(**options)
 
     @property
@@ -226,7 +251,18 @@ class InferableTypeStage(Stage):
             return super().type
         except KeyError:
             filename = self._options.get("filename")
-            return str(self._infer_type(filename) if filename else "")
+            if isinstance(filename, dict):
+                if "path" not in filename:
+                    raise ValueError(f"'path' is missing in the provided filespec: {filename}")
+                if HaveFileSpecSupport:
+                    path = filename.get('path')
+                else:
+                    path = filename
+
+            else:
+                path = str(filename)
+
+            return str(self._infer_type(path) if filename else "")
 
     _infer_type = staticmethod(lambda filename: "")
 
