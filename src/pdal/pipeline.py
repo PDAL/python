@@ -33,6 +33,13 @@ LogLevelToPDAL = {
 LogLevelFromPDAL = {v: k for k, v in LogLevelToPDAL.items()}
 
 
+HaveFileSpecSupport = False
+if libpdalpython.getInfo().major == 2 and \
+        libpdalpython.getInfo().minor >= 9 or \
+        libpdalpython.getInfo().major > 2:
+            HaveFileSpecSupport = True
+
+
 class Pipeline(libpdalpython.Pipeline):
     def __init__(
         self,
@@ -220,11 +227,22 @@ class InferableTypeStage(Stage):
             if isinstance(filename, dict):
                 if "path" not in filename:
                     raise ValueError(f"'path' is missing in the provided filespec: {filename}")
-                options["filename"] = filename
+                if HaveFileSpecSupport:
+                    options["filename"] = filename
+                else:
+                    # log that we can't pass FileSpec to PDAL
+                    # because the library version is too old
+                    msg = "PDAL library version is too old for FileSpec support. " \
+                          "Defaulting to using filename only"
+                    logging.info(msg)
+                    options["filename"] = filename["path"]
 
             else:
-                filespec = {'path':str(filename)}
-                options["filename"] = filespec
+                if HaveFileSpecSupport:
+                    filespec = {'path':str(filename)}
+                    options["filename"] = filespec
+                else:
+                    options["filename"] = filename
         super().__init__(**options)
 
     @property
@@ -236,10 +254,13 @@ class InferableTypeStage(Stage):
             if isinstance(filename, dict):
                 if "path" not in filename:
                     raise ValueError(f"'path' is missing in the provided filespec: {filename}")
-                path = filename.get('path')
+                if HaveFileSpecSupport:
+                    path = filename.get('path')
+                else:
+                    path = filename
+
             else:
                 path = str(filename)
-
 
             return str(self._infer_type(path) if filename else "")
 
