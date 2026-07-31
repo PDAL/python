@@ -186,10 +186,11 @@ char *PythonPointTable::getPoint(PointId idx)
 StreamableExecutor::StreamableExecutor(std::string const& json,
                                        std::vector<std::shared_ptr<Array>> arrays,
                                        int level,
+                                       bool timing,
                                        point_count_t chunkSize,
                                        int prefetch,
                                        pdal::StringList allowedDims)
-    : PipelineExecutor(json, arrays, level)
+    : PipelineExecutor(json, arrays, level, timing)
     , m_table(chunkSize, prefetch)
     , m_exc(nullptr)
 {

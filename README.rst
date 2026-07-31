@@ -73,6 +73,18 @@ sorts it by the ``X`` dimension:
     metadata = pipeline.metadata
     log = pipeline.log
 
+Pass ``timing=True`` when creating a pipeline to include PDAL timing
+information in ``pipeline.log`` after execution:
+
+.. code-block:: python
+
+    import logging
+    import pdal
+
+    pipeline = pdal.Pipeline(json, loglevel=logging.DEBUG, timing=True)
+    count = pipeline.execute()
+    timing_log = pipeline.log
+
 Programmatic Pipeline Construction
 ................................................................................
 

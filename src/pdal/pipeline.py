@@ -49,6 +49,8 @@ class Pipeline(libpdalpython.Pipeline):
         json: Optional[str] = None,
         dataframes: Sequence[DataFrame] = (),
         stream_handlers: Sequence[Callable[[], int]] = (),
+        *,
+        timing: bool = False,
     ):
 
         if json:
@@ -75,6 +77,7 @@ class Pipeline(libpdalpython.Pipeline):
             self.inputs = [(a, None) for a in arrays]
 
         self.loglevel = loglevel
+        self.timing = timing
 
     def __getstate__(self):
         state = self.pipeline
@@ -104,6 +107,14 @@ class Pipeline(libpdalpython.Pipeline):
         # super() property setter is not supported
         libpdalpython.Pipeline.loglevel.__set__(self, loglevel)
 
+    @property
+    def timing(self) -> bool:
+        return super().timing
+
+    @timing.setter
+    def timing(self, value: bool) -> None:
+        libpdalpython.Pipeline.timing.__set__(self, bool(value))
+
     def __ior__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         if isinstance(other, Stage):
             self._stages.append(other)
@@ -124,7 +135,7 @@ class Pipeline(libpdalpython.Pipeline):
         return new
 
     def __copy__(self) -> Pipeline:
-        clone = self.__class__(loglevel=self.loglevel)
+        clone = self.__class__(loglevel=self.loglevel, timing=self.timing)
         clone._copy_inputs(self)
         clone |= self
         return clone
@@ -214,8 +225,13 @@ class Stage:
     def options(self) -> Dict[str, Any]:
         return dict(self._options)
 
-    def pipeline(self, *arrays: np.ndarray, loglevel: int = logging.ERROR) -> Pipeline:
-        return Pipeline((self,), arrays, loglevel)
+    def pipeline(
+        self,
+        *arrays: np.ndarray,
+        loglevel: int = logging.ERROR,
+        timing: bool = False,
+    ) -> Pipeline:
+        return Pipeline((self,), arrays, loglevel=loglevel, timing=timing)
 
     def __or__(self, other: Union[Stage, Pipeline]) -> Pipeline:
         return Pipeline((self, other))
