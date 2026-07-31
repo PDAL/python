@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import sys
 
 from itertools import product
@@ -52,6 +53,21 @@ class TestPipeline:
             p = pdal.Pipeline(spec)
             assert isinstance(p, pdal.Pipeline)
             assert len(p.stages) == 2
+
+    def test_timing_is_optional_public_api(self):
+        with open(os.path.join(DATADIRECTORY, "chip.json"), "r") as f:
+            pipeline_json = f.read()
+
+        p = pdal.Pipeline(None, (), logging.ERROR, pipeline_json)
+        assert p.timing is False
+        assert p.execute() == 1065
+
+        with pytest.raises(TypeError):
+            pdal.Pipeline(None, (), logging.ERROR, pipeline_json, (), (), True)
+
+        reader = pdal.Reader(os.path.join(DATADIRECTORY, "1.2-with-color.las"))
+        assert reader.pipeline().timing is False
+        assert reader.pipeline(timing=True).timing is True
 
     @pytest.mark.parametrize(
         "pipeline",
@@ -338,6 +354,7 @@ class TestPipeline:
         """Can we fetch log output"""
         r = get_pipeline(filename)
         assert r.loglevel == logging.ERROR
+        assert r.timing is False
         assert r.log == ""
 
         for loglevel in logging.CRITICAL, -1:
@@ -355,6 +372,17 @@ class TestPipeline:
         assert "(pypipeline readers.las Debug)" in r.log
         assert "(pypipeline Debug) Executing pipeline in standard mode" in r.log
         assert "(pypipeline writers.las Debug)" in r.log
+
+    def test_logging_timing(self):
+        """Can we fetch log output decorated with timing information"""
+        with open(os.path.join(DATADIRECTORY, "chip.json"), "r") as f:
+            r = pdal.Pipeline(f.read(), loglevel=logging.DEBUG, timing=True)
+
+        assert r.timing is True
+        count = r.execute()
+        assert count == 1065
+        assert re.search(r"\(pypipeline readers\.las Debug [0-9.]+\)", r.log)
+        assert re.search(r"\(pypipeline Debug [0-9.]+\) Executing pipeline in standard mode", r.log)
 
     @pytest.mark.skipif(
         not hasattr(pdal.Filter, "python"),
@@ -904,4 +932,3 @@ class TestPipelineInputStreams():
         with pytest.raises(RuntimeError,
                            match=f"Stream chunk size not in the range of array length: {invalid_chunk_size}"):
             p.execute()
-

@@ -80,6 +80,7 @@ public:
     StreamableExecutor(std::string const& json,
                        std::vector<std::shared_ptr<Array>> arrays,
                        int level,
+                       bool timing,
                        point_count_t chunkSize,
                        int prefetch,
                        pdal::StringList allowedDim);

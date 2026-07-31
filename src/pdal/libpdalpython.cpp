@@ -186,7 +186,7 @@ namespace pdal {
 
         std::unique_ptr<PipelineIterator> iterator(int chunk_size, int prefetch, pdal::StringList allowedDims) {
             return std::unique_ptr<PipelineIterator>(new PipelineIterator(
-                getJson(), _inputs, _loglevel, chunk_size, prefetch, allowedDims
+                getJson(), _inputs, _loglevel, _timing, chunk_size, prefetch, allowedDims
             ));
         }
 
@@ -213,6 +213,10 @@ namespace pdal {
         int getLoglevel() { return _loglevel; }
 
         void setLogLevel(int level) { _loglevel = level; delExecutor(); }
+
+        bool getTiming() { return _timing; }
+
+        void setTiming(bool timing) { _timing = timing; delExecutor(); }
 
         std::string getLog() { return getExecutor()->getLog(); }
 
@@ -291,14 +295,15 @@ namespace pdal {
             // does for all of the other methods it knows about
             py::gil_scoped_acquire acquire;
             if (!_executor)
-                _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel));
+                _executor.reset(new PipelineExecutor(getJson(), _inputs, _loglevel, _timing));
             return _executor.get();
         }
 
     private:
         std::unique_ptr<PipelineExecutor> _executor;
         std::vector<std::shared_ptr<pdal::python::Array>> _inputs;
-        int _loglevel;
+        int _loglevel = 0;
+        bool _timing = false;
     };
 
 
@@ -324,6 +329,7 @@ namespace pdal {
         .def("iterator", &Pipeline::iterator, "chunk_size"_a=10000, "prefetch"_a=0, py::arg("allowed_dims") =py::list())
         .def_property("inputs", nullptr, &Pipeline::setInputs)
         .def_property("loglevel", &Pipeline::getLoglevel, &Pipeline::setLogLevel)
+        .def_property("timing", &Pipeline::getTiming, &Pipeline::setTiming)
         .def_property_readonly("log", &Pipeline::getLog)
         .def_property_readonly("schema", &Pipeline::getSchema)
         .def_property_readonly("srswkt2", &Pipeline::getSrsWKT2)

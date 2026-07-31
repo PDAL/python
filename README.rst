@@ -73,6 +73,9 @@ sorts it by the ``X`` dimension:
     metadata = pipeline.metadata
     log = pipeline.log
 
+Pass ``timing=True`` when creating a pipeline to include PDAL timing
+information in ``pipeline.log`` after execution.
+
 Programmatic Pipeline Construction
 ................................................................................
 

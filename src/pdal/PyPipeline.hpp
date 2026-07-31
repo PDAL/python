@@ -58,7 +58,7 @@ class Array;
 
 class PDAL_EXPORT PipelineExecutor {
 public:
-    PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level);
+    PipelineExecutor(std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level, bool timing);
     virtual ~PipelineExecutor() = default;
 
     point_count_t execute(pdal::StringList allowedDims);

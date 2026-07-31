@@ -56,12 +56,12 @@ void CountPointTable::reset()
 
 
 PipelineExecutor::PipelineExecutor(
-    std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level)
+    std::string const& json, std::vector<std::shared_ptr<Array>> arrays, int level, bool timing)
 {
     if (level < 0 || level > 8)
         throw pdal_error("log level must be between 0 and 8!");
 
-    LogPtr log(Log::makeLog("pypipeline", &m_logStream));
+    LogPtr log(Log::makeLog("pypipeline", &m_logStream, timing));
     log->setLevel(static_cast<pdal::LogLevel>(level));
     m_manager.setLog(log);
 
